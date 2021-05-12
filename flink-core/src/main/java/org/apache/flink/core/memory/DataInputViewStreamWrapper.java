@@ -27,6 +27,7 @@ import java.io.InputStream;
 
 /**
  * Utility class that turns an {@link InputStream} into a {@link DataInputView}.
+ * 如何读取java的数据源对象,读取的方式是字节数组的方式
  */
 @PublicEvolving
 public class DataInputViewStreamWrapper extends DataInputStream implements DataInputView {
@@ -35,6 +36,7 @@ public class DataInputViewStreamWrapper extends DataInputStream implements DataI
 		super(in);
 	}
 
+	//必须要跳过这些字节，如果字节数量不满足,则抛异常
 	@Override
 	public void skipBytesToRead(int numBytes) throws IOException {
 		if (skipBytes(numBytes) != numBytes){

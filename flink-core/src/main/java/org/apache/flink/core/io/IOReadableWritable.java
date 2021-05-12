@@ -42,6 +42,7 @@ public interface IOReadableWritable {
 	 *        the output view to receive the data.
 	 * @throws IOException
 	 *         thrown if any error occurs while writing to the output stream
+	 * 将自身的信息，输出到out中
 	 */
 	void write(DataOutputView out) throws IOException;
 
@@ -52,6 +53,7 @@ public interface IOReadableWritable {
 	 *        the input view to read the data from
 	 * @throws IOException
 	 *         thrown if any error occurs while reading from the input stream
+	 * 从in中读取数据,生产一个value
 	 */
 	void read(DataInputView in) throws IOException;
 

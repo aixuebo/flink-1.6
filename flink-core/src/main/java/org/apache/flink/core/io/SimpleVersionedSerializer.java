@@ -45,6 +45,7 @@ import java.io.IOException;
  * }</pre>
  *
  * @param <E> The data type serialized / deserialized by this serializer.
+ * 简单的提供序列化、反序列化接口---序列化与反序列化工具类,可以为泛型E对象进行序列化与反序列化
  */
 @Internal
 public interface SimpleVersionedSerializer<E> extends Versioned {

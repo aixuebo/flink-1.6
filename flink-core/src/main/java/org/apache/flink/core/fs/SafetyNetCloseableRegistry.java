@@ -171,6 +171,7 @@ public class SafetyNetCloseableRegistry extends
 
 	/**
 	 * Reaper runnable collects and closes leaking resources.
+	 * 单独的线程,用于处理close方法
 	 */
 	static final class CloseableReaperThread extends Thread {
 

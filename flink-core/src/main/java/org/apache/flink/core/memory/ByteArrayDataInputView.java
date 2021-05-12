@@ -22,14 +22,15 @@ import javax.annotation.Nonnull;
 
 /**
  * Reusable adapter to {@link DataInputView} that operates on given byte-arrays.
+ * 读取字节数组
  */
 public class ByteArrayDataInputView extends DataInputViewStreamWrapper {
 
 	@Nonnull
-	private final ByteArrayInputStreamWithPos inStreamWithPos;
+	private final ByteArrayInputStreamWithPos inStreamWithPos;//数据源
 
 	public ByteArrayDataInputView() {
-		super(new ByteArrayInputStreamWithPos());
+		super(new ByteArrayInputStreamWithPos());//创建一个数据源
 		this.inStreamWithPos = (ByteArrayInputStreamWithPos) in;
 	}
 
@@ -50,6 +51,7 @@ public class ByteArrayDataInputView extends DataInputViewStreamWrapper {
 		inStreamWithPos.setPosition(pos);
 	}
 
+	//每次通过设置setData,然后慢慢读取数据
 	public void setData(@Nonnull byte[] buffer, int offset, int length) {
 		inStreamWithPos.setBuffer(buffer, offset, length);
 	}

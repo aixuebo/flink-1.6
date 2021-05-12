@@ -36,6 +36,7 @@ import java.util.Objects;
  *
  * <p>Note that memory segments should usually not be allocated manually, but rather through the
  * {@link MemorySegmentFactory}.
+ * 堆内存,存储在JVM中
  */
 @SuppressWarnings("unused")
 @Internal
@@ -44,6 +45,7 @@ public final class HeapMemorySegment extends MemorySegment {
 	/**
 	 * An extra reference to the heap memory, so we can let byte array checks fail by the built-in
 	 * checks automatically without extra checks.
+	 * 内存数据
 	 */
 	private byte[] memory;
 
@@ -73,12 +75,14 @@ public final class HeapMemorySegment extends MemorySegment {
 	//  MemorySegment operations
 	// -------------------------------------------------------------------------
 
+	//释放内存
 	@Override
 	public void free() {
 		super.free();
 		this.memory = null;
 	}
 
+	//产生一个子集--即从offset到offset+length截取数据
 	@Override
 	public ByteBuffer wrap(int offset, int length) {
 		try {
@@ -102,32 +106,38 @@ public final class HeapMemorySegment extends MemorySegment {
 	//                    Random Access get() and put() methods
 	// ------------------------------------------------------------------------
 
+	//读取一个字节
 	@Override
 	public final byte get(int index) {
 		return this.memory[index];
 	}
 
+	//存储一个字节
 	@Override
 	public final void put(int index, byte b) {
 		this.memory[index] = b;
 	}
 
+	//从index位置开始复制数据,复制到dst中,复制dst.length长度字节
 	@Override
 	public final void get(int index, byte[] dst) {
 		get(index, dst, 0, dst.length);
 	}
 
+	//将src字节数组的内容存储起来,从本地的index位置开始存储
 	@Override
 	public final void put(int index, byte[] src) {
 		put(index, src, 0, src.length);
 	}
 
+	//读取数据到外部dst中
 	@Override
 	public final void get(int index, byte[] dst, int offset, int length) {
 		// system arraycopy does the boundary checks anyways, no need to check extra
 		System.arraycopy(this.memory, index, dst, offset, length);
 	}
 
+	//从外部src中读取数据,插入到本地内存中
 	@Override
 	public final void put(int index, byte[] src, int offset, int length) {
 		// system arraycopy does the boundary checks anyways, no need to check extra
@@ -148,22 +158,26 @@ public final class HeapMemorySegment extends MemorySegment {
 	//                     Bulk Read and Write Methods
 	// -------------------------------------------------------------------------
 
+	//读取本地缓存数据,输出到out中。读取本地的数据从offset开始,读取length个
 	@Override
 	public final void get(DataOutput out, int offset, int length) throws IOException {
 		out.write(this.memory, offset, length);
 	}
 
+	//读取in的数据,插入到本都内存中,从本都的offset位置开始插入,插入length个数据
 	@Override
 	public final void put(DataInput in, int offset, int length) throws IOException {
 		in.readFully(this.memory, offset, length);
 	}
 
+	//读取数据,存储到target中,读取的数据范围是从offset开始读取,读取numBytes个数据
 	@Override
 	public final void get(int offset, ByteBuffer target, int numBytes) {
 		// ByteBuffer performs the boundary checks
 		target.put(this.memory, offset, numBytes);
 	}
 
+	//读取source数据,插入到本地memory中,从本地的offset开始插入,插入numBytes个数据
 	@Override
 	public final void put(int offset, ByteBuffer source, int numBytes) {
 		// ByteBuffer performs the boundary checks
@@ -177,6 +191,7 @@ public final class HeapMemorySegment extends MemorySegment {
 	/**
 	 * A memory segment factory that produces heap memory segments. Note that this factory does not
 	 * support to allocate off-heap memory.
+	 * 给定一个字节数组,创建堆内存
 	 */
 	public static final class HeapMemorySegmentFactory  {
 

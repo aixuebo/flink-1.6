@@ -24,6 +24,7 @@ import java.io.IOException;
 
 /**
  * A BlockLocation lists hosts, offset and length of block.
+ * 表示一个数据块文件,在哪里存储、数据块在文件的相对偏移量、数据块长度
  */
 @Public
 public interface BlockLocation extends Comparable<BlockLocation> {

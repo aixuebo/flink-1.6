@@ -41,6 +41,7 @@ import java.nio.ReadOnlyBufferException;
  *
  * <p>Note that memory segments should usually not be allocated manually, but rather through the
  * {@link MemorySegmentFactory}.
+ * 堆外内存
  */
 @Internal
 public final class HybridMemorySegment extends MemorySegment {
@@ -50,7 +51,7 @@ public final class HybridMemorySegment extends MemorySegment {
 	 * reference to that buffer, so as long as this memory segment lives, the memory will not be
 	 * released.
 	 */
-	private final ByteBuffer offHeapBuffer;
+	private final ByteBuffer offHeapBuffer;//对外内存---对flink只需要关注long类型的地址即可
 
 	/**
 	 * Creates a new memory segment that represents the memory backing the given direct byte buffer.
@@ -123,6 +124,7 @@ public final class HybridMemorySegment extends MemorySegment {
 		}
 	}
 
+	//产生一个子集--即从offset到offset+length截取数据
 	@Override
 	public ByteBuffer wrap(int offset, int length) {
 		if (address <= addressLimit) {
@@ -398,6 +400,7 @@ public final class HybridMemorySegment extends MemorySegment {
 
 	/**
 	 * The reflection fields with which we access the off-heap pointer from direct ByteBuffers.
+	 * 获取对外内存的地址,返回long类型
 	 */
 	private static final Field ADDRESS_FIELD;
 
@@ -412,6 +415,7 @@ public final class HybridMemorySegment extends MemorySegment {
 		}
 	}
 
+	//获取对外内存的地址,返回long类型
 	private static long getAddress(ByteBuffer buffer) {
 		if (buffer == null) {
 			throw new NullPointerException("buffer is null");
@@ -424,6 +428,7 @@ public final class HybridMemorySegment extends MemorySegment {
 		}
 	}
 
+	//获取对外内存的地址,返回long类型
 	private static long checkBufferAndGetAddress(ByteBuffer buffer) {
 		if (buffer == null) {
 			throw new NullPointerException("buffer is null");

@@ -31,16 +31,19 @@ import java.net.URI;
 @PublicEvolving
 public class LocalFileSystemFactory implements FileSystemFactory {
 
+	//file
 	@Override
 	public String getScheme() {
 		return LocalFileSystem.getLocalFsURI().getScheme();
 	}
 
+	//如何初始化文件系统
 	@Override
 	public void configure(Configuration config) {
 		// the local file system takes no configuration, so nothing to do here
 	}
 
+	//创建一个文件系统--单例模式--因为文件系统创建是耗时的操作
 	@Override
 	public FileSystem create(URI fsUri) {
 		return LocalFileSystem.getSharedInstance();

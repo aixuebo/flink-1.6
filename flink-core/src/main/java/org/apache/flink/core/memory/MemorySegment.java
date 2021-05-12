@@ -104,6 +104,7 @@ public abstract class MemorySegment {
 
 	/**
 	 * The beginning of the byte array contents, relative to the byte array object.
+	 * 数字的开始位置
 	 */
 	@SuppressWarnings("restriction")
 	protected static final long BYTE_ARRAY_BASE_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
@@ -123,12 +124,14 @@ public abstract class MemorySegment {
 	 * off the heap. If we have this buffer, we must never void this reference, or the memory
 	 * segment will point to undefined addresses outside the heap and may in out-of-order execution
 	 * cases cause segmentation faults.
+	 * null,说明是堆外内存。非null说明是JVM管理的堆内内存
 	 */
 	protected final byte[] heapMemory;
 
 	/**
 	 * The address to the data, relative to the heap memory byte array. If the heap memory byte
 	 * array is <tt>null</tt>, this becomes an absolute memory address outside the heap.
+	 * 堆外内存地址
 	 */
 	protected long address;
 
@@ -140,6 +143,7 @@ public abstract class MemorySegment {
 
 	/**
 	 * The size in bytes of the memory segment.
+	 * 堆内、堆外内存size
 	 */
 	protected final int size;
 
@@ -155,6 +159,7 @@ public abstract class MemorySegment {
 	 * data on heap. The buffer must be at least of size 8 bytes.
 	 *
 	 * @param buffer The byte array whose memory is represented by this memory segment.
+	 * 创建堆内内存
 	 */
 	MemorySegment(byte[] buffer, Object owner) {
 		if (buffer == null) {
@@ -172,8 +177,9 @@ public abstract class MemorySegment {
 	 * Creates a new memory segment that represents the memory at the absolute address given
 	 * by the pointer.
 	 *
-	 * @param offHeapAddress The address of the memory represented by this memory segment.
-	 * @param size The size of this memory segment.
+	 * @param offHeapAddress The address of the memory represented by this memory segment.堆外内存的地址
+	 * @param size The size of this memory segment.堆外内存size
+	 * 创建堆外内存
 	 */
 	MemorySegment(long offHeapAddress, int size, Object owner) {
 		if (offHeapAddress <= 0) {
@@ -209,6 +215,8 @@ public abstract class MemorySegment {
 	 * Checks whether the memory segment was freed.
 	 *
 	 * @return <tt>true</tt>, if the memory segment has been freed, <tt>false</tt> otherwise.
+	 * 参考free()方法,当释放的时候,会强制设置地址的值>size.
+	 * 因此只要释放了,一定返回true
 	 */
 	public boolean isFreed() {
 		return address > addressLimit;
@@ -220,6 +228,7 @@ public abstract class MemorySegment {
 	 * <p>After this operation has been called, no further operations are possible on the memory
 	 * segment and will fail. The actual memory (heap or off-heap) will only be released after this
 	 * memory segment object has become garbage collected.
+	 * 当释放的时候,会强制设置地址的值>size,即size+1
 	 */
 	public void free() {
 		// this ensures we can place no more data and trigger
@@ -232,6 +241,7 @@ public abstract class MemorySegment {
 	 *
 	 * @return <tt>true</tt>, if the memory segment is backed by off-heap memory, <tt>false</tt> if
 	 * it is backed by heap memory.
+	 * true表示堆外内存,堆外内存是没有内存字节数组变量的(heapMemory)
 	 */
 	public boolean isOffHeap() {
 		return heapMemory == null;
@@ -244,6 +254,8 @@ public abstract class MemorySegment {
 	 *
 	 * @throws IllegalStateException
 	 * 		if the memory segment does not represent on-heap memory
+	 * 堆内内存--返回内存字节数组
+	 * 堆外内存 -- 抛异常 -- 无该方法 --- 参考long getAddress()
 	 */
 	public byte[] getArray() {
 		if (heapMemory != null) {
@@ -260,6 +272,7 @@ public abstract class MemorySegment {
 	 *
 	 * @throws IllegalStateException
 	 * 		if the memory segment does not represent off-heap memory
+	 * 返回堆外内存地址
 	 */
 	public long getAddress() {
 		if (heapMemory == null) {
@@ -279,6 +292,7 @@ public abstract class MemorySegment {
 	 * @return A <tt>ByteBuffer</tt> backed by the specified portion of the memory segment.
 	 * @throws IndexOutOfBoundsException Thrown, if offset is negative or larger than the memory segment size,
 	 *                                   or if the offset plus the length is larger than the segment size.
+	 * 产生一个子集--即从offset到offset+length截取数据
 	 */
 	public abstract ByteBuffer wrap(int offset, int length);
 
@@ -315,6 +329,7 @@ public abstract class MemorySegment {
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or larger or equal to the size of
 	 *                                   the memory segment.
+	 *  读取一个字节数组
 	 */
 	public abstract byte get(int index);
 
@@ -326,6 +341,7 @@ public abstract class MemorySegment {
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or larger or equal to the size of
 	 *                                   the memory segment.
+	 * 插入一个字节,插入到本地index位置
 	 */
 	public abstract void put(int index, byte b);
 
@@ -333,11 +349,12 @@ public abstract class MemorySegment {
 	 * Bulk get method. Copies dst.length memory from the specified position to
 	 * the destination memory.
 	 *
-	 * @param index The position at which the first byte will be read.
-	 * @param dst The memory into which the memory will be copied.
+	 * @param index The position at which the first byte will be read.从本地数组的offset位置开始读取数据
+	 * @param dst The memory into which the memory will be copied.输出目的地
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or too large that the data between the
 	 *                                   index and the memory segment end is not enough to fill the destination array.
+	 * 从index位置开始复制数据,复制到dst中,复制dst.length长度字节
 	 */
 	public abstract void get(int index, byte[] dst);
 
@@ -345,12 +362,13 @@ public abstract class MemorySegment {
 	 * Bulk put method. Copies src.length memory from the source memory into the
 	 * memory segment beginning at the specified position.
 	 *
-	 * @param index The index in the memory segment array, where the data is put.
-	 * @param src The source array to copy the data from.
+	 * @param index The index in the memory segment array, where the data is put.本地数组的offset位置开始插入
+	 * @param src The source array to copy the data from.数据源
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or too large such that the array
 	 *                                   size exceed the amount of memory between the index and the memory
 	 *                                   segment's end.
+	 * 将src字节数组的内容存储起来,从本地的index位置开始存储
 	 */
 	public abstract void put(int index, byte[] src);
 
@@ -358,14 +376,15 @@ public abstract class MemorySegment {
 	 * Bulk get method. Copies length memory from the specified position to the
 	 * destination memory, beginning at the given offset.
 	 *
-	 * @param index The position at which the first byte will be read.
-	 * @param dst The memory into which the memory will be copied.
-	 * @param offset The copying offset in the destination memory.
-	 * @param length The number of bytes to be copied.
+	 * @param index The position at which the first byte will be read.本地数组的offset
+	 * @param dst The memory into which the memory will be copied.输出目的地
+	 * @param offset The copying offset in the destination memory.输出目的地的offset
+	 * @param length The number of bytes to be copied.输出多少个字节数组
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or too large that the requested number of
 	 *                                   bytes exceed the amount of memory between the index and the memory
 	 *                                   segment's end.
+	 * 读取数据到外部dst中
 	 */
 	public abstract void get(int index, byte[] dst, int offset, int length);
 
@@ -374,14 +393,15 @@ public abstract class MemorySegment {
 	 * the source memory into the memory segment starting at the specified
 	 * index.
 	 *
-	 * @param index The position in the memory segment array, where the data is put.
-	 * @param src The source array to copy the data from.
-	 * @param offset The offset in the source array where the copying is started.
-	 * @param length The number of bytes to copy.
+	 * @param index The position in the memory segment array, where the data is put.插入到本地数组的offset
+	 * @param src The source array to copy the data from.数据源
+	 * @param offset The offset in the source array where the copying is started.数据源的offset
+	 * @param length The number of bytes to copy.读取多少个字节数组
 	 *
 	 * @throws IndexOutOfBoundsException Thrown, if the index is negative, or too large such that the array
 	 *                                   portion to copy exceed the amount of memory between the index and the memory
 	 *                                   segment's end.
+	 * 从外部src中读取数据,插入到本地内存中
 	 */
 	public abstract void put(int index, byte[] src, int offset, int length);
 
@@ -1180,19 +1200,20 @@ public abstract class MemorySegment {
 	// -------------------------------------------------------------------------
 	//                     Bulk Read and Write Methods
 	// -------------------------------------------------------------------------
-
+    //读取本地缓存数据,输出到out中。读取本地的数据从offset开始,读取length个
 	public abstract void get(DataOutput out, int offset, int length) throws IOException;
 
 	/**
 	 * Bulk put method. Copies length memory from the given DataInput to the
 	 * memory starting at position offset.
 	 *
-	 * @param in The DataInput to get the data from.
-	 * @param offset The position in the memory segment to copy the chunk to.
-	 * @param length The number of bytes to get.
+	 * @param in The DataInput to get the data from.数据源
+	 * @param offset The position in the memory segment to copy the chunk to.插入到本地的offset开始位置
+	 * @param length The number of bytes to get.需要读取数据源多少个字节
 	 *
 	 * @throws IOException Thrown, if the DataInput encountered a problem upon reading,
 	 *                     such as an End-Of-File.
+	 * 读取in的数据,插入到本都内存中,从本都的offset位置开始插入,插入length个数据
 	 */
 	public abstract void put(DataInput in, int offset, int length) throws IOException;
 
@@ -1203,14 +1224,15 @@ public abstract class MemorySegment {
 	 * the target byte buffer has remaining (with respect to {@link ByteBuffer#remaining()}),
 	 * this method will cause a {@link java.nio.BufferOverflowException}.
 	 *
-	 * @param offset The position where the bytes are started to be read from in this memory segment.
-	 * @param target The ByteBuffer to copy the bytes to.
-	 * @param numBytes The number of bytes to copy.
+	 * @param offset The position where the bytes are started to be read from in this memory segment.从哪里开始读取数据
+	 * @param target The ByteBuffer to copy the bytes to.存储数据的目的地
+	 * @param numBytes The number of bytes to copy.读取多少个字节数据
 	 *
 	 * @throws IndexOutOfBoundsException If the offset is invalid, or this segment does not
 	 *           contain the given number of bytes (starting from offset), or the target byte buffer does
 	 *           not have enough space for the bytes.
 	 * @throws ReadOnlyBufferException If the target buffer is read-only.
+	 * 读取数据,存储到target中,读取的数据范围是从offset开始读取,读取numBytes个数据
 	 */
 	public abstract void get(int offset, ByteBuffer target, int numBytes);
 
@@ -1223,13 +1245,15 @@ public abstract class MemorySegment {
 	 * the target byte buffer has remaining (with respect to {@link ByteBuffer#remaining()}),
 	 * this method will cause a {@link java.nio.BufferUnderflowException}.
 	 *
-	 * @param offset The position where the bytes are started to be written to in this memory segment.
-	 * @param source The ByteBuffer to copy the bytes from.
-	 * @param numBytes The number of bytes to copy.
+	 * @param offset The position where the bytes are started to be written to in this memory segment.写入本地内存的offset开始位置
+	 * @param source The ByteBuffer to copy the bytes from.读取的数据源
+	 * @param numBytes The number of bytes to copy.写入本都多少个字节
 	 *
 	 * @throws IndexOutOfBoundsException If the offset is invalid, or the source buffer does not
 	 *           contain the given number of bytes, or this segment does
 	 *           not have enough space for the bytes (counting from offset).
+	 * 读取source数据,插入到本地memory中,从本地的offset开始插入,插入numBytes个数据
+	 *
 	 */
 	public abstract void put(int offset, ByteBuffer source, int numBytes);
 
@@ -1246,6 +1270,8 @@ public abstract class MemorySegment {
 	 * @throws IndexOutOfBoundsException If either of the offsets is invalid, or the source segment does not
 	 *           contain the given number of bytes (starting from offset), or the target segment does
 	 *           not have enough space for the bytes (counting from targetOffset).
+	 * 将数据输出到target中。
+	 * 数据从offset开始，输出到target的targetOffset位置开始，输出numBytes个字节数组
 	 */
 	public final void copyTo(int offset, MemorySegment target, int targetOffset, int numBytes) {
 		final byte[] thisHeapRef = this.heapMemory;
@@ -1257,10 +1283,10 @@ public abstract class MemorySegment {
 				thisPointer <= this.addressLimit - numBytes && otherPointer <= target.addressLimit - numBytes) {
 			UNSAFE.copyMemory(thisHeapRef, thisPointer, otherHeapRef, otherPointer, numBytes);
 		}
-		else if (this.address > this.addressLimit) {
+		else if (this.address > this.addressLimit) {//数据已经free释放了,则不需要处理了
 			throw new IllegalStateException("this memory segment has been freed.");
 		}
-		else if (target.address > target.addressLimit) {
+		else if (target.address > target.addressLimit) {//数据已经free释放了,则不需要处理了
 			throw new IllegalStateException("target memory segment has been freed.");
 		}
 		else {
@@ -1283,20 +1309,25 @@ public abstract class MemorySegment {
 	 * @param len Length of the compared memory region
 	 *
 	 * @return 0 if equal, -1 if seg1 &lt; seg2, 1 otherwise
+	 * 比较两个内存的数据。分别从offset1和offset2的位置获取数据去比较。最多比较len个长度。
+	 * 如果全部相同,则返回0.
 	 */
 	public final int compare(MemorySegment seg2, int offset1, int offset2, int len) {
-		while (len >= 8) {
+		while (len >= 8) {//尽量比较多一些，因此每次获取long类型的8个字节去比较
 			long l1 = this.getLongBigEndian(offset1);
 			long l2 = seg2.getLongBigEndian(offset2);
 
-			if (l1 != l2) {
+			if (l1 != l2) {//一旦发现不同,则返回比较结果
 				return (l1 < l2) ^ (l1 < 0) ^ (l2 < 0) ? -1 : 1;
 			}
 
+			//发现相同,则继续比较后8个字节
 			offset1 += 8;
 			offset2 += 8;
-			len -= 8;
+			len -= 8;//总比较的长度要减少
 		}
+
+		//程序执行到这里,说明依然相同,只是不足8个字节,因此一个字节一个字节的比较
 		while (len > 0) {
 			int b1 = this.get(offset1) & 0xff;
 			int b2 = seg2.get(offset2) & 0xff;
@@ -1313,33 +1344,34 @@ public abstract class MemorySegment {
 
 	/**
 	 * Swaps bytes between two memory segments, using the given auxiliary buffer.
-	 *
-	 * @param tempBuffer The auxiliary buffer in which to put data during triangle swap.
+	 * 要求交换的空间都是堆内内存空间 && 两个内存空间都满足len个长度字节
+	 * @param tempBuffer The auxiliary buffer in which to put data during triangle swap.交换的缓冲区
 	 * @param seg2 Segment to swap bytes with
 	 * @param offset1 Offset of this segment to start swapping
 	 * @param offset2 Offset of seg2 to start swapping
 	 * @param len Length of the swapped memory region
+	 * 数据空间交换,交换this和seg2两个内存,从offset1和offset2开始,交换len个字节
 	 */
 	public final void swapBytes(byte[] tempBuffer, MemorySegment seg2, int offset1, int offset2, int len) {
 		if ((offset1 | offset2 | len | (tempBuffer.length - len)) >= 0) {
 			final long thisPos = this.address + offset1;
 			final long otherPos = seg2.address + offset2;
 
-			if (thisPos <= this.addressLimit - len && otherPos <= seg2.addressLimit - len) {
-				// this -> temp buffer
+			if (thisPos <= this.addressLimit - len && otherPos <= seg2.addressLimit - len) {//要求两个内存空间都满足len个长度字节
+				// this -> temp buffer 先将this的数据复制到缓冲区
 				UNSAFE.copyMemory(this.heapMemory, thisPos, tempBuffer, BYTE_ARRAY_BASE_OFFSET, len);
 
-				// other -> this
+				// other -> this 将other的数据替换到this中
 				UNSAFE.copyMemory(seg2.heapMemory, otherPos, this.heapMemory, thisPos, len);
 
-				// temp buffer -> other
+				// temp buffer -> other 将缓冲区的数据替换到other中
 				UNSAFE.copyMemory(tempBuffer, BYTE_ARRAY_BASE_OFFSET, seg2.heapMemory, otherPos, len);
 				return;
 			}
-			else if (this.address > this.addressLimit) {
+			else if (this.address > this.addressLimit) {//数据已经free释放了,则不需要处理了
 				throw new IllegalStateException("this memory segment has been freed.");
 			}
-			else if (seg2.address > seg2.addressLimit) {
+			else if (seg2.address > seg2.addressLimit) {//数据已经free释放了,则不需要处理了
 				throw new IllegalStateException("other memory segment has been freed.");
 			}
 		}

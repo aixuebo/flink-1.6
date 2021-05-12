@@ -24,6 +24,7 @@ import org.apache.flink.core.io.LocatableInputSplit;
 /**
  * A file input split provides information on a particular part of a file, possibly
  * hosted on a distributed file system and replicated among several hosts.
+ * 代表文件的一个数据块 -- 包含数据块所在host、路径、数据块相对文件的开始位置和size
  */
 @Public
 public class FileInputSplit extends LocatableInputSplit {

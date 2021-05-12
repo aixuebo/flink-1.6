@@ -24,6 +24,7 @@ import org.apache.flink.annotation.PublicEvolving;
 /**
  * An input split assigner distributes the {@link InputSplit}s among the instances on which a
  * data source exists.
+ * 为节点分配一个待处理的数据块
  */
 @PublicEvolving
 public interface InputSplitAssigner {
@@ -31,10 +32,11 @@ public interface InputSplitAssigner {
 	/**
 	 * Returns the next input split that shall be consumed. The consumer's host is passed as a parameter
 	 * to allow localized assignments.
-	 * 
-	 * @param host The host address of split requesting task.
-	 * @param taskId The id of the split requesting task.
+	 * 传递请求数据块节点id,目的是分配本地化的数据块,属于优化范畴
+	 * @param host The host address of split requesting task.请求数据块的节点
+	 * @param taskId The id of the split requesting task.请求数据块的任务id
 	 * @return the next input split to be consumed, or <code>null</code> if no more splits remain.
+	 * 返回要去处理的数据块
 	 */
 	InputSplit getNextInputSplit(String host, int taskId);
 

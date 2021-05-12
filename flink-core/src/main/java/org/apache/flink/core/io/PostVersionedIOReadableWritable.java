@@ -36,13 +36,14 @@ import java.util.Arrays;
 @Internal
 public abstract class PostVersionedIOReadableWritable extends VersionedIOReadableWritable {
 
-	/** NOTE: CANNOT CHANGE! */
+	/** NOTE: CANNOT CHANGE! 版本标识符 */
 	private static final byte[] VERSIONED_IDENTIFIER = new byte[] {-15, -51, -123, -97};
 
 	/**
 	 * Read from the provided {@link DataInputView in}. A flag {@code wasVersioned} can be
 	 * used to determine whether or not the data to read was previously written
 	 * by a {@link VersionedIOReadableWritable}.
+	 * 具体读取数据信息
 	 */
 	protected abstract void read(DataInputView in, boolean wasVersioned) throws IOException;
 
@@ -62,12 +63,12 @@ public abstract class PostVersionedIOReadableWritable extends VersionedIOReadabl
 	 */
 	public final void read(InputStream inputStream) throws IOException {
 		byte[] tmp = new byte[VERSIONED_IDENTIFIER.length];
-		inputStream.read(tmp);
+		inputStream.read(tmp);//读取模
 
-		if (Arrays.equals(tmp, VERSIONED_IDENTIFIER)) {
+		if (Arrays.equals(tmp, VERSIONED_IDENTIFIER)) {//确保模数据是相同的
 			DataInputView inputView = new DataInputViewStreamWrapper(inputStream);
 
-			super.read(inputView);
+			super.read(inputView);//读取版本号
 			read(inputView, true);
 		} else {
 			PushbackInputStream resetStream = new PushbackInputStream(inputStream, VERSIONED_IDENTIFIER.length);

@@ -26,16 +26,17 @@ import java.io.InputStream;
 
 /**
  * Un-synchronized stream similar to Java's ByteArrayInputStream that also exposes the current position.
+ * 字节数组作为数据源
  */
 @Internal
 public class ByteArrayInputStreamWithPos extends InputStream {
 
 	private static final byte[] EMPTY = new byte[0];
 
-	protected byte[] buffer;
-	protected int position;
-	protected int count;
-	protected int mark = 0;
+	protected byte[] buffer;//缓存字节内容
+	protected int position;//当前处理的位置
+	protected int count;//buffer的可操作性的end结束位置
+	protected int mark = 0;//可reset的position位置
 
 	public ByteArrayInputStreamWithPos() {
 		this(EMPTY);
@@ -49,11 +50,14 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 		setBuffer(buffer, offset, length);
 	}
 
+	//读取一个字节,返回字节内容
 	@Override
 	public int read() {
 		return (position < count) ? 0xFF & (buffer[position++]) : -1;
 	}
 
+	//从缓存中读取len个字节内容,存储到参数b的off之后
+	//返回读取了多少个字节,读取的内容在参数b中
 	@Override
 	public int read(byte[] b, int off, int len) {
 		Preconditions.checkNotNull(b);
@@ -62,13 +66,13 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 			throw new IndexOutOfBoundsException();
 		}
 
-		if (position >= count) {
+		if (position >= count) { //没有数据可以被读取了
 			return -1; // signal EOF
 		}
 
-		int available = count - position;
+		int available = count - position; //可以读取的内容
 
-		if (len > available) {
+		if (len > available) { //只能读取多少个字节
 			len = available;
 		}
 
@@ -76,9 +80,9 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 			return 0;
 		}
 
-		System.arraycopy(buffer, position, b, off, len);
+		System.arraycopy(buffer, position, b, off, len);//从buffer中读取数据到b中
 		position += len;
-		return len;
+		return len;//真正读取的字节长度
 	}
 
 	@Override
@@ -98,6 +102,7 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 		return true;
 	}
 
+	//标注一个位置,用于后期reset
 	@Override
 	public void mark(int readAheadLimit) {
 		mark = position;

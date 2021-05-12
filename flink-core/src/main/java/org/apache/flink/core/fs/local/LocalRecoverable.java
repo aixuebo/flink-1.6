@@ -29,18 +29,21 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * An implementation of the resume and commit descriptor objects for local recoverable streams.
+ * 可恢复的消费对象 --- 可序列化三个属性值
+ *
+ * 什么是可恢复---即在处理某一个文件的时候，记录一些元数据，通过元数据可以恢复重新消费的能力
  */
 @Internal
 class LocalRecoverable implements CommitRecoverable, ResumeRecoverable {
 
-	/** The file path for the final result file. */
+	/** The file path for the final result file.待重新消费的文件 */
 	private final File targetFile;
 
 	/** The file path of the staging file. */
 	private final File tempFile;
 
 	/** The position to resume from. */
-	private final long offset;
+	private final long offset;//tempFile文件已经记录在什么位置了,下次从该位置继续追加即可
 
 	/**
 	 * Creates a resumable for the given file at the given position.

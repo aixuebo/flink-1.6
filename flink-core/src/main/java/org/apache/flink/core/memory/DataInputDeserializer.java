@@ -26,6 +26,8 @@ import java.nio.ByteOrder;
 
 /**
  * A simple and efficient deserializer for the {@link java.io.DataInput} interface.
+ * 简单、有效的反序列化接口
+ * 读取数据源,数据源是字节数组
  */
 public class DataInputDeserializer implements DataInputView, java.io.Serializable {
 
@@ -33,7 +35,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 
 	// ------------------------------------------------------------------------
 
-	private byte[] buffer;
+	private byte[] buffer;//缓存的数据内容
 
 	private int end;
 
@@ -59,6 +61,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 	//  Changing buffers
 	// ------------------------------------------------------------------------
 
+	//设置待缓存的内容
 	public void setBuffer(ByteBuffer buffer) {
 		if (buffer.hasArray()) {
 			this.buffer = buffer.array();
@@ -76,6 +79,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		}
 	}
 
+	//设置待缓存的内容
 	public void setBuffer(byte[] buffer, int start, int len) {
 		if (buffer == null) {
 			throw new NullPointerException();
@@ -90,6 +94,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		this.end = start + len;
 	}
 
+	//清空缓存内容
 	public void releaseArrays() {
 		this.buffer = null;
 	}
@@ -143,11 +148,13 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		return Float.intBitsToFloat(readInt());
 	}
 
+	//读取数据内容到参数b中
 	@Override
 	public void readFully(byte[] b) throws IOException {
 		readFully(b, 0, b.length);
 	}
 
+	//读取数据内容到参数b中,读取的长度是len
 	@Override
 	public void readFully(byte[] b, int off, int len) throws IOException {
 		if (len >= 0) {
@@ -182,6 +189,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		}
 	}
 
+	//读取一行数据 --- 使用\r\n作为换行符
 	@Override
 	public String readLine() throws IOException {
 		if (this.position < this.end) {
@@ -194,7 +202,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 			}
 			// trim a trailing carriage return
 			int len = bld.length();
-			if (len > 0 && bld.charAt(len - 1) == '\r') {
+			if (len > 0 && bld.charAt(len - 1) == '\r') {//说明最后是\r\n,因此长度要扣除\r
 				bld.setLength(len - 1);
 			}
 			String s = bld.toString();
@@ -330,6 +338,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		}
 	}
 
+	//必须跳过numBytes个字节,否则抛异常
 	@Override
 	public void skipBytesToRead(int numBytes) throws IOException {
 		int skippedBytes = skipBytes(numBytes);
@@ -339,6 +348,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		}
 	}
 
+	//读取len个字节数据,存储到参数b中
 	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 		if (b == null){
@@ -369,6 +379,7 @@ public class DataInputDeserializer implements DataInputView, java.io.Serializabl
 		}
 	}
 
+	//读取字节,存储到参数b中
 	@Override
 	public int read(byte[] b) throws IOException {
 		return read(b, 0, b.length);

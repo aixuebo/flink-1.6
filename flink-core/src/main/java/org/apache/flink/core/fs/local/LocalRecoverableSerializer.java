@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Simple serializer for the {@link LocalRecoverable}.
+ * 对LocalRecoverable进行序列化与反序列化
  */
 @Internal
 class LocalRecoverableSerializer implements SimpleVersionedSerializer<LocalRecoverable> {
@@ -52,15 +53,18 @@ class LocalRecoverableSerializer implements SimpleVersionedSerializer<LocalRecov
 
 	@Override
 	public byte[] serialize(LocalRecoverable obj) throws IOException {
+		//获取绝对路径---转换成字节数组
 		final byte[] targetFileBytes = obj.targetFile().getAbsolutePath().getBytes(CHARSET);
 		final byte[] tempFileBytes = obj.tempFile().getAbsolutePath().getBytes(CHARSET);
 		final byte[] targetBytes = new byte[20 + targetFileBytes.length + tempFileBytes.length];
 
-		ByteBuffer bb = ByteBuffer.wrap(targetBytes).order(ByteOrder.LITTLE_ENDIAN);
-		bb.putInt(MAGIC_NUMBER);
-		bb.putLong(obj.offset());
+		ByteBuffer bb = ByteBuffer.wrap(targetBytes).order(ByteOrder.LITTLE_ENDIAN);//创建字节数组
+		//存储元数据
+		bb.putInt(MAGIC_NUMBER);//魔
+		bb.putLong(obj.offset());//从什么位置开始消费
 		bb.putInt(targetFileBytes.length);
 		bb.putInt(tempFileBytes.length);
+		//存储文件绝对路径
 		bb.put(targetFileBytes);
 		bb.put(tempFileBytes);
 

@@ -943,6 +943,7 @@ public abstract class FileSystem {
 	 * via Java's service framework.
 	 *
 	 * @return A map from the file system scheme to corresponding file system factory.
+	 * 加载支持的文件系统集合
 	 */
 	private static List<FileSystemFactory> loadFileSystems() {
 		final ArrayList<FileSystemFactory> list = new ArrayList<>();
@@ -1037,6 +1038,7 @@ public abstract class FileSystem {
 
 	/**
 	 * An identifier of a file system, via its scheme and its authority.
+	 * 文件系统的唯一标识schema+权限字符串
 	 */
 	private static final class FSKey {
 

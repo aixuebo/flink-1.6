@@ -40,6 +40,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A {@link RecoverableFsDataOutputStream} for the {@link LocalFileSystem}.
+ * 可恢复对象的输出流
  */
 @Internal
 class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
@@ -48,10 +49,11 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 
 	private final File tempFile;
 
-	private final FileChannel fileChannel;
+	private final FileChannel fileChannel;//tempFile的输出流
 
-	private final OutputStream fos;
+	private final OutputStream fos;//tempFile的输出流
 
+	//新建临时文件,并且产生输出流
 	LocalRecoverableFsDataOutputStream(File targetFile, File tempFile) throws IOException {
 		this.targetFile = checkNotNull(targetFile);
 		this.tempFile = checkNotNull(tempFile);
@@ -60,6 +62,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 		this.fos = Channels.newOutputStream(fileChannel);
 	}
 
+	//对临时文件创建append追加流
 	LocalRecoverableFsDataOutputStream(LocalRecoverable resumable) throws IOException {
 		this.targetFile = checkNotNull(resumable.targetFile());
 		this.tempFile = checkNotNull(resumable.tempFile());
@@ -72,7 +75,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 		if (this.fileChannel.position() < resumable.offset()) {
 			throw new IOException("Missing data in tmp file: " + tempFile.getAbsolutePath());
 		}
-		this.fileChannel.truncate(resumable.offset());
+		this.fileChannel.truncate(resumable.offset());//设置偏移量
 		this.fos = Channels.newOutputStream(fileChannel);
 	}
 
@@ -101,6 +104,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 		return fileChannel.position();
 	}
 
+	//实例化一个可恢复的对象
 	@Override
 	public ResumeRecoverable persist() throws IOException {
 		// we call both flush and sync in order to ensure persistence on mounted
@@ -111,6 +115,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 		return new LocalRecoverable(targetFile, tempFile, getPos());
 	}
 
+	//关闭流的时候做一个提交操作
 	@Override
 	public Committer closeForCommit() throws IOException {
 		final long pos = getPos();
@@ -127,7 +132,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 
 	static class LocalCommitter implements Committer {
 
-		private final LocalRecoverable recoverable;
+		private final LocalRecoverable recoverable;//提交一个可恢复的对象
 
 		LocalCommitter(LocalRecoverable recoverable) {
 			this.recoverable = checkNotNull(recoverable);
@@ -138,7 +143,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 			final File src = recoverable.tempFile();
 			final File dest = recoverable.targetFile();
 
-			// sanity check
+			// sanity check 做一个同步校验,证明临时文件写入flush成功，临时文件大小与记录的position位置相同
 			if (src.length() != recoverable.offset()) {
 				// something was done to this file since the committer was created.
 				// this is not the "clean" case
@@ -147,6 +152,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 
 			// rather than fall into default recovery, handle errors explicitly
 			// in order to improve error messages
+			// 使用临时文件 替换原始文件 。。。 临时文件可能未来更有用，不需要重新加载原始文件了
 			try {
 				Files.move(src.toPath(), dest.toPath(), StandardCopyOption.ATOMIC_MOVE);
 			}
@@ -160,6 +166,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 			}
 		}
 
+		//针对重复提交的幂等操作
 		@Override
 		public void commitAfterRecovery() throws IOException {
 			final File src = recoverable.tempFile();
@@ -171,7 +178,7 @@ class LocalRecoverableFsDataOutputStream extends RecoverableFsDataOutputStream {
 					// can happen if we co from persist to recovering for commit directly
 					// truncate the trailing junk away
 					try (FileOutputStream fos = new FileOutputStream(src, true)) {
-						fos.getChannel().truncate(expectedLength);
+						fos.getChannel().truncate(expectedLength);//将channel内的文件太大了,进行截断,参数targetSize字节偏移量位置后面的字节将被删除
 					}
 				} else if (src.length() < expectedLength) {
 					throw new IOException("Missing data in tmp file: " + src);

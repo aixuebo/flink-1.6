@@ -33,21 +33,25 @@ import java.util.Map;
  * <p>Registering to an already closed registry will throw an exception and close the provided {@link Closeable}
  *
  * <p>All methods in this class are thread-safe.
+ * 线程安全的去添加closeable对象,当执行close的时候,会将注册的closeable对象依次都执行close方法
  */
 @Internal
 public class CloseableRegistry extends AbstractCloseableRegistry<Closeable, Object> {
 
 	private static final Object DUMMY = new Object();
 
+	//初始化一个map
 	public CloseableRegistry() {
 		super(new HashMap<>());
 	}
 
+	//去注册一个closeable对象。
 	@Override
 	protected void doRegister(@Nonnull Closeable closeable, @Nonnull Map<Closeable, Object> closeableMap) {
 		closeableMap.put(closeable, DUMMY);
 	}
 
+	//删除一个closeable对象
 	@Override
 	protected boolean doUnRegister(@Nonnull Closeable closeable, @Nonnull Map<Closeable, Object> closeableMap) {
 		return closeableMap.remove(closeable) != null;

@@ -33,7 +33,7 @@ public interface InputSplit extends Serializable {
 	
 	/**
 	 * Returns the number of this input split.
-	 * 
+	 * 返回第几个数据块
 	 * @return the number of this input split
 	 */
 	int getSplitNumber();

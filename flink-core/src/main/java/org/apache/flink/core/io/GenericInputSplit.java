@@ -22,16 +22,17 @@ import org.apache.flink.annotation.Public;
 
 /**
  * A generic input split that has only a partition number.
+ * 分区号就是InputSplit号
  */
 @Public
 public class GenericInputSplit implements InputSplit, java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	/** The number of this split. */
+	/** The number of this split. 分区号 */
 	private final int partitionNumber;
 
-	/** The total number of partitions */
+	/** The total number of partitions 总分区数量*/
 	private final int totalNumberOfPartitions;
 	
 	// --------------------------------------------------------------------------------------------

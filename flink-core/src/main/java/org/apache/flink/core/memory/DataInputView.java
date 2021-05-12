@@ -27,6 +27,7 @@ import java.io.IOException;
 /**
  * This interface defines a view over some memory that can be used to sequentially read the contents of the memory.
  * The view is typically backed by one or more {@link org.apache.flink.core.memory.MemorySegment}.
+ * 如何读取数据
  */
 @Public
 public interface DataInputView extends DataInput {
@@ -35,10 +36,13 @@ public interface DataInputView extends DataInput {
 	 * Skips {@code numBytes} bytes of memory. In contrast to the {@link #skipBytes(int)} method,
 	 * this method always skips the desired number of bytes or throws an {@link java.io.EOFException}.
 	 *
-	 * @param numBytes The number of bytes to skip.
+	 * @param numBytes The number of bytes to skip.准备跳过的字节数量
 	 *
 	 * @throws IOException Thrown, if any I/O related problem occurred such that the input could not
 	 *                     be advanced to the desired position.
+	 *  必须要跳过这些字节，如果字节数量不满足,则抛异常
+	 *
+	 *  与skipBytes对比,skipBytes方法可以跳过一些字节,也可以不跳过,不强求
 	 */
 	void skipBytesToRead(int numBytes) throws IOException;
 

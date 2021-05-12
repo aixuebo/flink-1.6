@@ -30,6 +30,7 @@ import org.apache.flink.annotation.Public;
 /**
  * Interface that represents the client side information for a file
  * independent of the file system.
+ * 代表一个整体的文件--属于文件系统管理的虚拟文件---该文件由若干个数据块组成
  */
 @Public
 public interface FileStatus {
@@ -45,6 +46,7 @@ public interface FileStatus {
 	 *Get the block size of the file.
 	 *
 	 * @return the number of bytes
+	 * 每一个数据块大小
 	 */
 	long getBlockSize();
 
@@ -52,6 +54,7 @@ public interface FileStatus {
 	 * Get the replication factor of a file.
 	 *
 	 * @return the replication factor of a file.
+	 * 备份因子
 	 */
 	short getReplication();
 

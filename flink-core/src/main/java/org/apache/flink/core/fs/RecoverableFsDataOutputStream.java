@@ -27,12 +27,14 @@ import java.io.IOException;
  * An output stream to a file system that can be recovered at well defined points.
  * The stream initially writes to hidden files or temp files and only creates the
  * target file once it is closed and "committed".
+ * 可恢复的对象输出流
  */
 public abstract class RecoverableFsDataOutputStream extends FSDataOutputStream {
 
 	/**
 	 * Ensures all data so far is persistent (similar to {@link #sync()}) and returns
 	 * a handle to recover the stream at the current position.
+	 * 存储一个快照状态点
 	 */
 	public abstract ResumeRecoverable persist() throws IOException;
 
@@ -40,6 +42,7 @@ public abstract class RecoverableFsDataOutputStream extends FSDataOutputStream {
 	 * Closes the stream, ensuring persistence of all data (similar to {@link #sync()}).
 	 * This returns a Committer that can be used to publish (make visible) the file
 	 * that the stream was writing to.
+	 * 关闭流的时候，做一个快照
 	 */
 	public abstract Committer closeForCommit() throws IOException;
 
@@ -77,6 +80,7 @@ public abstract class RecoverableFsDataOutputStream extends FSDataOutputStream {
 		 * commit retries as they need to happen after recovery.
 		 *
 		 * @throws IOException Thrown if committing fails.
+		 * 针对重复提交的幂等操作
 		 */
 		void commitAfterRecovery() throws IOException;
 

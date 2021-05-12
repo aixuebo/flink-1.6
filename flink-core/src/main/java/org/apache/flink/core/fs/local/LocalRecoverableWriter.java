@@ -45,10 +45,11 @@ public class LocalRecoverableWriter implements RecoverableWriter {
 		this.fs = checkNotNull(fs);
 	}
 
+	//产生可恢复对象的输出流
 	@Override
 	public RecoverableFsDataOutputStream open(Path filePath) throws IOException {
 		final File targetFile = fs.pathToFile(filePath);
-		final File tempFile = generateStagingTempFilePath(targetFile);
+		final File tempFile = generateStagingTempFilePath(targetFile);//临时文件
 
 		// try to create the parent
 		final File parent = tempFile.getParentFile();
@@ -81,6 +82,7 @@ public class LocalRecoverableWriter implements RecoverableWriter {
 		}
 	}
 
+	//序列化对象
 	@Override
 	public SimpleVersionedSerializer<CommitRecoverable> getCommitRecoverableSerializer() {
 		@SuppressWarnings("unchecked")
@@ -90,6 +92,7 @@ public class LocalRecoverableWriter implements RecoverableWriter {
 		return typedSerializer;
 	}
 
+	//序列化对象
 	@Override
 	public SimpleVersionedSerializer<ResumeRecoverable> getResumeRecoverableSerializer() {
 		@SuppressWarnings("unchecked")
@@ -104,6 +107,7 @@ public class LocalRecoverableWriter implements RecoverableWriter {
 		return true;
 	}
 
+	//随机产生一个临时文件targetFile.inprogress.uuid
 	@VisibleForTesting
 	static File generateStagingTempFilePath(File targetFile) {
 		checkArgument(targetFile.isAbsolute(), "targetFile must be absolute");

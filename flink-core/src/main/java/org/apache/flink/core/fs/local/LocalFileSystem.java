@@ -56,35 +56,41 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * The class {@code LocalFileSystem} is an implementation of the {@link FileSystem} interface
  * for the local file system of the machine where the JVM runs.
+ *
+ * 本地文件系统 --- home目录、项目目录、机器host
  */
 @Internal
 public class LocalFileSystem extends FileSystem {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LocalFileSystem.class);
 
-	/** The URI representing the local file system. */
+	/** The URI representing the local file system. 是否是windows操作系统*/
 	private static final URI LOCAL_URI = OperatingSystem.isWindows() ? URI.create("file:/") : URI.create("file:///");
 
 	/** The shared instance of the local file system. */
 	private static final LocalFileSystem INSTANCE = new LocalFileSystem();
 
 	/** Path pointing to the current working directory.
-	 * Because Paths are not immutable, we cannot cache the proper path here */
-	private final URI workingDir;
+	 * Because Paths are not immutable, we cannot cache the proper path here
+	 * 比如 file:/Users/maming/Desktop/mm/document/poi_udf/
+	 **/
+	private final URI workingDir;//项目目录
 
 	/** Path pointing to the current working directory.
-	 * Because Paths are not immutable, we cannot cache the proper path here. */
-	private final URI homeDir;
+	 * Because Paths are not immutable, we cannot cache the proper path here.
+	 * 比如 file:/Users/maming/
+	 **/
+	private final URI homeDir;//磁盘操作的home目录
 
-	/** The host name of this machine. */
+	/** The host name of this machine.机器的host */
 	private final String hostName;
 
 	/**
 	 * Constructs a new <code>LocalFileSystem</code> object.
 	 */
 	public LocalFileSystem() {
-		this.workingDir = new File(System.getProperty("user.dir")).toURI();
-		this.homeDir = new File(System.getProperty("user.home")).toURI();
+		this.workingDir = new File(System.getProperty("user.dir")).toURI();//项目所在目录
+		this.homeDir = new File(System.getProperty("user.home")).toURI();//磁盘操作的home目录
 
 		String tmp = "unknownHost";
 		try {
@@ -294,6 +300,7 @@ public class LocalFileSystem extends FileSystem {
 		}
 	}
 
+	//是否是分布式的系统
 	@Override
 	public boolean isDistributedFS() {
 		return false;
@@ -310,6 +317,7 @@ public class LocalFileSystem extends FileSystem {
 	 * Converts the given Path to a File for this file system.
 	 *
 	 * <p>If the path is not absolute, it is interpreted relative to this FileSystem's working directory.
+	 * path转文件
 	 */
 	public File pathToFile(Path path) {
 		if (!path.isAbsolute()) {

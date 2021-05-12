@@ -30,6 +30,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Simple serialization / deserialization methods for the {@link SimpleVersionedSerializer}.
+ * 简单的序列化、反序列化工具类
  */
 @PublicEvolving
 public class SimpleVersionedSerialization {
@@ -45,16 +46,17 @@ public class SimpleVersionedSerialization {
 	 * datum, as produced by {@link SimpleVersionedSerializer#serialize(Object)}, plus its length.
 	 * The resulting array will hence be eight bytes larger than the serialized datum.
 	 *
-	 * @param serializer The serializer to serialize the datum with.
-	 * @param datum The datum to serialize.
-	 * @param out The stream to serialize to.
+	 * @param serializer The serializer to serialize the datum with.序列化与反序列化工具类
+	 * @param datum The datum to serialize.待序列化的对象
+	 * @param out The stream to serialize to.序列化后输出
+	 * 将对象T序列化成字节数组,然后输出到out中
 	 */
 	public static <T> void writeVersionAndSerialize(SimpleVersionedSerializer<T> serializer, T datum, DataOutputView out) throws IOException {
 		checkNotNull(serializer, "serializer");
 		checkNotNull(datum, "datum");
 		checkNotNull(out, "out");
 
-		final byte[] data = serializer.serialize(datum);
+		final byte[] data = serializer.serialize(datum);//序列化
 
 		out.writeInt(serializer.getVersion());
 		out.writeInt(data.length);
@@ -74,17 +76,18 @@ public class SimpleVersionedSerialization {
 	 *
 	 * @param serializer The serializer to serialize the datum with.
 	 * @param in The stream to deserialize from.
+	 * 从in中读取字节数组--反序列化成对象
 	 */
 	public static <T> T readVersionAndDeSerialize(SimpleVersionedSerializer<T> serializer, DataInputView in) throws IOException {
 		checkNotNull(serializer, "serializer");
 		checkNotNull(in, "in");
 
-		final int version = in.readInt();
-		final int length = in.readInt();
+		final int version = in.readInt();//版本
+		final int length = in.readInt();//长度
 		final byte[] data = new byte[length];
-		in.readFully(data);
+		in.readFully(data);//读取字节内容
 
-		return serializer.deserialize(version, data);
+		return serializer.deserialize(version, data);//反序列化
 	}
 
 	/**
@@ -104,6 +107,8 @@ public class SimpleVersionedSerialization {
 	 *
 	 * @throws IOException Exceptions from the {@link SimpleVersionedSerializer#serialize(Object)}
 	 *                     method are forwarded.
+	 * 将对象序列化,返回序列化的字节数组(不需要输出out中)。
+	 * 字节数组包含 版本号+序列化后的字节数组长度+字节数组
 	 */
 	public static <T> byte[] writeVersionAndSerialize(SimpleVersionedSerializer<T> serializer, T datum) throws IOException {
 		checkNotNull(serializer, "serializer");
@@ -142,6 +147,7 @@ public class SimpleVersionedSerialization {
 	 *
 	 * @throws IOException Exceptions from the {@link SimpleVersionedSerializer#deserialize(int, byte[])}
 	 *                     method are forwarded.
+	 * 从字节数组中反序列化成对象
 	 */
 	public static <T> T readVersionAndDeSerialize(SimpleVersionedSerializer<T> serializer, byte[] bytes) throws IOException {
 		checkNotNull(serializer, "serializer");

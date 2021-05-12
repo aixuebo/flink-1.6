@@ -22,6 +22,7 @@ import org.apache.flink.annotation.Internal;
 
 /**
  * The class of memory, such as heap or off-heap.
+ * 内存存储方式--堆内存、堆外内存
  */
 @Internal
 public enum MemoryType {

@@ -27,6 +27,9 @@ import java.io.Serializable;
  * by {@link org.apache.flink.api.common.io.InputFormat}s.
  *
  * @param <T> The type of the input splits created by the source.
+ * 决定如何区分数据块 && 如何为不同节点分配要处理的数据块
+ *
+ * 参见:FileInputFormat如何拆分数据块
  */
 @Public
 public interface InputSplitSource<T extends InputSplit> extends Serializable {
@@ -40,6 +43,7 @@ public interface InputSplitSource<T extends InputSplit> extends Serializable {
 	 * 
 	 * @throws Exception Exceptions when creating the input splits may be forwarded and will cause the
 	 *                   execution to permanently fail.
+	 * 决定如何区分数据块
 	 */
 	T[] createInputSplits(int minNumSplits) throws Exception;
 	
@@ -48,6 +52,7 @@ public interface InputSplitSource<T extends InputSplit> extends Serializable {
 	 * input format gets which input split.
 	 *
 	 * @return The input split assigner.
+	 * 如何为不同节点分配要处理的数据块
 	 */
 	InputSplitAssigner getInputSplitAssigner(T[] inputSplits);
 }

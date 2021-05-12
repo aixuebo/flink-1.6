@@ -29,12 +29,16 @@ import java.net.URI;
  *
  * <p>The factory is typically configured via {@link #configure(Configuration)} before
  * creating file systems via {@link #create(URI)}.
+ *
+ * 参见 LocalFileSystemFactory、HadoopFsFactory
+ * 文件系统工程
  */
 @PublicEvolving
 public interface FileSystemFactory {
 
 	/**
 	 * Gets the scheme of the file system created by this factory.
+	 * uri的schema,比如hdfs、file
 	 */
 	String getScheme();
 
@@ -44,6 +48,7 @@ public interface FileSystemFactory {
 	 * account.
 	 *
 	 * @param config The configuration to apply.
+	 * 如何初始化文件系统
 	 */
 	void configure(Configuration config);
 
@@ -52,10 +57,11 @@ public interface FileSystemFactory {
 	 * The URI describes the type of file system (via its scheme) and optionally the
 	 * authority (for example the host) of the file system.
 	 *
-	 * @param fsUri The URI that describes the file system.
+	 * @param fsUri The URI that describes the file system.描述文件系统该如何创建的uri
 	 * @return A new instance of the specified file system.
 	 *
 	 * @throws IOException Thrown if the file system could not be instantiated.
+	 * 给定一个url,去创建一个文件系统 --- 一般都是单例的方式创建,与参数无关
 	 */
 	FileSystem create(URI fsUri) throws IOException;
 }

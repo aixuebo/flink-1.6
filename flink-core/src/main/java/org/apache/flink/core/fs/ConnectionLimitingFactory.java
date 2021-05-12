@@ -29,13 +29,14 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A wrapping factory that adds a {@link LimitedConnectionsFileSystem} to a file system.
+ * 针对文件系统的一个包装,限制对文件系统同时打开多个输入输出流
  */
 @Internal
 public class ConnectionLimitingFactory implements FileSystemFactory {
 
-	private final FileSystemFactory factory;
+	private final FileSystemFactory factory;//包装的文件系统
 
-	private final ConnectionLimitingSettings settings;
+	private final ConnectionLimitingSettings settings;//限制条件
 
 	private ConnectionLimitingFactory(
 			FileSystemFactory factory,
@@ -57,6 +58,7 @@ public class ConnectionLimitingFactory implements FileSystemFactory {
 		factory.configure(config);
 	}
 
+	//创建一个包装限制条件的文件系统
 	@Override
 	public FileSystem create(URI fsUri) throws IOException {
 		FileSystem original = factory.create(fsUri);
@@ -72,11 +74,12 @@ public class ConnectionLimitingFactory implements FileSystemFactory {
 	 * configuration configured connection limiting for the given file system scheme.
 	 * Otherwise, it returns the given factory as is.
 	 *
-	 * @param factory The factory to potentially decorate.
+	 * @param factory The factory to potentially decorate.原始文件系统
 	 * @param scheme The file scheme for which to check the configuration.
 	 * @param config The configuration
 	 *
 	 * @return The decorated factors, if connection limiting is configured, the original factory otherwise.
+	 * 是否进行包装
 	 */
 	public static FileSystemFactory decorateIfLimited(FileSystemFactory factory, String scheme, Configuration config) {
 		checkNotNull(factory, "factory");
