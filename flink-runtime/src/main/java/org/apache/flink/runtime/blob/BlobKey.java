@@ -36,6 +36,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A BLOB key uniquely identifies a BLOB.
+ * blob文件的唯一表示
+ *
+ * 比较方式:比较字节内容、比较类型、比较随机数
+ *
+ * BlobKey由20个字节的key+类型(永久/临时)+随机数组成
  */
 public abstract class BlobKey implements Serializable, Comparable<BlobKey> {
 
@@ -59,11 +64,13 @@ public abstract class BlobKey implements Serializable, Comparable<BlobKey> {
 		/**
 		 * Indicates a permanent BLOB whose lifecycle is that of a job and which is made highly
 		 * available.
+		 * 永久
 		 */
 		PERMANENT_BLOB,
 		/**
 		 * Indicates a transient BLOB whose lifecycle is managed by the user and which is not made
 		 * highly available.
+		 * 暂时
 		 */
 		TRANSIENT_BLOB
 	}
@@ -246,6 +253,7 @@ public abstract class BlobKey implements Serializable, Comparable<BlobKey> {
 		return typeString + StringUtils.byteToHexString(this.key) + "-" + random.toString();
 	}
 
+	//比较字节内容、比较类型、比较随机数
 	@Override
 	public int compareTo(BlobKey o) {
 		// compare the hashes first

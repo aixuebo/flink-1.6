@@ -35,12 +35,14 @@ import java.io.Serializable;
  * {@link RetrievableStateStorageHelper} implementation which stores the state in the given filesystem path.
  *
  * @param <T> The type of the data that can be stored by this storage helper.
+ *
+ * 将T序列化后,存储到hdfs的一个文件中,返回可以可反序列化T的对象
  */
 public class FileSystemStateStorageHelper<T extends Serializable> implements RetrievableStateStorageHelper<T> {
 
-	private final Path rootPath;
+	private final Path rootPath;//hdfs的根目录
 
-	private final String prefix;
+	private final String prefix;//文件前缀
 
 	private final FileSystem fs;
 
@@ -55,6 +57,7 @@ public class FileSystemStateStorageHelper<T extends Serializable> implements Ret
 		fs = FileSystem.get(rootPath.toUri());
 	}
 
+	//将T序列化后,存储到hdfs的一个文件中,返回可以可反序列化T的对象
 	@Override
 	public RetrievableStateHandle<T> store(T state) throws Exception {
 		Exception latestException = null;
@@ -74,6 +77,7 @@ public class FileSystemStateStorageHelper<T extends Serializable> implements Ret
 		throw new Exception("Could not open output stream for state backend", latestException);
 	}
 
+	//随机产生一个新的文件
 	private Path getNewFilePath() {
 		return new Path(rootPath, FileUtils.getRandomFilename(prefix));
 	}

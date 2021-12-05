@@ -35,6 +35,7 @@ public class BlobServerProtocol {
 	 * Internal code to identify a PUT operation.
 	 *
 	 * <p>Note: previously, there was also <tt>DELETE_OPERATION</tt> (code <tt>2</tt>).
+	 * 表示put命令
 	 */
 	static final byte PUT_OPERATION = 0;
 
@@ -42,19 +43,21 @@ public class BlobServerProtocol {
 	 * Internal code to identify a GET operation.
 	 *
 	 * <p>Note: previously, there was also <tt>DELETE_OPERATION</tt> (code <tt>2</tt>).
+	 * get操作符
 	 */
 	static final byte GET_OPERATION = 1;
 
-	/** Internal code to identify a successful operation. */
+	/** Internal code to identify a successful operation.返回数据正常 */
 	static final byte RETURN_OKAY = 0;
 
-	/** Internal code to identify an erroneous operation. */
+	/** Internal code to identify an erroneous operation.返回数据有问题 */
 	static final byte RETURN_ERROR = 1;
 
 	/**
 	 * Internal code to identify a job-unrelated BLOBs (only for transient BLOBs!).
 	 *
 	 * <p>Note: previously, there was also <tt>NAME_ADDRESSABLE</tt> (code <tt>1</tt>).
+	 * 表示头文件中无jobid信息
 	 */
 	static final byte JOB_UNRELATED_CONTENT = 0;
 
@@ -62,6 +65,7 @@ public class BlobServerProtocol {
 	 * Internal code to identify a job-related (permanent or transient) BLOBs.
 	 *
 	 * <p>Note: This is equal to the previous <tt>JOB_ID_SCOPE</tt> (code <tt>2</tt>).
+	 * 表示头文件中有jobid信息
 	 */
 	static final byte JOB_RELATED_CONTENT = 2;
 

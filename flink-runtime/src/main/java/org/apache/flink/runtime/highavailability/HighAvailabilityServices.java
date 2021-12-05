@@ -136,6 +136,7 @@ public interface HighAvailabilityServices extends AutoCloseable {
 	 *
 	 * @return Submitted job graph store
 	 * @throws Exception if the submitted job graph store could not be created
+	 * 记录每一个job的提交任务对象,即SubmittedJobGraph对象 ---- 可以有回调函数,当job被添加和删除时，给客户端一个回调处理特殊逻辑
 	 */
 	SubmittedJobGraphStore getSubmittedJobGraphStore() throws Exception;
 
@@ -143,6 +144,7 @@ public interface HighAvailabilityServices extends AutoCloseable {
 	 * Gets the registry that holds information about whether jobs are currently running.
 	 *
 	 * @return Running job registry to retrieve running jobs
+	 * 获取job的状态信息
 	 */
 	RunningJobsRegistry getRunningJobsRegistry() throws Exception;
 

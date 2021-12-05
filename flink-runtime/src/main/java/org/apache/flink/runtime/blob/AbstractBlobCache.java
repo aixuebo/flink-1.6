@@ -42,6 +42,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Abstract base class for permanent and transient BLOB files.
+ * 避免客户端重复下载同一个文件，对下载过的文件做一层缓存
+ *
+ * 1.先读取本地缓存数据。
+ * 2.如果本地没有缓存,则读取blob存储上的数据，然后缓存到本地。
+ * 3.如果连接不到blob存储，则连接blob服务器,去获取数据，然后缓存到本地
  */
 public abstract class AbstractBlobCache implements Closeable {
 
@@ -75,7 +80,7 @@ public abstract class AbstractBlobCache implements Closeable {
 	/**
 	 * The number of retries when the transfer fails.
 	 */
-	protected final int numFetchRetries;
+	protected final int numFetchRetries;//请求服务获取文件的最大尝试次数
 
 	/**
 	 * Configuration for the blob client like ssl parameters required to connect to the blob
@@ -89,7 +94,7 @@ public abstract class AbstractBlobCache implements Closeable {
 	protected final ReadWriteLock readWriteLock;
 
 	@Nullable
-	protected volatile InetSocketAddress serverAddress;
+	protected volatile InetSocketAddress serverAddress;//blob服务地址
 
 	public AbstractBlobCache(
 			final Configuration blobClientConfig,
@@ -142,6 +147,7 @@ public abstract class AbstractBlobCache implements Closeable {
 	protected File getFileInternal(@Nullable JobID jobId, BlobKey blobKey) throws IOException {
 		checkArgument(blobKey != null, "BLOB key cannot be null.");
 
+		//获取本地应该存储的路径 --- 本地缓存
 		final File localFile = BlobUtils.getStorageLocation(storageDir, jobId, blobKey);
 		readWriteLock.readLock().lock();
 
@@ -153,12 +159,14 @@ public abstract class AbstractBlobCache implements Closeable {
 			readWriteLock.readLock().unlock();
 		}
 
+		//说明本地没有拿到缓存文件,因此要去下载
 		// first try the distributed blob store (if available)
 		// use a temporary file (thread-safe without locking)
+		//创建临时文件
 		File incomingFile = createTemporaryFilename();
 		try {
 			try {
-				if (blobView.get(jobId, blobKey, incomingFile)) {
+				if (blobView.get(jobId, blobKey, incomingFile)) {//说明缓存存在该文件,正在下载中
 					// now move the temp file to our local cache atomically
 					readWriteLock.writeLock().lock();
 					try {
@@ -174,6 +182,7 @@ public abstract class AbstractBlobCache implements Closeable {
 				log.info("Failed to copy from blob store. Downloading from BLOB server instead.", e);
 			}
 
+			//作为客户端,从服务器去下载
 			final InetSocketAddress currentServerAddress = serverAddress;
 
 			if (currentServerAddress != null) {

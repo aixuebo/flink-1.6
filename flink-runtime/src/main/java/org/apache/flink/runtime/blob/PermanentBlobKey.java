@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 
 /**
  * BLOB key referencing permanent BLOB files.
+ * 永久key
  */
 public final class PermanentBlobKey extends BlobKey {
 

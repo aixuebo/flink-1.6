@@ -21,6 +21,10 @@ package org.apache.flink.runtime.registration;
 /**
  * Classes which want to be notified about the registration result by the {@link RegisteredRpcConnection}
  * have to implement this interface.
+ * 监听注册是否成功，比如task从节点要连接ResourceManager,就需要判断是否从节点连接成功
+ * 成功与否都会产生一个回调函数
+ *
+ * 子类实现类,属于全局性的对象,全局管理所有的请求的成功与否
  */
 public interface RegistrationConnectionListener<T extends RegisteredRpcConnection<?, ?, S>, S extends RegistrationResponse.Success> {
 
@@ -29,6 +33,7 @@ public interface RegistrationConnectionListener<T extends RegisteredRpcConnectio
 	 *
 	 * @param success The concrete response information for successful registration.
 	 * @param connection The instance which established the connection
+	 * 哪个注册请求成功了,以及成功的返回值是什么
 	 */
 	void onRegistrationSuccess(T connection, S success);
 
@@ -36,6 +41,7 @@ public interface RegistrationConnectionListener<T extends RegisteredRpcConnectio
 	 * This method is called by the {@link RegisteredRpcConnection} when the registration fails.
 	 *
 	 * @param failure The exception which causes the registration failure.
+	 * 注册失败原因 --- 感觉确实哪个请求成功
 	 */
 	void onRegistrationFailure(Throwable failure);
 }

@@ -75,6 +75,12 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * FLINK-2513</a> about a possible way to overcome this).
  *
  * @param <T> Type of state
+ *
+ * 基于zookeeper存储数据。
+ * 由于T序列化后可能会很大，都存储在zookeeper上不太合理。因此设计原理如下:
+ * 1.将T序列化到hdfs等存储上。
+ * 2.返回可以读取hdfs上信息，反序列化T对象的对象 RetrievableStateHandle，并且该对象支持序列化.（此时序列化就信息占用字节数组很小）
+ * 3.zookeeper的path上存储序列化的对象RetrievableStateHandle
  */
 public class ZooKeeperStateHandleStore<T extends Serializable> {
 
@@ -83,7 +89,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	/** Curator ZooKeeper client. */
 	private final CuratorFramework client;
 
-	private final RetrievableStateStorageHelper<T> storage;
+	private final RetrievableStateStorageHelper<T> storage;//如何对T反序列化
 
 	/** Lock node name of this ZooKeeperStateHandleStore. The name should be unique among all other state handle stores. */
 	private final String lockNode;
@@ -125,6 +131,13 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 *
 	 * @return The Created {@link RetrievableStateHandle}.
 	 * @throws Exception If a ZooKeeper or state handle operation fails
+	 *
+	 * 将T序列化,返回可反序列化的对象RetrievableStateHandle,并且将RetrievableStateHandle对象序列化后存储到zookeeper的pathInZooKeeper上。
+	 *
+	 * 即zookeeper的pathInZooKeeper上,存储一个字节数组，该字节数组是RetrievableStateHandle对象(支持反序列化T)
+	 * 可能是T很大，因此他最好存储在文件系统上，而反序列化RetrievableStateHandle对象很小，只需要持有如何读取文件系统路径即可。
+	 *
+	 * 属于新增方法
 	 */
 	public RetrievableStateHandle<T> addAndLock(
 			String pathInZooKeeper,
@@ -175,6 +188,8 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * @param expectedVersion Expected version of the node to replace
 	 * @param state           The new state to replace the old one
 	 * @throws Exception If a ZooKeeper or state handle operation fails
+	 *
+	 * 属于update方法
 	 */
 	public void replace(String pathInZooKeeper, int expectedVersion, T state) throws Exception {
 		checkNotNull(pathInZooKeeper, "Path in ZooKeeper");
@@ -215,6 +230,8 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * @param pathInZooKeeper Path in ZooKeeper to check
 	 * @return Version of the ZNode if the path exists, <code>-1</code> otherwise.
 	 * @throws Exception If the ZooKeeper operation fails
+	 *
+	 * 获取path对应的版本号
 	 */
 	public int exists(String pathInZooKeeper) throws Exception {
 		checkNotNull(pathInZooKeeper, "Path in ZooKeeper");
@@ -239,6 +256,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * @return The retrieved state handle from the specified ZooKeeper node
 	 * @throws IOException Thrown if the method failed to deserialize the stored state handle
 	 * @throws Exception Thrown if a ZooKeeper operation failed
+	 * 获取反序列化对象
 	 */
 	public RetrievableStateHandle<T> getAndLock(String pathInZooKeeper) throws Exception {
 		return get(pathInZooKeeper, true);
@@ -278,6 +296,8 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 */
 	@SuppressWarnings("unchecked")
 	public List<Tuple2<RetrievableStateHandle<T>, String>> getAllAndLock() throws Exception {
+
+		//返回每一个zookeeper的path下对应的RetrievableStateHandle对象，通过该对象可以获取存储的反序列化T是什么具体值
 		final List<Tuple2<RetrievableStateHandle<T>, String>> stateHandles = new ArrayList<>();
 
 		boolean success = false;
@@ -389,6 +409,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * @param pathInZooKeeper Path of state handle to remove
 	 * @return True if the state handle could be released
 	 * @throws Exception If the ZooKeeper operation or discarding the state handle fails
+	 * 删除序列化的文件 && 删除zookeeper的path && 删除zookeeper的锁path
 	 */
 	@Nullable
 	public boolean releaseAndTryRemove(String pathInZooKeeper) throws Exception {
@@ -404,17 +425,17 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 			LOG.warn("Could not retrieve the state handle from node {}.", path, e);
 		}
 
-		release(pathInZooKeeper);
+		release(pathInZooKeeper);//删除锁路径
 
 		try {
-			client.delete().forPath(path);
+			client.delete().forPath(path);//删除zookeeper路径
 		} catch (KeeperException.NotEmptyException ignored) {
 			LOG.debug("Could not delete znode {} because it is still locked.", path);
 			return false;
 		}
 
 		if (stateHandle != null) {
-			stateHandle.discardState();
+			stateHandle.discardState();//删除序列化的文件
 		}
 
 		return true;
@@ -427,6 +448,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * <p>The delete operation is executed asynchronously
 	 *
 	 * @throws Exception if the delete operation fails
+	 * 删除所有的zookeeper下文件+路径
 	 */
 	public void releaseAndTryRemoveAll() throws Exception {
 		Collection<String> children = getAllPaths();
@@ -451,6 +473,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 *
 	 * @param pathInZooKeeper Path describing the ZooKeeper node
 	 * @throws Exception if the delete operation of the lock node fails
+	 * 删除锁path路径
 	 */
 	public void release(String pathInZooKeeper) throws Exception {
 		final String path = normalizePath(pathInZooKeeper);
@@ -468,6 +491,7 @@ public class ZooKeeperStateHandleStore<T extends Serializable> {
 	 * Releases all lock nodes of this ZooKeeperStateHandleStore.
 	 *
 	 * @throws Exception if the delete operation of a lock file fails
+	 * 删除所有zookeeper的锁路径
 	 */
 	public void releaseAll() throws Exception {
 		Collection<String> children = getAllPaths();

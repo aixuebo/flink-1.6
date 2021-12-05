@@ -27,6 +27,7 @@ import java.io.Serializable;
  * the state handle is written to ZooKeeper.
  *
  * @param <T> The type of the data that can be stored by this storage helper.
+ * 如何存储stage信息 --- stage信息使用文件系统进行存储,反序列化也是从文件系统读取文件后反序列化成stage
  */
 public interface RetrievableStateStorageHelper<T extends Serializable> {
 
@@ -36,6 +37,7 @@ public interface RetrievableStateStorageHelper<T extends Serializable> {
 	 * @param state State to be stored
 	 * @return State handle to the stored state
 	 * @throws Exception
+	 * 将T序列化后存储起来---并且返回值支持反序列化
 	 */
 	RetrievableStateHandle<T> store(T state) throws Exception;
 }

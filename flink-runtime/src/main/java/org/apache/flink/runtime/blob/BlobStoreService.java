@@ -22,11 +22,14 @@ import java.io.Closeable;
 
 /**
  * Service interface for the BlobStore which allows to close and clean up its data.
+ * 根据配置文件,获取存储数据的path，创建一个服务，可以向该path写入数据
+ * 因此任意一个节点都可以用来当服务节点,服务创建需要的资源很小
  */
 public interface BlobStoreService extends BlobStore, Closeable {
 
 	/**
 	 * Closes and cleans up the store. This entails the deletion of all blobs.
+	 * 删除全部job的全部文件数据，即清空BlobStoreService服务维护的所有数据
 	 */
 	void closeAndCleanupAllData();
 }

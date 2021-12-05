@@ -53,17 +53,21 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>This registry is especially tailored towards deployment modes like for example
  * YARN, where HDFS is available as a persistent file system, and the YARN
  * application's working directories on HDFS are automatically cleaned
- * up after the application completed. 
+ * up after the application completed.
+ *
+ * 基于操作系统下,比如hdfs下,创建文件的方式维护job的状态。
+ *
+ * 比如在目录下有job_complete_${job_id} 说明job已完成。
  */
 public class FsNegativeRunningJobsRegistry implements RunningJobsRegistry {
 
-	private static final String DONE_PREFIX = ".job_complete_";
+	private static final String DONE_PREFIX = ".job_complete_";//job完成的文件前缀
 
-	private static final String RUNNING_PREFIX = ".job_runing_";
+	private static final String RUNNING_PREFIX = ".job_runing_";//job调度中的文件前缀
 
-	private final FileSystem fileSystem;
+	private final FileSystem fileSystem;//操作系统
 
-	private final Path basePath;
+	private final Path basePath;//目录
 
 	/**
 	 * Creates a new registry that writes to the FileSystem and working directory
@@ -100,7 +104,7 @@ public class FsNegativeRunningJobsRegistry implements RunningJobsRegistry {
 		// catch problems early
 		final Path testFile = new Path(workingDirectory, ".registry_test");
 		try {
-			createFile(testFile, false);
+			createFile(testFile, false);//测试是否有写权限
 		}
 		catch (IOException e) {
 			throw new IOException("Unable to write to working directory: " + workingDirectory, e);

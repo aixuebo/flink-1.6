@@ -49,6 +49,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>If files for a job are not needed any more, they will enter a staged, i.e. deferred, cleanup.
  * Files may thus still be be accessible upon recovery and do not need to be re-downloaded.
+ * 避免客户端重复下载同一个文件，对下载过的文件做一层缓存
+ *
+ * 为了避免长期文件缓存，则设置过期时间，如果job文件不被引用，并且超时，则被删除
  */
 public class PermanentBlobCache extends AbstractBlobCache implements PermanentBlobService {
 
@@ -59,12 +62,14 @@ public class PermanentBlobCache extends AbstractBlobCache implements PermanentBl
 	static class RefCount {
 		/**
 		 * Number of references to a job.
+		 * job被引用的次数
 		 */
 		public int references = 0;
 
 		/**
 		 * Timestamp in milliseconds when any job data should be cleaned up (no cleanup for
 		 * non-positive values).
+		 * job应该被清理的时间戳，超过该时间戳就应该可以被清理了
 		 */
 		public long keepUntil = -1;
 	}
@@ -235,6 +240,7 @@ public class PermanentBlobCache extends AbstractBlobCache implements PermanentBl
 	/**
 	 * Cleanup task which is executed periodically to delete BLOBs whose ref-counter reached
 	 * <tt>0</tt>.
+	 * 定期删除无引用的job
 	 */
 	class PermanentBlobCleanupTask extends TimerTask {
 		/**

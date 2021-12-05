@@ -44,6 +44,10 @@ import java.util.UUID;
 /**
  * Simple wrapper for ZooKeeper's {@link QuorumPeer}, which reads a ZooKeeper config file and writes
  * the required 'myid' file before starting the peer.
+ *
+ * 启动zookeeper,假设有3个节点则需要启动3次。分别传入不同的peerId
+ *
+ * 启动后多个server节点争夺leader节点,因此zookeeper就可以用来服务了
  */
 public class FlinkZooKeeperQuorumPeer {
 
@@ -72,7 +76,7 @@ public class FlinkZooKeeperQuorumPeer {
 			EnvironmentInformation.logEnvironmentInfo(LOG, "ZooKeeper Quorum Peer", args);
 			
 			final ParameterTool params = ParameterTool.fromArgs(args);
-			final String zkConfigFile = params.getRequired("zkConfigFile");
+			final String zkConfigFile = params.getRequired("zkConfigFile");//zookeeper的配置信息
 			final int peerId = params.getInt("peerId");
 
 			// Run quorum peer
@@ -97,17 +101,17 @@ public class FlinkZooKeeperQuorumPeer {
 
 		Properties zkProps = new Properties();
 
-		try (InputStream inStream = new FileInputStream(new File(zkConfigFile))) {
+		try (InputStream inStream = new FileInputStream(new File(zkConfigFile))) {//读取zookeeper的配置信息
 			zkProps.load(inStream);
 		}
 
 		LOG.info("Configuration: " + zkProps);
 
 		// Set defaults for required properties
-		setRequiredProperties(zkProps);
+		setRequiredProperties(zkProps);//设置zkProps额外的信息
 
 		// Write peer id to myid file
-		writeMyIdToDataDir(zkProps, peerId);
+		writeMyIdToDataDir(zkProps, peerId);//输出id到文件中
 
 		// The myid file needs to be written before creating the instance. Otherwise, this
 		// will fail.
@@ -119,7 +123,7 @@ public class FlinkZooKeeperQuorumPeer {
 			LOG.info("Running distributed ZooKeeper quorum peer (total peers: {}).",
 					conf.getServers().size());
 
-			QuorumPeerMain qp = new QuorumPeerMain();
+			QuorumPeerMain qp = new QuorumPeerMain();//多个zookeeper 的server争夺leader节点
 			qp.runFromConfig(conf);
 		}
 		else {
@@ -135,6 +139,7 @@ public class FlinkZooKeeperQuorumPeer {
 
 	/**
 	 * Sets required properties to reasonable defaults and logs it.
+	 * 设置zkProps额外的信息
 	 */
 	private static void setRequiredProperties(Properties zkProps) {
 		// Set default client port
@@ -173,6 +178,7 @@ public class FlinkZooKeeperQuorumPeer {
 
 		// Set peer and leader ports if none given, because ZooKeeper complains if multiple
 		// servers are configured, but no ports are given.
+		//设置每一个ip 对应的 peerport和leaderPort
 		for (Map.Entry<Object, Object> entry : zkProps.entrySet()) {
 			String key = (String) entry.getKey();
 
@@ -215,8 +221,9 @@ public class FlinkZooKeeperQuorumPeer {
 	 *                                       created.
 	 * @see <a href="http://zookeeper.apache.org/doc/r3.4.6/zookeeperAdmin.html">
 	 * ZooKeeper Administrator's Guide</a>
+	 *
+	 * 在dataDir目录下,创建文件myid,设置id
 	 */
-
 	private static void writeMyIdToDataDir(Properties zkProps, int id) throws IOException {
 
 		// Check dataDir and create if necessary
@@ -224,7 +231,7 @@ public class FlinkZooKeeperQuorumPeer {
 			throw new IllegalConfigurationException("No dataDir configured.");
 		}
 
-		File dataDir = new File(zkProps.getProperty("dataDir"));
+		File dataDir = new File(zkProps.getProperty("dataDir"));//数据存储本地的目录
 
 		if (!dataDir.isDirectory() && !dataDir.mkdirs()) {
 			throw new IOException("Cannot create dataDir '" + dataDir + "'.");

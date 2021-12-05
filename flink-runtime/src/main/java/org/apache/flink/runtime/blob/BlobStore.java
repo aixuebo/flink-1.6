@@ -25,6 +25,7 @@ import java.io.IOException;
 
 /**
  * A blob store.
+ * jobid+blobKey 对应一个文件
  */
 public interface BlobStore extends BlobView {
 

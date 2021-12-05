@@ -44,6 +44,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>TODO: make this truly transient by returning file streams to a local copy with the remote
  * being removed upon retrieval and the local copy being deleted at the end of the stream.
+ *
+ * 临时文件如何被删除 -- 只要超时就删除
  */
 public class TransientBlobCache extends AbstractBlobCache implements TransientBlobService {
 
@@ -70,7 +72,7 @@ public class TransientBlobCache extends AbstractBlobCache implements TransientBl
 	 * @param blobClientConfig
 	 * 		global configuration
 	 * @param serverAddress
-	 * 		address of the {@link BlobServer} to use for fetching files from or {@code null} if none yet
+	 * 		address of the {@link BlobServer} to use for fetching files from or {@code null} if none yet 在applicationmaster节点上开启blob服务的ip+port
 	 * @throws IOException
 	 * 		thrown if the (local or distributed) file storage cannot be created or is not usable
 	 */
@@ -111,7 +113,7 @@ public class TransientBlobCache extends AbstractBlobCache implements TransientBl
 			// it into the map as they are close to each other anyway, also we can simply
 			// overwrite old values as long as we are in the read (or write) lock
 			blobExpiryTimes.put(Tuple2.of(jobId, (TransientBlobKey) blobKey),
-				System.currentTimeMillis() + cleanupInterval);
+				System.currentTimeMillis() + cleanupInterval);//追加过期时间
 		} finally {
 			readWriteLock.readLock().unlock();
 		}
@@ -119,6 +121,7 @@ public class TransientBlobCache extends AbstractBlobCache implements TransientBl
 		return file;
 	}
 
+	//向服务器上传临时文件
 	@Override
 	public TransientBlobKey putTransient(byte[] value) throws IOException {
 		try (BlobClient bc = createClient()) {
@@ -177,11 +180,11 @@ public class TransientBlobCache extends AbstractBlobCache implements TransientBl
 
 		readWriteLock.writeLock().lock();
 		try {
-			if (!localFile.delete() && localFile.exists()) {
+			if (!localFile.delete() && localFile.exists()) {//删除文件
 				log.warn("Failed to delete locally cached BLOB {} at {}", key,
 					localFile.getAbsolutePath());
 				return false;
-			} else {
+			} else {//删除映射
 				// this needs to happen inside the write lock in case of concurrent getFile() calls
 				blobExpiryTimes.remove(Tuple2.of(jobId, key));
 			}

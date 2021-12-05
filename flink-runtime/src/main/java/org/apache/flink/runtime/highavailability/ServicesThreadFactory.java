@@ -22,6 +22,9 @@ import javax.annotation.Nonnull;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 线程工厂
+ */
 public class ServicesThreadFactory implements ThreadFactory {
 
 	private AtomicInteger enumerator = new AtomicInteger();

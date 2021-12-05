@@ -104,7 +104,7 @@ public class ZooKeeperHaServices implements HighAvailabilityServices {
 	/** The runtime configuration */
 	private final Configuration configuration;
 
-	/** The zookeeper based running jobs registry */
+	/** The zookeeper based running jobs registry 如何管理高可用的job状态信息,保证提交上的job信息不会丢失*/
 	private final RunningJobsRegistry runningJobsRegistry;
 
 	/** Store for arbitrary blobs */

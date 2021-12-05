@@ -86,6 +86,7 @@ public class BlobUtils {
 	 *
 	 * @throws IOException
 	 * 		thrown if the (distributed) file storage cannot be created
+	 * 		根据配置文件,获取存储数据的path，创建一个服务，可以向该path写入数据
 	 */
 	public static BlobStoreService createBlobStoreFromConfig(Configuration config) throws IOException {
 		HighAvailabilityMode highAvailabilityMode = HighAvailabilityMode.fromConfig(config);
@@ -99,10 +100,11 @@ public class BlobUtils {
 		}
 	}
 
+	//根据配置文件,获取存储数据的path，创建一个服务，可以向该path写入数据
 	private static BlobStoreService createFileSystemBlobStore(Configuration configuration) throws IOException {
 		String storagePath = configuration.getValue(
 			HighAvailabilityOptions.HA_STORAGE_PATH);
-		if (isNullOrWhitespaceOnly(storagePath)) {
+		if (isNullOrWhitespaceOnly(storagePath)) {//true表示目录接口是""---即空
 			throw new IllegalConfigurationException("Configuration is missing the mandatory parameter: " +
 				HighAvailabilityOptions.HA_STORAGE_PATH);
 		}
@@ -249,6 +251,7 @@ public class BlobUtils {
 	 * 		the ID of the job to return the storage directory for
 	 *
 	 * @return the storage directory for BLOBs belonging to the job with the given ID
+	 * 获取job的目录
 	 */
 	static String getStorageLocationPath(String storageDir, @Nullable JobID jobId) {
 		if (jobId == null) {
@@ -275,6 +278,7 @@ public class BlobUtils {
 	 * 		ID of the job for the incoming files
 	 *
 	 * @return the path to the given BLOB
+	 * 获取存储的文件路径
 	 */
 	static String getStorageLocationPath(
 			String storageDir, @Nullable JobID jobId, BlobKey key) {
@@ -293,6 +297,7 @@ public class BlobUtils {
 	 * Creates a new instance of the message digest to use for the BLOB key computation.
 	 *
 	 * @return a new instance of the message digest to use for the BLOB key computation
+	 * 获取加密算法
 	 */
 	static MessageDigest createMessageDigest() {
 		try {
@@ -313,6 +318,7 @@ public class BlobUtils {
 	 * @throws IOException
 	 *         thrown if an I/O error occurs while writing to the output
 	 *         stream
+	 *         发送一个int字节，表示要发送的字节数组长度
 	 */
 	static void writeLength(int length, OutputStream outputStream) throws IOException {
 		byte[] buf = new byte[4];

@@ -43,15 +43,16 @@ import static org.apache.flink.runtime.blob.BlobUtils.writeLength;
 
 /**
  * The BLOB output stream is a special implementation of an {@link OutputStream} to send data vi PUT to the BLOB server.
+ * 用于将本地的流信息，上传到服务器，返回本地一个BlobKey对象。
  */
 final class BlobOutputStream extends OutputStream {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BlobOutputStream.class);
 
-	private final BlobKey.BlobType blobType;
-	private final OutputStream socketStream;
+	private final BlobKey.BlobType blobType;//存储类型
+	private final OutputStream socketStream;//socket的输出流
 	private final Socket socket;
-	private final MessageDigest md;
+	private final MessageDigest md;//本地对输出流内容进行MD5等校验码编码
 
 	BlobOutputStream(JobID jobID, BlobKey.BlobType blobType, Socket socket) throws IOException {
 		this.blobType = blobType;
@@ -67,6 +68,7 @@ final class BlobOutputStream extends OutputStream {
 		sendPutHeader(socketStream, jobID, blobType);
 	}
 
+	//输出一个字节
 	@Override
 	public void write(int b) throws IOException {
 		writeLength(1, socketStream);
@@ -74,6 +76,7 @@ final class BlobOutputStream extends OutputStream {
 		md.update((byte) b);
 	}
 
+	//输出len个字节
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 		// Send the value in iterations of BUFFER_SIZE
@@ -97,11 +100,11 @@ final class BlobOutputStream extends OutputStream {
 
 	public BlobKey finish() throws IOException {
 		// send -1 as the stream end
-		writeLength(-1, socketStream);
+		writeLength(-1, socketStream);//输出-1 表示完成
 
 		// Receive blob key and compare
 		final InputStream is = this.socket.getInputStream();
-		return receiveAndCheckPutResponse(is, md, blobType);
+		return receiveAndCheckPutResponse(is, md, blobType);//接受返回值
 	}
 
 	/**
@@ -116,6 +119,7 @@ final class BlobOutputStream extends OutputStream {
 	 *
 	 * @throws IOException
 	 * 		thrown if an I/O error occurs while writing the header data to the output stream
+	 * 	输出头文件,即put命令+jobid+BlobType类型
 	 */
 	private static void sendPutHeader(
 		OutputStream outputStream, @Nullable JobID jobId, BlobKey.BlobType blobType)
@@ -144,6 +148,7 @@ final class BlobOutputStream extends OutputStream {
 	 * @throws IOException
 	 * 		if the response is an error, the message digest does not match or reading the response
 	 * 		failed
+	 * 	服务器返回状态码 && blobKey对象，校验md5加密串是否服务端与客户端相同。
 	 */
 	private static BlobKey receiveAndCheckPutResponse(
 		InputStream is, MessageDigest md, BlobKey.BlobType blobType)
@@ -155,12 +160,12 @@ final class BlobOutputStream extends OutputStream {
 		else if (response == RETURN_OKAY) {
 
 			BlobKey remoteKey = BlobKey.readFromInputStream(is);
-			byte[] localHash = md.digest();
+			byte[] localHash = md.digest();//本地加密串
 
 			if (blobType != remoteKey.getType()) {
 				throw new IOException("Detected data corruption during transfer");
 			}
-			if (!Arrays.equals(localHash, remoteKey.getHash())) {
+			if (!Arrays.equals(localHash, remoteKey.getHash())) {//md5加密相同
 				throw new IOException("Detected data corruption during transfer");
 			}
 

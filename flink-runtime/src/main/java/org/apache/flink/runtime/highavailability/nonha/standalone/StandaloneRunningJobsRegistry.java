@@ -30,7 +30,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public class StandaloneRunningJobsRegistry implements RunningJobsRegistry {
 
-	/** The currently running jobs. */
+	/** The currently running jobs. 当前正在被管理的job状态*/
 	private final HashMap<JobID, JobSchedulingStatus> jobStatus = new HashMap<>();
 
 	@Override

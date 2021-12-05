@@ -34,15 +34,16 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A zookeeper based registry for running jobs, highly available.
+ * 使用zookeeper跟踪job的状态  路径:/running_job_registry/${job_id}下存储内容为状态
  */
 public class ZooKeeperRunningJobsRegistry implements RunningJobsRegistry {
 
 	private static final Charset ENCODING = Charset.forName("utf-8");
 
 	/** The ZooKeeper client to use. */
-	private final CuratorFramework client;
+	private final CuratorFramework client;//zookeeper客户端
 
-	private final String runningJobPath;
+	private final String runningJobPath;//管理job的状态的zookeeper路径
 
 	public ZooKeeperRunningJobsRegistry(final CuratorFramework client, final Configuration configuration) {
 		this.client = checkNotNull(client, "client");
@@ -61,6 +62,7 @@ public class ZooKeeperRunningJobsRegistry implements RunningJobsRegistry {
 		}
 	}
 
+	//写入状态
 	@Override
 	public void setJobFinished(JobID jobID) throws IOException {
 		checkNotNull(jobID);
@@ -73,16 +75,17 @@ public class ZooKeeperRunningJobsRegistry implements RunningJobsRegistry {
 		}
 	}
 
+	//获取zookeeper上持久化存储的job状态
 	@Override
 	public JobSchedulingStatus getJobSchedulingStatus(JobID jobID) throws IOException {
 		checkNotNull(jobID);
 
 		try {
-			final String zkPath = createZkPath(jobID);
+			final String zkPath = createZkPath(jobID);//获取job路径
 			final Stat stat = client.checkExists().forPath(zkPath);
-			if (stat != null) {
+			if (stat != null) {//已经调度
 				// found some data, try to parse it
-				final byte[] data = client.getData().forPath(zkPath);
+				final byte[] data = client.getData().forPath(zkPath);//获取状态内容
 				if (data != null) {
 					try {
 						final String name = new String(data, ENCODING);
@@ -96,7 +99,7 @@ public class ZooKeeperRunningJobsRegistry implements RunningJobsRegistry {
 			}
 
 			// nothing found, yet, must be in status 'PENDING'
-			return JobSchedulingStatus.PENDING;
+			return JobSchedulingStatus.PENDING;//没有发现,所以为默认值:尚未调度
 		}
 		catch (Exception e) {
 			throw new IOException("Get finished state from zk fail for job " + jobID.toString(), e);
@@ -108,19 +111,21 @@ public class ZooKeeperRunningJobsRegistry implements RunningJobsRegistry {
 		checkNotNull(jobID);
 
 		try {
-			final String zkPath = createZkPath(jobID);
+			final String zkPath = createZkPath(jobID);//获取job路径
 			this.client.newNamespaceAwareEnsurePath(zkPath).ensure(client.getZookeeperClient());
-			this.client.delete().forPath(zkPath);
+			this.client.delete().forPath(zkPath);//删除job路径
 		}
 		catch (Exception e) {
 			throw new IOException("Failed to clear job state from ZooKeeper for job " + jobID, e);
 		}
 	}
 
+	//path+jobid
 	private String createZkPath(JobID jobID) {
 		return runningJobPath + jobID.toString();
 	}
 
+	//路径内容是状态
 	private void writeEnumToZooKeeper(JobID jobID, JobSchedulingStatus status) throws Exception {
 		final String zkPath = createZkPath(jobID);
 		this.client.newNamespaceAwareEnsurePath(zkPath).ensure(client.getZookeeperClient());

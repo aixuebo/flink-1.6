@@ -95,6 +95,8 @@ public class ZooKeeperUtilityFactory {
 	 * @param path to the shared value in ZooKeeper
 	 * @param seedValue for the shared value
 	 * @return a shared value
+	 *
+	 * 向zookeeper的path写入字节数组值
 	 */
 	public ZooKeeperSharedValue createSharedValue(String path, byte[] seedValue) {
 		return new ZooKeeperSharedValue(
@@ -110,6 +112,8 @@ public class ZooKeeperUtilityFactory {
 	 * @param path to the shared count in ZooKeeper
 	 * @param seedCount for the shared count
 	 * @return a shared count
+	 *
+	 * 向zookeeper的path写入int值
 	 */
 	public ZooKeeperSharedCount createSharedCount(String path, int seedCount) {
 		return new ZooKeeperSharedCount(

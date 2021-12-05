@@ -59,19 +59,20 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * The BLOB client can communicate with the BLOB server and either upload (PUT), download (GET),
  * or delete (DELETE) BLOBs.
+ * 客户端，用于与server交互,上传、下载、删除文件
  */
 public final class BlobClient implements Closeable {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BlobClient.class);
 
 	/** The socket connection to the BLOB server. */
-	private final Socket socket;
+	private final Socket socket;//连接到服务端
 
 	/**
 	 * Instantiates a new BLOB client.
 	 *
 	 * @param serverAddress
-	 *        the network address of the BLOB server
+	 *        the network address of the BLOB server 服务端地址
 	 * @param clientConfig
 	 *        additional configuration like SSL parameters required to connect to the blob server
 	 *
@@ -110,20 +111,21 @@ public final class BlobClient implements Closeable {
 	 * given <tt>localJarFile</tt>.
 	 *
 	 * @param jobId
-	 * 		job ID the BLOB belongs to or <tt>null</tt> if job-unrelated
+	 * 		job ID the BLOB belongs to or <tt>null</tt> if job-unrelated 要下载的jobid
 	 * @param blobKey
-	 * 		BLOB key
+	 * 		BLOB key 要下载的blobKey
 	 * @param localJarFile
-	 * 		the local file to write to
+	 * 		the local file to write to 下载的文件流，输出到本地哪个文件中
 	 * @param serverAddress
-	 * 		address of the server to download from
+	 * 		address of the server to download from 服务器地址
 	 * @param blobClientConfig
 	 * 		client configuration for the connection
 	 * @param numFetchRetries
-	 * 		number of retries before failing
+	 * 		number of retries before failing 尝试次数
 	 *
 	 * @throws IOException
 	 * 		if an I/O error occurs during the download
+	 * 	尝试连接服务器serverAddress去下载文件，下载jobId+blobKey对应的文件，并且将文件流写入到本地localJarFile中
 	 */
 	static void downloadFromBlobServer(
 			@Nullable JobID jobId,
@@ -203,6 +205,7 @@ public final class BlobClient implements Closeable {
 	 * 		if there is no such file;
 	 * @throws IOException
 	 * 		if an I/O error occurs during the download
+	 * 	向服务器输出get命令+jobId+blobKey，返回文件流
 	 */
 	InputStream getInternal(@Nullable JobID jobId, BlobKey blobKey)
 			throws IOException {
@@ -244,6 +247,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 *         thrown if an I/O error occurs while writing the header data to the output stream
+	 *         向服务器输出get命令+jobId+blobKey
 	 */
 	private static void sendGetHeader(
 			OutputStream outputStream, @Nullable JobID jobId, BlobKey blobKey)
@@ -273,6 +277,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 * 		if the response is an error or reading the response failed
+	 * 	对response做校验
 	 */
 	private static void receiveAndCheckGetResponse(InputStream is) throws IOException {
 		int response = is.read();
@@ -311,6 +316,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 * 		thrown if an I/O error occurs while uploading the data to the BLOB server
+	 * 	将value字节数组，输出到服务器，归属于jobId+blobType
 	 */
 	BlobKey putBuffer(
 			@Nullable JobID jobId, byte[] value, int offset, int len, BlobKey.BlobType blobType)
@@ -350,6 +356,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 * 		thrown if an I/O error occurs while uploading the data to the BLOB server
+	 * 	将输入流，输出到服务器，归属于jobId+blobType
 	 */
 	BlobKey putInputStream(@Nullable JobID jobId, InputStream inputStream, BlobKey.BlobType blobType)
 			throws IOException {
@@ -388,6 +395,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 * 		if the upload fails
+	 * 	将本地文件List,上传到服务器
 	 */
 	public static List<PermanentBlobKey> uploadFiles(
 			InetSocketAddress serverAddress, Configuration clientConfig, JobID jobId, List<Path> files)
@@ -421,6 +429,7 @@ public final class BlobClient implements Closeable {
 	 *
 	 * @throws IOException
 	 * 		if the upload fails
+	 * 	将本地文件上传到服务器
 	 */
 	public PermanentBlobKey uploadFile(JobID jobId, Path file) throws IOException {
 		final FileSystem fs = file.getFileSystem();

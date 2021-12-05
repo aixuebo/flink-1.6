@@ -66,6 +66,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * This class implements the BLOB server. The BLOB server is responsible for listening for incoming requests and
  * spawning threads to handle these requests. Furthermore, it takes care of creating the directory structure to store
  * the BLOBs or temporarily cache them.
+ * 在applicationmaster上开启一个blob服务,接受客户端请求,返回客户端需要的文件信息
  */
 public class BlobServer extends Thread implements BlobService, BlobWriter, PermanentBlobService, TransientBlobService {
 
@@ -88,7 +89,7 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 	private final File storageDir;
 
 	/** Blob store for distributed file storage, e.g. in HA. */
-	private final BlobStore blobStore;
+	private final BlobStore blobStore;//本都文件如何上传到hdfs上,以及如何从hdfs上获取数据
 
 	/** Set of currently running threads. */
 	private final Set<BlobServerConnection> activeConnections = new HashSet<>();
@@ -221,6 +222,7 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 	 *
 	 * @throws IOException
 	 * 		if creating the directory fails
+	 * 	获取服务器本地存储的文件
 	 */
 	@VisibleForTesting
 	public File getStorageLocation(@Nullable JobID jobId, BlobKey key) throws IOException {
@@ -261,7 +263,7 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 					}
 
 					conn.start();
-					conn = null;
+					conn = null;//设置为null,防止finally销毁该连接
 				}
 				finally {
 					if (conn != null) {
@@ -466,11 +468,12 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 	 *
 	 * @throws IOException
 	 * 		Thrown if the file retrieval failed.
+	 * 	从hdfs上把文件下载到本地,存储到本地localFile文件下
 	 */
 	void getFileInternal(@Nullable JobID jobId, BlobKey blobKey, File localFile) throws IOException {
 		// assume readWriteLock.readLock() was already locked (cannot really check that)
 
-		if (localFile.exists()) {
+		if (localFile.exists()) {//说明本地文件存在
 			// update TTL for transient BLOBs:
 			if (blobKey instanceof TransientBlobKey) {
 				// regarding concurrent operations, it is not really important which timestamp makes
@@ -478,7 +481,7 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 				// overwrite old values as long as we are in the read (or write) lock
 				blobExpiryTimes
 					.put(Tuple2.of(jobId, (TransientBlobKey) blobKey),
-						System.currentTimeMillis() + cleanupInterval);
+						System.currentTimeMillis() + cleanupInterval);//设置临时文件存储周期
 			}
 			return;
 		} else if (blobKey instanceof PermanentBlobKey) {
@@ -489,8 +492,8 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 			// use a temporary file (thread-safe without locking)
 			File incomingFile = null;
 			try {
-				incomingFile = createTemporaryFilename();
-				blobStore.get(jobId, blobKey, incomingFile);
+				incomingFile = createTemporaryFilename();//创建临时接收文件
+				blobStore.get(jobId, blobKey, incomingFile);//从hdfs下载文件到临时文件中
 
 				readWriteLock.writeLock().lock();
 				try {
@@ -503,7 +506,7 @@ public class BlobServer extends Thread implements BlobService, BlobWriter, Perma
 				return;
 			} finally {
 				// delete incomingFile from a failed download
-				if (incomingFile != null && !incomingFile.delete() && incomingFile.exists()) {
+				if (incomingFile != null && !incomingFile.delete() && incomingFile.exists()) {//删除临时文件
 					LOG.warn("Could not delete the staging file {} for blob key {} and job {}.",
 						incomingFile, blobKey, jobId);
 				}

@@ -29,6 +29,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * The BLOB cache provides access to BLOB services for permanent and transient BLOBs.
+ * 避免客户端重复下载同一个文件，对下载过的文件做一层缓存
  */
 public class BlobCacheService implements BlobService {
 

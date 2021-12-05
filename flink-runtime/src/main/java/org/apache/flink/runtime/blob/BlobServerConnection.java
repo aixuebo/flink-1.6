@@ -55,6 +55,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A BLOB connection handles a series of requests from a particular BLOB client.
+ * 服务端  用于单独处理一个客户端的连接
  */
 class BlobServerConnection extends Thread {
 
@@ -62,10 +63,10 @@ class BlobServerConnection extends Thread {
 	private static final Logger LOG = LoggerFactory.getLogger(BlobServerConnection.class);
 
 	/** The socket to communicate with the client. */
-	private final Socket clientSocket;
+	private final Socket clientSocket;//客户端连接socket
 
 	/** The BLOB server. */
-	private final BlobServer blobServer;
+	private final BlobServer blobServer;//服务器对象
 
 	/** Read lock to synchronize file accesses. */
 	private final Lock readLock;
@@ -77,7 +78,7 @@ class BlobServerConnection extends Thread {
 	 * @param blobServer The BLOB server.
 	 */
 	BlobServerConnection(Socket clientSocket, BlobServer blobServer) {
-		super("BLOB connection for " + clientSocket.getRemoteSocketAddress());
+		super("BLOB connection for " + clientSocket.getRemoteSocketAddress());//客户端谁连接过来了
 		setDaemon(true);
 
 		this.clientSocket = clientSocket;
@@ -179,12 +180,13 @@ class BlobServerConnection extends Thread {
 
 		try {
 			// read HEADER contents: job ID, key, HA mode/permanent or transient BLOB
-			final int mode = inputStream.read();
+			final int mode = inputStream.read();//是否有jobId
 			if (mode < 0) {
 				throw new EOFException("Premature end of GET request");
 			}
 
 			// Receive the jobId and key
+			//获取jobId
 			if (mode == JOB_UNRELATED_CONTENT) {
 				jobId = null;
 			} else if (mode == JOB_RELATED_CONTENT) {
@@ -194,6 +196,8 @@ class BlobServerConnection extends Thread {
 			} else {
 				throw new IOException("Unknown type of BLOB addressing: " + mode + '.');
 			}
+
+			//获取blobKey
 			blobKey = BlobKey.readFromInputStream(inputStream);
 
 			checkArgument(blobKey instanceof TransientBlobKey || jobId != null,
@@ -205,6 +209,7 @@ class BlobServerConnection extends Thread {
 			}
 
 			// the file's (destined) location at the BlobServer
+			//获取本地文件对象
 			blobFile = blobServer.getStorageLocation(jobId, blobKey);
 
 			// up to here, an error can give a good message
@@ -303,28 +308,30 @@ class BlobServerConnection extends Thread {
 	 *
 	 * @throws IOException
 	 * 		thrown if an I/O error occurs while reading/writing data from/to the respective streams
+	 * 	写数据
 	 */
 	private void put(InputStream inputStream, OutputStream outputStream, byte[] buf) throws IOException {
 		File incomingFile = null;
 
 		try {
 			// read HEADER contents: job ID, HA mode/permanent or transient BLOB
-			final int mode = inputStream.read();
+			final int mode = inputStream.read();//获取是否存在jobId标识符
 			if (mode < 0) {
 				throw new EOFException("Premature end of PUT request");
 			}
 
-			final JobID jobId;
+			final JobID jobId;//获取jobId
 			if (mode == JOB_UNRELATED_CONTENT) {
 				jobId = null;
 			} else if (mode == JOB_RELATED_CONTENT) {
-				byte[] jidBytes = new byte[JobID.SIZE];
+				byte[] jidBytes = new byte[JobID.SIZE];//读取16个字节对应的jobid
 				readFully(inputStream, jidBytes, 0, JobID.SIZE, "JobID");
 				jobId = JobID.fromByteArray(jidBytes);
 			} else {
 				throw new IOException("Unknown type of BLOB addressing.");
 			}
 
+			//获取BlobType类型
 			final BlobKey.BlobType blobType;
 			{
 				final int read = inputStream.read();
@@ -345,12 +352,13 @@ class BlobServerConnection extends Thread {
 					clientSocket.getInetAddress());
 			}
 
+			// 从inputStream中读取数据,写入到本地文件incomingFile中，返回md5校验码
 			incomingFile = blobServer.createTemporaryFilename();
-			byte[] digest = readFileFully(inputStream, incomingFile, buf);
+			byte[] digest = readFileFully(inputStream, incomingFile, buf);//返回MD5
 
 			BlobKey blobKey = blobServer.moveTempFileToStore(incomingFile, jobId, digest, blobType);
 
-			// Return computed key to client for validation
+			// Return computed key to client for validation 输出response数据
 			outputStream.write(RETURN_OKAY);
 			blobKey.writeToOutputStream(outputStream);
 		}
@@ -392,6 +400,7 @@ class BlobServerConnection extends Thread {
 	 *
 	 * @throws IOException
 	 * 		thrown if an I/O error occurs while reading/writing data from/to the respective streams
+	 * 	 从inputStream中读取数据,写入到本地文件incomingFile中，返回md5校验码
 	 */
 	private static byte[] readFileFully(
 			final InputStream inputStream, final File incomingFile, final byte[] buf)
@@ -401,7 +410,7 @@ class BlobServerConnection extends Thread {
 		try (FileOutputStream fos = new FileOutputStream(incomingFile)) {
 			while (true) {
 				final int bytesExpected = readLength(inputStream);
-				if (bytesExpected == -1) {
+				if (bytesExpected == -1) {//表示读取到结尾了,不需要再读取数据了
 					// done
 					break;
 				}

@@ -26,6 +26,8 @@ import java.io.IOException;
 /**
  * Wrapper class for a {@link SharedCount} so that we don't expose a curator dependency in our
  * internal APIs. Such an exposure is problematic due to the relocation of curator.
+ *
+ * zookeeper存储int值
  */
 public class ZooKeeperSharedCount {
 
@@ -43,10 +45,12 @@ public class ZooKeeperSharedCount {
 		sharedCount.close();
 	}
 
+	//获取当前value+version
 	public ZooKeeperVersionedValue<Integer> getVersionedValue() {
 		return new ZooKeeperVersionedValue<>(sharedCount.getVersionedValue());
 	}
 
+	//基于当前值的value+version，去设置新的值。当前值是int类型
 	public boolean trySetCount(ZooKeeperVersionedValue<Integer> previous, int newCount) throws Exception {
 		return sharedCount.trySetCount(previous.getVersionedValue(), newCount);
 	}

@@ -90,7 +90,7 @@ class TransientBlobCleanupTask extends TimerTask {
 		// iterate through all entries and remove those where the current time is past their expiry
 		Set<Map.Entry<Tuple2<JobID, TransientBlobKey>, Long>> entries = blobExpiryTimes.entrySet();
 		for (Map.Entry<Tuple2<JobID, TransientBlobKey>, Long> entry : entries) {
-			if (currentTimeMillis >= entry.getValue()) {
+			if (currentTimeMillis >= entry.getValue()) {//超过超时时间
 				JobID jobId = entry.getKey().f0;
 				BlobKey blobKey = entry.getKey().f1;
 

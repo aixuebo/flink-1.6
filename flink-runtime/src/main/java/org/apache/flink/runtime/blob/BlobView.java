@@ -25,6 +25,7 @@ import java.io.IOException;
 
 /**
  * View on blobs stored in a {@link BlobStore}.
+ * 如何下载一个job需要的文件，下载到本地的localFile路径下
  */
 public interface BlobView {
 
@@ -37,6 +38,8 @@ public interface BlobView {
 	 *
 	 * @return whether the file was copied (<tt>true</tt>) or not (<tt>false</tt>)
 	 * @throws IOException If the copy fails
+	 * 读取fromBlobPath文件,他可能在hdfs上，读取的结果存储到本地的localFile中。并且做check校验,校验码是blobKey
+	 * 文件路径由jobId+blobKey可以唯一确定
 	 */
 	boolean get(JobID jobId, BlobKey blobKey, File localFile) throws IOException;
 }

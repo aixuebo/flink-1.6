@@ -22,6 +22,7 @@ import java.io.Serializable;
 
 /**
  * Base class for responses given to registration attempts from {@link RetryingRegistration}.
+ * 注册是否成功 --- 属于response回复信息的内容---所以需要序列化
  */
 public abstract class RegistrationResponse implements Serializable {
 
@@ -32,6 +33,7 @@ public abstract class RegistrationResponse implements Serializable {
 	/**
 	 * Base class for a successful registration. Concrete registration implementations
 	 * will typically extend this class to attach more information.
+	 * 注册成功 --- 子类用于封装成功后的返回信息
 	 */
 	public static class Success extends RegistrationResponse {
 		private static final long serialVersionUID = 1L;
@@ -46,12 +48,13 @@ public abstract class RegistrationResponse implements Serializable {
 
 	/**
 	 * A rejected (declined) registration.
+	 * 注册被拒绝 --- 子类用于封装成功后的返回信息
 	 */
 	public static final class Decline extends RegistrationResponse {
 		private static final long serialVersionUID = 1L;
 
 		/** The rejection reason. */
-		private final String reason;
+		private final String reason;//拒绝理由
 
 		/**
 		 * Creates a new rejection message.

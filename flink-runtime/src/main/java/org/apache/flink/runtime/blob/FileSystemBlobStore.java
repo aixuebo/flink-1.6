@@ -41,6 +41,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * Blob store backed by {@link FileSystem}.
  *
  * <p>This is used in addition to the local blob storage for high availability.
+ * 将本地的文件数据 上传到hdfs上
  */
 public class FileSystemBlobStore implements BlobStoreService {
 
@@ -84,6 +85,7 @@ public class FileSystemBlobStore implements BlobStoreService {
 		return get(BlobUtils.getStorageLocationPath(basePath, jobId, blobKey), localFile, blobKey);
 	}
 
+	//读取fromBlobPath文件,他可能在hdfs上，读取的结果存储到本地的toFile中。并且做check校验,校验码是blobKey
 	private boolean get(String fromBlobPath, File toFile, BlobKey blobKey) throws IOException {
 		checkNotNull(fromBlobPath, "Blob path");
 		checkNotNull(toFile, "File");
@@ -156,6 +158,7 @@ public class FileSystemBlobStore implements BlobStoreService {
 			// send a call to delete the directory containing the file. This will
 			// fail (and be ignored) when some files still exist.
 			try {
+				//delete方式可以确保:删除的是一个文件,如果是目录,并且目录下有文件，会删除失败的
 				fileSystem.delete(path.getParent(), false);
 				fileSystem.delete(new Path(basePath), false);
 			} catch (IOException ignored) {}

@@ -43,9 +43,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Utils class to instantiate {@link HighAvailabilityServices} implementations.
+ * 如何创建一个高可用的服务
  */
 public class HighAvailabilityServicesUtils {
 
+	//创建一个高可用的服务
 	public static HighAvailabilityServices createAvailableOrEmbeddedServices(
 		Configuration config,
 		Executor executor) throws Exception {
@@ -56,7 +58,7 @@ public class HighAvailabilityServicesUtils {
 				return new EmbeddedHaServices(executor);
 
 			case ZOOKEEPER:
-				BlobStoreService blobStoreService = BlobUtils.createBlobStoreFromConfig(config);
+				BlobStoreService blobStoreService = BlobUtils.createBlobStoreFromConfig(config);//根据配置文件,获取存储数据的path，创建一个服务，可以向该path写入数据
 
 				return new ZooKeeperHaServices(
 					ZooKeeperUtils.startCuratorFramework(config),
@@ -99,6 +101,7 @@ public class HighAvailabilityServicesUtils {
 					addressResolution,
 					configuration);
 
+				//对外暴露服务地址
 				final String address = checkNotNull(configuration.getString(RestOptions.ADDRESS),
 					"%s must be set",
 					RestOptions.ADDRESS.key());
@@ -131,9 +134,11 @@ public class HighAvailabilityServicesUtils {
 	 * @param configuration Configuration to extract the JobManager's address from
 	 * @return The JobManager's hostname and port
 	 * @throws ConfigurationException if the JobManager's address cannot be extracted from the configuration
+	 * 返回jobmanager的ip+port
 	 */
 	public static Tuple2<String, Integer> getJobManagerAddress(Configuration configuration) throws ConfigurationException {
 
+		//jobmanager的ip+port
 		final String hostname = configuration.getString(JobManagerOptions.ADDRESS);
 		final int port = configuration.getInteger(JobManagerOptions.PORT);
 

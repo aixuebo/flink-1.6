@@ -45,9 +45,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * The registration can be canceled, for example when the target where it tries to register
  * at looses leader status.
  *
- * @param <F> The type of the fencing token
- * @param <G> The type of the gateway to connect to.
- * @param <S> The type of the successful registration responses.
+ * @param <F> The type of the fencing token 与目标服务器通讯的对象实体，比如连接ResourceManager，则该实体就是ResourceManagerId对象
+ * @param <G> The type of the gateway to connect to.目标服务器的网关，比如连接ResourceManager,那就是ResourceManager的网关
+ * @param <S> The type of the successful registration responses.注册成功后的返回值对象
+ *
+ * 尝试去真实的做连接交互请求
  */
 public abstract class RetryingRegistration<F extends Serializable, G extends RpcGateway, S extends RegistrationResponse.Success> {
 
@@ -83,15 +85,15 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 
 	private final F fencingToken;
 
-	private final CompletableFuture<Tuple2<G, S>> completionFuture;
+	private final CompletableFuture<Tuple2<G, S>> completionFuture;//注册成功,返回<服务器网关代理类,返回值>
 
-	private final long initialRegistrationTimeout;
+	private final long initialRegistrationTimeout;//注册过程中超时时间
 
-	private final long maxRegistrationTimeout;
+	private final long maxRegistrationTimeout;//
 
-	private final long delayOnError;
+	private final long delayOnError;//错误原因造成的失败,晚一些再来一次注册
 
-	private final long delayOnRefusedRegistration;
+	private final long delayOnRefusedRegistration;//拒绝原因造成的失败,晚一些再来一次注册
 
 	private volatile boolean canceled;
 
@@ -100,10 +102,10 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 	public RetryingRegistration(
 			Logger log,
 			RpcService rpcService,
-			String targetName,
-			Class<G> targetType,
-			String targetAddress,
-			F fencingToken) {
+			String targetName,//为一次连接起一个名字,比如ResourceManager
+			Class<G> targetType,//连接的网关
+			String targetAddress,//服务器地址
+			F fencingToken) {//传输的交互实体
 		this(log, rpcService, targetName, targetType, targetAddress, fencingToken,
 				INITIAL_REGISTRATION_TIMEOUT_MILLIS, MAX_REGISTRATION_TIMEOUT_MILLIS,
 				ERROR_REGISTRATION_DELAY_MILLIS, REFUSED_REGISTRATION_DELAY_MILLIS);
@@ -150,6 +152,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 
 	/**
 	 * Cancels the registration procedure.
+	 * 取消注册任务
 	 */
 	public void cancel() {
 		canceled = true;
@@ -167,13 +170,14 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 	// ------------------------------------------------------------------------
 	//  registration
 	// ------------------------------------------------------------------------
-
+    //真实去发生动作
 	protected abstract CompletableFuture<RegistrationResponse> invokeRegistration(
 		G gateway, F fencingToken, long timeoutMillis) throws Exception;
 
 	/**
 	 * This method resolves the target address to a callable gateway and starts the
 	 * registration after that.
+	 * 开始注册任务 --- 连接远程服务器网关
 	 */
 	@SuppressWarnings("unchecked")
 	public void startRegistration() {
@@ -192,21 +196,21 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 					fencingToken,
 					targetType.asSubclass(FencedRpcGateway.class));
 			} else {
-				resourceManagerFuture = rpcService.connect(targetAddress, targetType);
+				resourceManagerFuture = rpcService.connect(targetAddress, targetType);//产生socket连接,连接服务器地址上的网关class对象
 			}
 
-			// upon success, start the registration attempts
-			CompletableFuture<Void> resourceManagerAcceptFuture = resourceManagerFuture.thenAcceptAsync(
-				(G result) -> {
-					log.info("Resolved {} address, beginning registration", targetName);
-					register(result, 1, initialRegistrationTimeout);
+			// upon success, start the registration attempts 该对象表示尝试开始去注册
+			CompletableFuture<Void> resourceManagerAcceptFuture = resourceManagerFuture.thenAcceptAsync(//此时说明已经连接完成
+				(G result) -> {//返回值是远程服务器网关的代理类
+					log.info("Resolved {} address, beginning registration", targetName);//打印日志,准备开始注册行为
+					register(result, 1, initialRegistrationTimeout);//开始注册,设置尝试次数 && 超时时间
 				},
 				rpcService.getExecutor());
 
 			// upon failure, retry, unless this is cancelled
-			resourceManagerAcceptFuture.whenCompleteAsync(
+			resourceManagerAcceptFuture.whenCompleteAsync(//说明已经完成了注册的请求,要么成功,要么失败
 				(Void v, Throwable failure) -> {
-					if (failure != null && !canceled) {
+					if (failure != null && !canceled) {//说明失败
 						final Throwable strippedFailure = ExceptionUtils.stripCompletionException(failure);
 						if (log.isDebugEnabled()) {
 							log.debug(
@@ -224,7 +228,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 								strippedFailure.getMessage());
 						}
 
-						startRegistrationLater(delayOnError);
+						startRegistrationLater(delayOnError);//晚一些再来一次注册
 					}
 				},
 				rpcService.getExecutor());
@@ -238,6 +242,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 	/**
 	 * This method performs a registration attempt and triggers either a success notification or a retry,
 	 * depending on the result.
+	 * 准备向远程网关G发送注册请求,参数是 尝试次数 以及 超时时间
 	 */
 	@SuppressWarnings("unchecked")
 	private void register(final G gateway, final int attempt, final long timeoutMillis) {
@@ -248,18 +253,19 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 
 		try {
 			log.info("Registration at {} attempt {} (timeout={}ms)", targetName, attempt, timeoutMillis);
-			CompletableFuture<RegistrationResponse> registrationFuture = invokeRegistration(gateway, fencingToken, timeoutMillis);
+			CompletableFuture<RegistrationResponse> registrationFuture = invokeRegistration(gateway, fencingToken, timeoutMillis);//执行注册
 
 			// if the registration was successful, let the TaskExecutor know
-			CompletableFuture<Void> registrationAcceptFuture = registrationFuture.thenAcceptAsync(
-				(RegistrationResponse result) -> {
+			//注册失败时,尝试重新再次注册
+			CompletableFuture<Void> registrationAcceptFuture = registrationFuture.thenAcceptAsync(//说明已经开始注册成功了
+				(RegistrationResponse result) -> {//获取注册的返回值
 					if (!isCanceled()) {
-						if (result instanceof RegistrationResponse.Success) {
+						if (result instanceof RegistrationResponse.Success) {//注册成功
 							// registration successful!
-							S success = (S) result;
+							S success = (S) result;//强转返回值
 							completionFuture.complete(Tuple2.of(gateway, success));
 						}
-						else {
+						else {//注册失败
 							// registration refused or unknown
 							if (result instanceof RegistrationResponse.Decline) {
 								RegistrationResponse.Decline decline = (RegistrationResponse.Decline) result;
@@ -269,7 +275,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 							}
 
 							log.info("Pausing and re-attempting registration in {} ms", delayOnRefusedRegistration);
-							registerLater(gateway, 1, initialRegistrationTimeout, delayOnRefusedRegistration);
+							registerLater(gateway, 1, initialRegistrationTimeout, delayOnRefusedRegistration);//再次重新注册
 						}
 					}
 				},
@@ -278,8 +284,8 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 			// upon failure, retry
 			registrationAcceptFuture.whenCompleteAsync(
 				(Void v, Throwable failure) -> {
-					if (failure != null && !isCanceled()) {
-						if (ExceptionUtils.stripCompletionException(failure) instanceof TimeoutException) {
+					if (failure != null && !isCanceled()) {//再次注册依然失败
+						if (ExceptionUtils.stripCompletionException(failure) instanceof TimeoutException) {//超时,则在注册
 							// we simply have not received a response in time. maybe the timeout was
 							// very low (initial fast registration attempts), maybe the target endpoint is
 							// currently down.
@@ -298,7 +304,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 
 							registerLater(gateway, 1, initialRegistrationTimeout, delayOnError);
 						}
-					}
+					} //省略else,说明注册已经成功
 				},
 				rpcService.getExecutor());
 		}
@@ -317,6 +323,7 @@ public abstract class RetryingRegistration<F extends Serializable, G extends Rpc
 		}, delay, TimeUnit.MILLISECONDS);
 	}
 
+	//晚一些再来一次注册
 	private void startRegistrationLater(final long delay) {
 		rpcService.scheduleRunnable(
 			this::startRegistration,

@@ -34,21 +34,23 @@ import java.io.IOException;
  * <p>In addition, the registry can help to determine whether a newly assigned leader JobManager
  * should attempt reconciliation with running TaskManagers, or immediately schedule the job from
  * the latest checkpoint/savepoint.
+ * 管理多少个正在运行的job
  */
 public interface RunningJobsRegistry {
 
 	/**
 	 * The scheduling status of a job, as maintained by the {@code RunningJobsRegistry}.
+	 * job的调度状态
 	 */
 	enum JobSchedulingStatus {
 
-		/** Job has not been scheduled, yet. */
+		/** Job has not been scheduled, yet. 没有被调度*/
 		PENDING,
 
-		/** Job has been scheduled and is not yet finished. */
+		/** Job has been scheduled and is not yet finished. 已经被调度,但没有完成*/
 		RUNNING,
 
-		/** Job has been finished, successfully or unsuccessfully. */
+		/** Job has been finished, successfully or unsuccessfully. 已经完成,不管成功还是失败*/
 		DONE;
 	}
 
@@ -62,6 +64,7 @@ public interface RunningJobsRegistry {
 	 *
 	 * @throws IOException Thrown when the communication with the highly-available storage or registry
 	 *                     failed and could not be retried.
+	 * 设置状态为RUNNING
 	 */
 	void setJobRunning(JobID jobID) throws IOException;
 
@@ -73,6 +76,7 @@ public interface RunningJobsRegistry {
 	 *
 	 * @throws IOException Thrown when the communication with the highly-available storage or registry
 	 *                     failed and could not be retried.
+	 *  设置状态为done
 	 */
 	void setJobFinished(JobID jobID) throws IOException;
 
@@ -84,6 +88,7 @@ public interface RunningJobsRegistry {
 	 *
 	 * @throws IOException Thrown when the communication with the highly-available storage or registry
 	 *                     failed and could not be retried.
+	 * 获取job的状态
 	 */
 	JobSchedulingStatus getJobSchedulingStatus(JobID jobID) throws IOException;
 
@@ -94,6 +99,7 @@ public interface RunningJobsRegistry {
 	 *
 	 * @throws IOException Thrown when the communication with the highly-available storage or registry
 	 *                     failed and could not be retried.
+	 * 清理job
 	 */
 	void clearJob(JobID jobID) throws IOException;
 }

@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 
 /**
  * BLOB key referencing transient BLOB files.
+ * 临时key
  */
 public final class TransientBlobKey extends BlobKey {
 

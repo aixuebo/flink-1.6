@@ -41,9 +41,11 @@ import static org.apache.flink.util.Preconditions.checkState;
  * The RPC connection can be closed, for example when the target where it tries to register
  * at looses leader status.
  *
- * @param <F> The type of the fencing token
- * @param <G> The type of the gateway to connect to.
- * @param <S> The type of the successful registration responses.
+ * @param <F> The type of the fencing token 与目标服务器通讯的对象实体，比如连接ResourceManager，则该实体就是ResourceManagerId对象
+ * @param <G> The type of the gateway to connect to. 目标服务器的网关，比如连接ResourceManager,那就是ResourceManager的网关
+ * @param <S> The type of the successful registration responses.注册成功后的返回值对象
+ *
+ * 封装了如何真实发生的连接，比如从节点如何真实去请求ResourceManager的
  */
 public abstract class RegisteredRpcConnection<F extends Serializable, G extends RpcGateway, S extends RegistrationResponse.Success> {
 
@@ -56,19 +58,19 @@ public abstract class RegisteredRpcConnection<F extends Serializable, G extends 
 	protected final Logger log;
 
 	/** The fencing token fo the remote component. */
-	private final F fencingToken;
+	private final F fencingToken;//远程连接交互的实体对象
 
 	/** The target component Address, for example the ResourceManager Address. */
-	private final String targetAddress;
+	private final String targetAddress;//服务器地址
 
 	/** Execution context to be used to execute the on complete action of the ResourceManagerRegistration. */
-	private final Executor executor;
+	private final Executor executor;//本地如何执行线程任务
 
 	/** The Registration of this RPC connection. */
 	private volatile RetryingRegistration<F, G, S> pendingRegistration;
 
 	/** The gateway to register, it's null until the registration is completed. */
-	private volatile G targetGateway;
+	private volatile G targetGateway;//服务器网关对象
 
 	/** Flag indicating that the RPC connection is closed. */
 	private volatile boolean closed;
@@ -233,7 +235,7 @@ public abstract class RegisteredRpcConnection<F extends Serializable, G extends 
 					}
 				} else {
 					targetGateway = result.f0;
-					onRegistrationSuccess(result.f1);
+					onRegistrationSuccess(result.f1);//服务器返回的结果,传入回调函数中
 				}
 			}, executor);
 

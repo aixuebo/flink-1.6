@@ -24,6 +24,8 @@ import org.apache.flink.util.Preconditions;
 /**
  * Wrapper class for a {@link VersionedValue} so that we don't expose a curator dependency in our
  * internal APIs. Such an exposure is problematic due to the relocation of curator.
+ *
+ * 当前zookeeper存储的version+value值,T是value的类型
  */
 public class ZooKeeperVersionedValue<T> {
 
