@@ -29,7 +29,10 @@ import org.apache.flink.util.MathUtils;
 
 /**
  *
+ * 将数据写入到内存的segment中。
+ * 操作内存，可在所有segment中,可快速定位到某一个位置。
  *
+ * 外界只需要正常调用write方法即可，内部透明，将数据按照顺序写入到MemorySegment[] segments中，直到存满位置
  */
 public class RandomAccessOutputView extends AbstractPagedOutputView implements SeekableDataOutputView
 {
@@ -59,6 +62,7 @@ public class RandomAccessOutputView extends AbstractPagedOutputView implements S
 	}
 
 
+	//保存一个segment到内存
 	@Override
 	protected MemorySegment nextSegment(MemorySegment current, int positionInCurrent) throws EOFException {
 		if (++this.currentSegmentIndex < this.segments.length) {

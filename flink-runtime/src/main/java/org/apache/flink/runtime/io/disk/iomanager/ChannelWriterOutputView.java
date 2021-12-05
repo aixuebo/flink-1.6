@@ -31,37 +31,44 @@ import org.apache.flink.runtime.memory.AbstractPagedOutputView;
  * {@link BlockChannelWriter}, making it effectively a data output
  * stream. The view writes its data in blocks to the underlying channel, adding a minimal header to each block.
  * The data can be re-read by a {@link ChannelReaderInputView}, if it uses the same block size.
+ *
+ * 将数据写入到MemorySegment中,写完MemorySegment后,再申请一个MemorySegment,继续写入。
+ * 记录好一共写了多少个MemorySegment。
+ *
+ * 前提:每一个MemorySegment共享相同的size、头文件大小。
+ *
+ * 将N个segment写入到同一个文件中。因此每一段segment使用固定大小的头文件进行标识
  */
 public final class ChannelWriterOutputView extends AbstractPagedOutputView {
 	
 	/**
 	 * The magic number that identifies blocks as blocks from a ChannelWriterOutputView.
 	 */
-	protected static final short HEADER_MAGIC_NUMBER = (short) 0xC0FE;
+	protected static final short HEADER_MAGIC_NUMBER = (short) 0xC0FE;//魔信息
 	
 	/**
-	 * The length of the header put into the blocks.
+	 * The length of the header put into the blocks.头文件长度 --- 格式:魔信息(short)+是否是最后一个数据块(short)+数据块占用字节数(int)
 	 */
 	protected static final int HEADER_LENGTH = 8;
 	
 	/**
 	 * The offset to the flags in the header;
 	 */
-	protected static final int HEADER_FLAGS_OFFSET = 2;
+	protected static final int HEADER_FLAGS_OFFSET = 2;//第2个字节开始读
 	
 	/**
-	 * The offset to the header field indicating the number of bytes in the block
+	 * The offset to the header field indicating the number of bytes in the block 最后四个字节,用于存储数据块占用多少字节,即segment有效的size
 	 */
-	protected static final int HEAD_BLOCK_LENGTH_OFFSET = 4;
+	protected static final int HEAD_BLOCK_LENGTH_OFFSET = 4;//第4个字节开始读
 	
 	/**
-	 * The flag marking a block as the last block.
+	 * The flag marking a block as the last block.固定值1,表示是最后一个数据块
 	 */
 	protected static final short FLAG_LAST_BLOCK = (short) 0x1;
 	
 	// --------------------------------------------------------------------------------------------
 	
-	private final BlockChannelWriter<MemorySegment> writer;		// the writer to the channel
+	private final BlockChannelWriter<MemorySegment> writer;		// the writer to the channel 如何写数据
 	
 	private long bytesBeforeSegment;				// the number of bytes written before the current memory segment
 	
@@ -77,9 +84,9 @@ public final class ChannelWriterOutputView extends AbstractPagedOutputView {
 	 * directly from the return queue of the writer. Note that this variant locks if no buffers are contained
 	 * in the return queue.
 	 * 
-	 * @param writer The writer to write to.
+	 * @param writer The writer to write to.如何写数据
 	 * @param memory The memory used to buffer data, or null, to utilize solely the return queue.
-	 * @param segmentSize The size of the memory segments.
+	 * @param segmentSize The size of the memory segments.每一个segments的固定大小
 	 */
 	public ChannelWriterOutputView(BlockChannelWriter<MemorySegment> writer, List<MemorySegment> memory, int segmentSize) {
 		super(segmentSize, HEADER_LENGTH);
@@ -177,6 +184,7 @@ public final class ChannelWriterOutputView extends AbstractPagedOutputView {
 	 * in the segments.
 	 * 
 	 * @return The number of bytes that have been written to this output view.
+	 * 一共写了多少个字节
 	 */
 	public long getBytesWritten()
 	{
@@ -196,25 +204,27 @@ public final class ChannelWriterOutputView extends AbstractPagedOutputView {
 	// --------------------------------------------------------------------------------------------
 	//                                      Page Management
 	// --------------------------------------------------------------------------------------------
-	
+	//参数表示当前已经写好的MemorySegment,以及写到了哪个位置。
+	//目标将该MemorySegment写入到磁盘，同时返回下一个MemorySegment去继续写内存
 	protected final MemorySegment nextSegment(MemorySegment current, int posInSegment) throws IOException
 	{
 		if (current != null) {
 			writeSegment(current, posInSegment, false);
 		}
 		
-		final MemorySegment next = this.writer.getNextReturnedBlock();
+		final MemorySegment next = this.writer.getNextReturnedBlock();//复用MemorySegment
 		this.blockCount++;
 		return next;
 	}
 	
 	private void writeSegment(MemorySegment segment, int writePosition, boolean lastSegment) throws IOException
 	{
+		//写入segment元数据信息
 		segment.putShort(0, HEADER_MAGIC_NUMBER);
 		segment.putShort(HEADER_FLAGS_OFFSET, lastSegment ? FLAG_LAST_BLOCK : 0);
 		segment.putInt(HEAD_BLOCK_LENGTH_OFFSET, writePosition);
 		
-		this.writer.writeBlock(segment);
-		this.bytesBeforeSegment += writePosition - HEADER_LENGTH;
+		this.writer.writeBlock(segment);//开始写入数据
+		this.bytesBeforeSegment += writePosition - HEADER_LENGTH;//已经写了多少个字节
 	}
 }

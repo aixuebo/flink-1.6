@@ -52,7 +52,19 @@ public class ChannelReaderInputViewIterator<E> implements MutableObjectIterator<
 	{
 		this(ioAccess, channel, new LinkedBlockingQueue<MemorySegment>(), segments, freeMemTarget, accessors, numBlocks);
 	}
-		
+
+	/**
+	 *
+	 * @param ioAccess
+	 * @param channel
+	 * @param returnQueue  异步的读取channel文件,加入异步队列returnQueue中
+	 *
+	 * @param segments
+	 * @param freeMemTarget
+	 * @param accessors 如果反序列化成对象
+	 * @param numBlocks
+	 * @throws IOException
+	 */
 	public ChannelReaderInputViewIterator(IOManager ioAccess, FileIOChannel.ID channel,  LinkedBlockingQueue<MemorySegment> returnQueue,
 			List<MemorySegment> segments, List<MemorySegment> freeMemTarget, TypeSerializer<E> accessors, int numBlocks)
 	throws IOException

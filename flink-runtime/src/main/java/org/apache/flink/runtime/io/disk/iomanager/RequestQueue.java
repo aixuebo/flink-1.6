@@ -23,6 +23,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * A {@link LinkedBlockingQueue} that is extended with closing methods.
+ * 在LinkedBlockingQueue队列基础上，增加是否close功能
+ * 先进先出队列
  */
 public final class RequestQueue<E> extends LinkedBlockingQueue<E> implements Closeable {
 	

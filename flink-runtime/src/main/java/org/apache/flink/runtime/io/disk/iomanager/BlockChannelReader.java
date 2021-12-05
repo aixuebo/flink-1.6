@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * {@link org.apache.flink.core.memory.MemorySegment}. To support asynchronous implementations,
  * the read method does not immediately return the full memory segment, but rather adds it to
  * a blocking queue of finished read operations.
+ * 如何读取数据到Segment数据
  */
 public interface BlockChannelReader<T> extends FileIOChannel {
 
@@ -51,6 +52,7 @@ public interface BlockChannelReader<T> extends FileIOChannel {
 	 * 
 	 * @return The next memory segment from the reader's return queue.
 	 * @throws IOException Thrown, if an I/O error occurs in the reader while waiting for the request to return.
+	 * 返回已经读取成功的数据块T内容
 	 */
 	public T getNextReturnedBlock() throws IOException;
 	

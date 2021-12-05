@@ -21,6 +21,7 @@ package org.apache.flink.runtime.io.disk.iomanager;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+//返回每一个Buffer作为单元的FileSegment对象
 public class AsynchronousBufferFileSegmentReader extends AsynchronousFileIOChannel<FileSegment, ReadRequest> implements BufferFileSegmentReader {
 
 	private final AtomicBoolean hasReachedEndOfFile = new AtomicBoolean();

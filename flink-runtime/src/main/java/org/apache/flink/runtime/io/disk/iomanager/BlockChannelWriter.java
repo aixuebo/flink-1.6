@@ -40,6 +40,7 @@ public interface BlockChannelWriter<T> extends BlockChannelWriterWithCallback<T>
 	 * 
 	 * @return The next memory segment from the writers's return queue.
 	 * @throws IOException Thrown, if an I/O error occurs in the writer while waiting for the request to return.
+	 * 返回一个已经写入完成的数据块
 	 */
 	T getNextReturnedBlock() throws IOException;
 	
@@ -48,6 +49,7 @@ public interface BlockChannelWriter<T> extends BlockChannelWriterWithCallback<T>
 	 * is completed
 	 * 
 	 * @return The queue with the written memory segments.
+	 * 返回已经写入完成的数据块集合
 	 */
 	LinkedBlockingQueue<T> getReturnQueue();
 }

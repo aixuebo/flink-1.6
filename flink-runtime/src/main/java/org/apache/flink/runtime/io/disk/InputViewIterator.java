@@ -26,6 +26,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.util.MutableObjectIterator;
 
+//从DataInputView中反序列化成一个个E对象
 public class InputViewIterator<E> implements MutableObjectIterator<E>
 {
 	private DataInputView inputView;
@@ -37,6 +38,7 @@ public class InputViewIterator<E> implements MutableObjectIterator<E>
 		this.serializer = serializer;
 	}
 
+	//读取inputView的数据内容,反序列化成reuse对象
 	@Override
 	public E next(E reuse) throws IOException {
 		try {

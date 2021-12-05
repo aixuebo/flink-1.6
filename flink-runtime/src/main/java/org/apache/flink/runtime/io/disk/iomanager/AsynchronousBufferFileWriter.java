@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class AsynchronousBufferFileWriter extends AsynchronousFileIOChannel<Buffer, WriteRequest> implements BufferFileWriter {
 
-	private static final RecyclingCallback CALLBACK = new RecyclingCallback();
+	private static final RecyclingCallback CALLBACK = new RecyclingCallback();//一旦成功,就回收该Buffer,因为写数据,并不需要知道哪些已经写完了。
 
 	protected AsynchronousBufferFileWriter(ID channelID, RequestQueue<WriteRequest> requestQueue) throws IOException {
 		super(channelID, requestQueue, CALLBACK, true);
@@ -45,7 +45,7 @@ public class AsynchronousBufferFileWriter extends AsynchronousFileIOChannel<Buff
 	public void writeBlock(Buffer buffer) throws IOException {
 		try {
 			// if successfully added, the buffer will be recycled after the write operation
-			addRequest(new BufferWriteRequest(this, buffer));
+			addRequest(new BufferWriteRequest(this, buffer));//发送一个写请求
 		} catch (Throwable e) {
 			// if not added, we need to recycle here
 			buffer.recycleBuffer();
@@ -54,6 +54,7 @@ public class AsynchronousBufferFileWriter extends AsynchronousFileIOChannel<Buff
 
 	}
 
+	//当前有多少个写请求尚未完成
 	@Override
 	public int getNumberOfOutstandingRequests() {
 		return requestsNotReturned.get();

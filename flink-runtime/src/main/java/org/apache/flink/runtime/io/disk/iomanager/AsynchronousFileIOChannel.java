@@ -39,6 +39,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * The asynchrony of the access makes it possible to implement read-ahead or write-behind types of I/O accesses.
  * 
  * @param <R> The type of request (e.g. <tt>ReadRequest</tt> or <tt>WriteRequest</tt> issued by this access to the I/O threads.
+ *
+ * R 表示什么类型的请求，比如读取Segment请求,即每次读取一个Segment内容。
+ * T 表示针对R类型的请求,需要什么容器承接。
  */
 public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends AbstractFileIOChannel {
 
@@ -51,13 +54,13 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 	protected final Object closeLock = new Object();
 
 	/** A request queue for submitting asynchronous requests to the corresponding IO worker thread. */
-	protected final RequestQueue<R> requestQueue;
+	protected final RequestQueue<R> requestQueue;//存储request请求队列
 
-	/** An atomic integer that counts the number of requests that we still wait for to return. */
+	/** An atomic integer that counts the number of requests that we still wait for to return. 请求中的数量*/
 	protected final AtomicInteger requestsNotReturned = new AtomicInteger(0);
 	
 	/** Handler for completed requests */
-	protected final RequestDoneCallback<T> resultHandler;
+	protected final RequestDoneCallback<T> resultHandler;//回调函数
 
 	/** An exception that was encountered by the asynchronous request handling thread. */
 	protected volatile IOException exception;
@@ -74,11 +77,11 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 	 * read/written and hands them to the asynchronous I/O thread. After being processed, the buffers
 	 * are returned by adding the to the given queue.
 	 *
-	 * @param channelID    The id describing the path of the file that the channel accessed.
-	 * @param requestQueue The queue that this channel hands its IO requests to.
-	 * @param callback     The callback to be invoked when a request is done.
+	 * @param channelID    The id describing the path of the file that the channel accessed.文件
+	 * @param requestQueue The queue that this channel hands its IO requests to.一个阻塞队列,存储读取动作的请求
+	 * @param callback     The callback to be invoked when a request is done.当读取成功或者失败的时候,如何回调。当一个R执行完后，参与回调
 	 * @param writeEnabled Flag describing whether the channel should be opened in read/write mode, rather
-	 *                     than in read-only mode.
+	 *                     than in read-only mode.是否可以向文件写入数据
 	 * @throws IOException Thrown, if the channel could no be opened.
 	 */
 	protected AsynchronousFileIOChannel(FileIOChannel.ID channelID, RequestQueue<R> requestQueue, 
@@ -119,13 +122,13 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 			try {
 				// wait until as many buffers have been returned as were written
 				// only then is everything guaranteed to be consistent.
-				while (this.requestsNotReturned.get() > 0) {
+				while (this.requestsNotReturned.get() > 0) {//说明有请求尚未完成,等待全部完成后才能真实关闭
 					try {
 						// we add a timeout here, because it is not guaranteed that the
 						// decrementing during buffer return and the check here are deadlock free.
 						// the deadlock situation is however unlikely and caught by the timeout
 						this.closeLock.wait(1000);
-						checkErroneous();
+						checkErroneous();//有异常,则抛出,无异常,则不断循环
 					}
 					catch (InterruptedException iex) {
 						throw new IOException("Closing of asynchronous file channel was interrupted.");
@@ -182,11 +185,13 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 	 * provided buffer and/or an exception that occurred while processing the request
 	 * for that buffer.
 	 *
-	 * @param buffer The buffer to be processed.
-	 * @param ex     The exception that occurred in the I/O threads when processing the buffer's request.
+	 * @param buffer The buffer to be processed.读取到的数据结果
+	 * @param ex     The exception that occurred in the I/O threads when processing the buffer's request.读取过程中出现问题。
+	 *
+	 * 处理读取到的结果
 	 */
 	final protected void handleProcessedBuffer(T buffer, IOException ex) {
-		if (buffer == null) {
+		if (buffer == null) {//说明没有读取到结果
 			return;
 		}
 
@@ -194,10 +199,10 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 		try {
 			if (ex != null && this.exception == null) {
 				this.exception = ex;
-				this.resultHandler.requestFailed(buffer, ex);
+				this.resultHandler.requestFailed(buffer, ex);//处理失败
 			}
 			else {
-				this.resultHandler.requestSuccessful(buffer);
+				this.resultHandler.requestSuccessful(buffer);//处理成功
 			}
 		}
 		finally {
@@ -229,9 +234,9 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 		checkErroneous();
 
 		// write the current buffer and get the next one
-		this.requestsNotReturned.incrementAndGet();
+		this.requestsNotReturned.incrementAndGet();//增加请求的数量
 
-		if (this.closed || this.requestQueue.isClosed()) {
+		if (this.closed || this.requestQueue.isClosed()) {//请求已经关闭了
 			// if we found ourselves closed after the counter increment,
 			// decrement the counter again and do not forward the request
 			this.requestsNotReturned.decrementAndGet();
@@ -250,12 +255,12 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 			throw new IOException("I/O channel already closed. Could not fulfill: " + request);
 		}
 
-		this.requestQueue.add(request);
+		this.requestQueue.add(request);//追加请求到队列
 	}
 
 	/**
 	 * Registers a listener to be notified when all outstanding requests have been processed.
-	 *
+	 * 注册一个listener,当所有的请求都执行完成后,会发送通知
 	 * <p> New requests can arrive right after the listener got notified. Therefore, it is not safe
 	 * to assume that the number of outstanding requests is still zero after a notification unless
 	 * there was a close right before the listener got called.
@@ -287,12 +292,14 @@ public abstract class AsynchronousFileIOChannel<T, R extends IORequest> extends 
 
 /**
  * Read request that reads an entire memory segment from a block reader.
+ * 读取数据,存储到MemorySegment中,即读取的是一整块的MemorySegment可以读取到的内容size
+ * 即每次读取一个Segment大小的数据信息
  */
 final class SegmentReadRequest implements ReadRequest {
 
 	private final AsynchronousFileIOChannel<MemorySegment, ReadRequest> channel;
 
-	private final MemorySegment segment;
+	private final MemorySegment segment;//读取数据内容,写入到MemorySegment中
 
 	protected SegmentReadRequest(AsynchronousFileIOChannel<MemorySegment, ReadRequest> targetChannel, MemorySegment segment) {
 		if (segment == null) {
@@ -306,10 +313,10 @@ final class SegmentReadRequest implements ReadRequest {
 	@Override
 	public void read() throws IOException {
 		final FileChannel c = this.channel.fileChannel;
-		if (c.size() - c.position() > 0) {
+		if (c.size() - c.position() > 0) {//文件流有内容
 			try {
 				final ByteBuffer wrapper = this.segment.wrap(0, this.segment.size());
-				this.channel.fileChannel.read(wrapper);
+				this.channel.fileChannel.read(wrapper);//将数据填充到segment中
 			}
 			catch (NullPointerException npex) {
 				throw new IOException("Memory segment has been released.");
@@ -327,6 +334,7 @@ final class SegmentReadRequest implements ReadRequest {
 
 /**
  * Write request that writes an entire memory segment to the block writer.
+ * 将MemorySegment的内容写到文件流中
  */
 final class SegmentWriteRequest implements WriteRequest {
 
@@ -339,9 +347,11 @@ final class SegmentWriteRequest implements WriteRequest {
 		this.segment = segment;
 	}
 
+	//将segment的内容输出到channel中
 	@Override
 	public void write() throws IOException {
 		try {
+			//this.channel.fileChannel 对应要写入的文件流
 			FileUtils.writeCompletely(this.channel.fileChannel, this.segment.wrap(0, this.segment.size()));
 		}
 		catch (NullPointerException npex) {
@@ -355,6 +365,7 @@ final class SegmentWriteRequest implements WriteRequest {
 	}
 }
 
+//将buffer内容输出到文件流中
 final class BufferWriteRequest implements WriteRequest {
 
 	private final AsynchronousFileIOChannel<Buffer, WriteRequest> channel;
@@ -368,16 +379,16 @@ final class BufferWriteRequest implements WriteRequest {
 
 	@Override
 	public void write() throws IOException {
-		ByteBuffer nioBufferReadable = buffer.getNioBufferReadable();
+		ByteBuffer nioBufferReadable = buffer.getNioBufferReadable();//将buffer转换成可读的buffer
 
 		final ByteBuffer header = ByteBuffer.allocateDirect(8);
 
-		header.putInt(buffer.isBuffer() ? 1 : 0);
-		header.putInt(nioBufferReadable.remaining());
+		header.putInt(buffer.isBuffer() ? 1 : 0);//buffer类型
+		header.putInt(nioBufferReadable.remaining());//buffer的size
 		header.flip();
 
-		FileUtils.writeCompletely(channel.fileChannel, header);
-		FileUtils.writeCompletely(channel.fileChannel, nioBufferReadable);
+		FileUtils.writeCompletely(channel.fileChannel, header);//输出8个字节头文件
+		FileUtils.writeCompletely(channel.fileChannel, nioBufferReadable);//输出buffer具体内容
 	}
 
 	@Override
@@ -386,13 +397,14 @@ final class BufferWriteRequest implements WriteRequest {
 	}
 }
 
+//读取一个buffer内容
 final class BufferReadRequest implements ReadRequest {
 
 	private final AsynchronousFileIOChannel<Buffer, ReadRequest> channel;
 
 	private final Buffer buffer;
 
-	private final AtomicBoolean hasReachedEndOfFile;
+	private final AtomicBoolean hasReachedEndOfFile;//true表示已经读取到结尾
 
 	protected BufferReadRequest(AsynchronousFileIOChannel<Buffer, ReadRequest> targetChannel, Buffer buffer, AtomicBoolean hasReachedEndOfFile) {
 		this.channel = targetChannel;
@@ -405,12 +417,12 @@ final class BufferReadRequest implements ReadRequest {
 
 		final FileChannel fileChannel = channel.fileChannel;
 
-		if (fileChannel.size() - fileChannel.position() > 0) {
+		if (fileChannel.size() - fileChannel.position() > 0) {//说明有文件还可以继续读
 			BufferFileChannelReader reader = new BufferFileChannelReader(fileChannel);
-			hasReachedEndOfFile.set(reader.readBufferFromFileChannel(buffer));
+			hasReachedEndOfFile.set(reader.readBufferFromFileChannel(buffer));//向buffer中添加读取到的内容,并且判断是否读取完数据
 		}
 		else {
-			hasReachedEndOfFile.set(true);
+			hasReachedEndOfFile.set(true);//说明没有文件可以读了
 		}
 	}
 
@@ -420,6 +432,7 @@ final class BufferReadRequest implements ReadRequest {
 	}
 }
 
+//读取内容到FileSegment --- 读取一个buffer数据的元信息，组装成FileSegment对象返回。
 final class FileSegmentReadRequest implements ReadRequest {
 
 	private final AsynchronousFileIOChannel<FileSegment, ReadRequest> channel;
@@ -438,7 +451,7 @@ final class FileSegmentReadRequest implements ReadRequest {
 
 		final FileChannel fileChannel = channel.fileChannel;
 
-		if (fileChannel.size() - fileChannel.position() > 0) {
+		if (fileChannel.size() - fileChannel.position() > 0) {//说明有内容
 			final ByteBuffer header = ByteBuffer.allocateDirect(8);
 
 			fileChannel.read(header);
@@ -454,7 +467,7 @@ final class FileSegmentReadRequest implements ReadRequest {
 			// Skip the binary data
 			fileChannel.position(position + length);
 
-			hasReachedEndOfFile.set(fileChannel.size() - fileChannel.position() == 0);
+			hasReachedEndOfFile.set(fileChannel.size() - fileChannel.position() == 0);//是否读取完
 		}
 		else {
 			hasReachedEndOfFile.set(true);
@@ -469,6 +482,7 @@ final class FileSegmentReadRequest implements ReadRequest {
 
 /**
  * Request that seeks the underlying file channel to the given position.
+ * 跳跃请求,在执行read或者write时,都会跳跃到position位置
  */
 final class SeekRequest implements ReadRequest, WriteRequest {
 
@@ -484,11 +498,13 @@ final class SeekRequest implements ReadRequest, WriteRequest {
 	public void requestDone(IOException ioex) {
 	}
 
+	//跳跃到该位置
 	@Override
 	public void read() throws IOException {
 		this.channel.fileChannel.position(position);
 	}
 
+	//跳跃到该位置
 	@Override
 	public void write() throws IOException {
 		this.channel.fileChannel.position(position);

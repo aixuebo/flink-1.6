@@ -28,6 +28,7 @@ public interface BlockChannelWriterWithCallback<T> extends FileIOChannel {
 	 *
 	 * @param block The segment to be written (transferring ownership to this writer).
 	 * @throws IOException Thrown, when the writer encounters an I/O error.
+	 * 将数据块的内容写入到文件中
 	 */
 	void writeBlock(T block) throws IOException;
 }

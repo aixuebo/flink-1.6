@@ -27,25 +27,32 @@ import org.apache.flink.runtime.memory.AbstractPagedInputView;
 import org.apache.flink.util.MathUtils;
 
 
+//外界只需要正常调用read方法即可，内部透明，将数据按照顺序从MemorySegment[] segments中读取出来，直到得到结尾为止
 public class RandomAccessInputView extends AbstractPagedInputView implements SeekableDataInputView {
 	
-	private final ArrayList<MemorySegment> segments;
+	private final ArrayList<MemorySegment> segments;//相当于数据库
 	
-	private int currentSegmentIndex;
+	private int currentSegmentIndex;//当前该读取第几个segment内容了
 	
 	private final int segmentSizeBits;
 	
 	private final int segmentSizeMask;
 	
-	private final int segmentSize;
+	private final int segmentSize;//每一个segment大小
 	
-	private final int limitInLastSegment;
+	private final int limitInLastSegment;//最后一个segment真实存储数据的大小，因为可能segment没存满
 	
 	public RandomAccessInputView(ArrayList<MemorySegment> segments, int segmentSize)
 	{
 		this(segments, segmentSize, segmentSize);
 	}
 
+	/**
+	 *
+	 * @param segments 存储数据的源头
+	 * @param segmentSize 每一个segment大小
+	 * @param limitInLastSegment 最后一个segment真实存储数据的大小，因为可能segment没存满
+	 */
 	public RandomAccessInputView(ArrayList<MemorySegment> segments, int segmentSize, int limitInLastSegment) {
 		super(segments.get(0), segments.size() > 1 ? segmentSize : limitInLastSegment, 0);
 		this.segments = segments;
@@ -57,6 +64,7 @@ public class RandomAccessInputView extends AbstractPagedInputView implements See
 	}
 
 
+	//设置该读取哪个segment的那个位置了
 	@Override
 	public void setReadPosition(long position) {
 		final int bufferNum = (int) (position >>> this.segmentSizeBits);
@@ -66,11 +74,13 @@ public class RandomAccessInputView extends AbstractPagedInputView implements See
 		seekInput(this.segments.get(bufferNum), offset, bufferNum < this.segments.size() - 1 ? this.segmentSize : this.limitInLastSegment);
 	}
 
+	//全局看,已经读取了多少个字节了
 	public long getReadPosition() {
 		return (((long) currentSegmentIndex) << segmentSizeBits) + getCurrentPositionInSegment();
 	}
 
 
+	//返回下一个待读取的segment
 	@Override
 	protected MemorySegment nextSegment(MemorySegment current) throws EOFException {
 		if (++this.currentSegmentIndex < this.segments.size()) {
@@ -80,7 +90,7 @@ public class RandomAccessInputView extends AbstractPagedInputView implements See
 		}
 	}
 
-
+    //当前segment的大小
 	@Override
 	protected int getLimitForSegment(MemorySegment segment) {
 		return this.currentSegmentIndex == this.segments.size() - 1 ? this.limitInLastSegment : this.segmentSize;

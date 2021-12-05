@@ -34,14 +34,40 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * The facade for the provided I/O manager services.
+ *
+ 一、write
+ 1.向文件中写入MemorySegment格式的数据
+ a.默认回调函数
+ 其中LinkedBlockingQueue是存储已经成功写入的MemorySegment，即默认回调函数向队列存储成功的数据块
+ BlockChannelWriter<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID)
+ BlockChannelWriter<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID,LinkedBlockingQueue<MemorySegment> returnQueue)
+ b.自定义回调函数
+ BlockChannelWriterWithCallback<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID, RequestDoneCallback<MemorySegment> callback)
+
+ 2.向文件中写入Buffer格式的数据
+ BufferFileWriter createBufferFileWriter(FileIOChannel.ID channelID)
+
+ 二、read
+ 1.以MemorySegment的方式读取数据
+ 其中LinkedBlockingQueue是存储已经成功读取的MemorySegment，即默认回调函数向队列存储成功的数据块
+ BlockChannelReader<MemorySegment> createBlockChannelReader(FileIOChannel.ID channelID)
+ BlockChannelReader<MemorySegment> createBlockChannelReader(FileIOChannel.ID channelID,LinkedBlockingQueue<MemorySegment> returnQueue)
+ 2.以Buffer的方式读取数据
+ BufferFileReader createBufferFileReader(FileIOChannel.ID channelID, RequestDoneCallback<Buffer> callback) 自定义回调函数
+ 3.以BufferFile的方式读取数据
+ BufferFileSegmentReader createBufferFileSegmentReader(FileIOChannel.ID channelID, RequestDoneCallback<FileSegment> callback) 自定义回调函数
+
+ 4.以BulkBlock方式读取数据
+ BulkBlockChannelReader createBulkBlockChannelReader(FileIOChannel.ID channelID,List<MemorySegment> targetSegments, int numBlocks)
  */
 public abstract class IOManager {
 
+	//同步还是异步
 	public enum IOMode {
 
 		SYNC(true), ASYNC(false);
 
-		private final boolean isSynchronous;
+		private final boolean isSynchronous;//true 表示同步
 
 		IOMode(boolean isSynchronous) {
 			this.isSynchronous = isSynchronous;
@@ -56,13 +82,13 @@ public abstract class IOManager {
 	protected static final Logger LOG = LoggerFactory.getLogger(IOManager.class);
 
 	/** The temporary directories for files */
-	private final File[] paths;
+	private final File[] paths;//临时目录--即/root/flink-io-rand目录 ，多个临时目录顺序切换写文件
 
 	/** A random number generator for the anonymous ChannelIDs. */
 	private final Random random;
 
 	/** The number of the next path to use. */
-	private volatile int nextPath;
+	private volatile int nextPath;//下一个使用的目录
 
 	// -------------------------------------------------------------------------
 	//               Constructors / Destructors
@@ -71,7 +97,7 @@ public abstract class IOManager {
 	/**
 	 * Constructs a new IOManager.
 	 *
-	 * @param tempDirs The basic directories for files underlying anonymous channels.
+	 * @param tempDirs The basic directories for files underlying anonymous channels. 参数是root根目录集合
 	 */
 	protected IOManager(String[] tempDirs) {
 		if (tempDirs == null || tempDirs.length == 0) {
@@ -81,10 +107,11 @@ public abstract class IOManager {
 		this.random = new Random();
 		this.nextPath = 0;
 
+		//创建临时目录
 		this.paths = new File[tempDirs.length];
 		for (int i = 0; i < tempDirs.length; i++) {
 			File baseDir = new File(tempDirs[i]);
-			String subfolder = String.format("flink-io-%s", UUID.randomUUID().toString());
+			String subfolder = String.format("flink-io-%s", UUID.randomUUID().toString());//产生一个随机子目录。即/root/flink-io-rand目录
 			File storageDir = new File(baseDir, subfolder);
 
 			if (!storageDir.exists() && !storageDir.mkdirs()) {
@@ -99,6 +126,7 @@ public abstract class IOManager {
 	/**
 	 * Close method, marks the I/O manager as closed
 	 * and removed all temporary files.
+	 * 删除临时目录
 	 */
 	public void shutdown() {
 		// remove all of our temp directories
@@ -121,6 +149,7 @@ public abstract class IOManager {
 	 * For this base implementation, this means that all files have been removed.
 	 *
 	 * @return True, if the IO manager has properly shut down, false otherwise.
+	 * true表示所有临时目录都被删除 --- 即是否删除干净
 	 */
 	public boolean isProperlyShutDown() {
 		for (File path : paths) {
@@ -139,11 +168,11 @@ public abstract class IOManager {
 	 * Creates a new {@link FileIOChannel.ID} in one of the temp directories. Multiple
 	 * invocations of this method spread the channels evenly across the different directories.
 	 *
-	 * @return A channel to a temporary directory.
+	 * @return A channel to a temporary directory. 创建一个.channel文件名,此时还未真正创建该文件
 	 */
 	public FileIOChannel.ID createChannel() {
-		final int num = getNextPathNum();
-		return new FileIOChannel.ID(this.paths[num], num, this.random);
+		final int num = getNextPathNum();//找到一个root目录
+		return new FileIOChannel.ID(this.paths[num], num, this.random);//创建一个文件对象
 	}
 
 	/**
@@ -151,6 +180,7 @@ public abstract class IOManager {
 	 * across the temporary file directories.
 	 *
 	 * @return An enumerator for channels.
+	 * 在paths[]这些root下,轮训创建.channel文件
 	 */
 	public FileIOChannel.Enumerator createChannelEnumerator() {
 		return new FileIOChannel.Enumerator(this.paths, this.random);
@@ -162,6 +192,7 @@ public abstract class IOManager {
 	 * 
 	 * @param channel The channel to be deleted.
 	 * @throws IOException Thrown if the deletion fails.
+	 * 删除一个文件
 	 */
 	public void deleteChannel(FileIOChannel.ID channel) throws IOException {
 		if (channel != null) {
@@ -182,6 +213,7 @@ public abstract class IOManager {
 	 * @param channelID The descriptor for the channel to write to.
 	 * @return A block channel writer that writes to the given channel.
 	 * @throws IOException Thrown, if the channel for the writer could not be opened.
+	 * 向文件中写入MemorySegment格式的数据
 	 */
 	public BlockChannelWriter<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID) throws IOException {
 		return createBlockChannelWriter(channelID, new LinkedBlockingQueue<MemorySegment>());
@@ -191,10 +223,11 @@ public abstract class IOManager {
 	 * Creates a block channel writer that writes to the given channel. The writer adds the
 	 * written segment to the given queue (to allow for asynchronous implementations).
 	 *
-	 * @param channelID The descriptor for the channel to write to.
-	 * @param returnQueue The queue to put the written buffers into.
+	 * @param channelID The descriptor for the channel to write to.向该文件写入数据
+	 * @param returnQueue The queue to put the written buffers into.存储已经成功写入的MemorySegment
 	 * @return A block channel writer that writes to the given channel.
 	 * @throws IOException Thrown, if the channel for the writer could not be opened.
+	 * 向文件中写入MemorySegment格式的数据
 	 */
 	public abstract BlockChannelWriter<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID,
 				LinkedBlockingQueue<MemorySegment> returnQueue) throws IOException;
@@ -208,6 +241,8 @@ public abstract class IOManager {
 	 * @param callback The callback to be called for
 	 * @return A block channel writer that writes to the given channel.
 	 * @throws IOException Thrown, if the channel for the writer could not be opened.
+	 * 向文件中写入MemorySegment格式的数据
+	 * 关键点 : 自定义回调函数--写入成功/失败时候如何处理
 	 */
 	public abstract BlockChannelWriterWithCallback<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID, RequestDoneCallback<MemorySegment> callback) throws IOException;
 
@@ -216,9 +251,10 @@ public abstract class IOManager {
 	 * full memory segments (with the read data) to its "return queue", to allow for asynchronous read
 	 * implementations.
 	 *
-	 * @param channelID The descriptor for the channel to write to.
+	 * @param channelID The descriptor for the channel to write to.要读取的文件
 	 * @return A block channel reader that reads from the given channel.
 	 * @throws IOException Thrown, if the channel for the reader could not be opened.
+	 * 以MemorySegment的方式读取数据
 	 */
 	public BlockChannelReader<MemorySegment> createBlockChannelReader(FileIOChannel.ID channelID) throws IOException {
 		return createBlockChannelReader(channelID, new LinkedBlockingQueue<MemorySegment>());
@@ -229,17 +265,40 @@ public abstract class IOManager {
 	 * to the given queue, to allow for asynchronous implementations.
 	 *
 	 * @param channelID The descriptor for the channel to write to.
-	 * @param returnQueue The queue to put the full buffers into.
+	 * @param returnQueue The queue to put the full buffers into.读取完成的数据块,存储在该集合中
 	 * @return A block channel reader that reads from the given channel.
 	 * @throws IOException Thrown, if the channel for the reader could not be opened.
+	 * 以MemorySegment的方式读取数据
 	 */
 	public abstract BlockChannelReader<MemorySegment> createBlockChannelReader(FileIOChannel.ID channelID,
 										LinkedBlockingQueue<MemorySegment> returnQueue) throws IOException;
 
+	/**
+	 * 以Buffer的形式写入数据到channelID中
+	 * @param channelID 要写入的文件
+	 * @return
+	 * @throws IOException
+	 */
 	public abstract BufferFileWriter createBufferFileWriter(FileIOChannel.ID channelID) throws IOException;
 
+	/**
+	 *  以Buffer的形式读取数据
+	 * @param channelID 要读取的文件
+	 * @param callback 读取的数据如何处理回调函数
+	 * @return
+	 * @throws IOException
+	 */
 	public abstract BufferFileReader createBufferFileReader(FileIOChannel.ID channelID, RequestDoneCallback<Buffer> callback) throws IOException;
 
+	/**
+	 * 	 * 以BufferFile的方式读取文件
+	 * 	 * @param channelID 要读取的文件
+	 * 	 * @param callback 读取的数据如何处理回调函数
+	 * @param channelID
+	 * @param callback
+	 * @return
+	 * @throws IOException
+	 */
 	public abstract BufferFileSegmentReader createBufferFileSegmentReader(FileIOChannel.ID channelID, RequestDoneCallback<FileSegment> callback) throws IOException;
 
 	/**
@@ -268,7 +327,7 @@ public abstract class IOManager {
 	/**
 	 * Gets the number of directories across which the I/O manager rotates its files.
 	 * 
-	 * @return The number of temporary file directories.
+	 * @return The number of temporary file directories.获取临时根目录数量
 	 */
 	public int getNumberOfSpillingDirectories() {
 		return this.paths.length;
@@ -277,7 +336,7 @@ public abstract class IOManager {
 	/**
 	 * Gets the directories that the I/O manager spills to.
 	 * 
-	 * @return The directories that the I/O manager spills to.
+	 * @return The directories that the I/O manager spills to.获取临时根目录集合--file对象集合
 	 */
 	public File[] getSpillingDirectories() {
 		return this.paths;
@@ -287,6 +346,7 @@ public abstract class IOManager {
 	 * Gets the directories that the I/O manager spills to, as path strings.
 	 *
 	 * @return The directories that the I/O manager spills to, as path strings.
+	 * 获取临时根目录集合--file路径集合
 	 */
 	public String[] getSpillingDirectoriesPaths() {
 		String[] strings = new String[this.paths.length];
@@ -295,7 +355,8 @@ public abstract class IOManager {
 		}
 		return strings;
 	}
-	
+
+	//获取下一个路径
 	protected int getNextPathNum() {
 		final int next = this.nextPath;
 		final int newNext = next + 1;

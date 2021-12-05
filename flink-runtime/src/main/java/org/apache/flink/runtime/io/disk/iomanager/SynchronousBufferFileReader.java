@@ -29,28 +29,37 @@ import java.io.IOException;
  * is currently in use.
  *
  * TODO Refactor I/O manager setup and refactor this into it
+ * 读取文件 -- 追加一层buffer缓存 --- 如何读取文件
  */
 public class SynchronousBufferFileReader extends SynchronousFileIOChannel implements BufferFileReader {
 
-	private final BufferFileChannelReader reader;
+	private final BufferFileChannelReader reader;//缓冲区对象
 
-	private boolean hasReachedEndOfFile;
+	private boolean hasReachedEndOfFile;//是否达到文件结尾
 
+	/**
+	 *
+	 * @param channelID  文件
+	 * @param writeEnabled  对该文件是否有写操作
+	 * @throws IOException
+	 */
 	public SynchronousBufferFileReader(ID channelID, boolean writeEnabled) throws IOException {
 		super(channelID, writeEnabled);
-		this.reader = new BufferFileChannelReader(fileChannel);
+		this.reader = new BufferFileChannelReader(fileChannel);//对文件流进行缓存
 	}
 
+	//读取数据到buffer参数中
 	@Override
 	public void readInto(Buffer buffer) throws IOException {
-		if (fileChannel.size() - fileChannel.position() > 0) {
-			hasReachedEndOfFile = reader.readBufferFromFileChannel(buffer);
+		if (fileChannel.size() - fileChannel.position() > 0) {//还有字节可以读取
+			hasReachedEndOfFile = reader.readBufferFromFileChannel(buffer);//从缓冲区中读取数据到buffer中
 		}
 		else {
-			buffer.recycleBuffer();
+			buffer.recycleBuffer();//回收参数buffer
 		}
 	}
 
+	//跳跃到该位置
 	@Override
 	public void seekToPosition(long position) throws IOException {
 		fileChannel.position(position);

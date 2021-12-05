@@ -29,13 +29,14 @@ import org.apache.flink.util.StringUtils;
 /**
  * A Channel represents a collection of files that belong logically to the same resource. An example is a collection of
  * files that contain sorted runs of data from the same stream, that will later on be merged together.
+ * 代表一个文件---对文件的读写流、文件size等信息、文件close、文件删除
  */
 public interface FileIOChannel {
 	
 	/**
 	 * Gets the channel ID of this I/O channel.
 	 * 
-	 * @return The channel ID.
+	 * @return The channel ID.代表一个文件
 	 */
 	FileIOChannel.ID getChannelID();
 	
@@ -43,6 +44,7 @@ public interface FileIOChannel {
 	 * Gets the size (in bytes) of the file underlying the channel.
 	 * 
 	 * @return The size (in bytes) of the file underlying the channel.
+	 * 文件size
 	 */
 	long getSize() throws IOException;
 	
@@ -50,6 +52,7 @@ public interface FileIOChannel {
 	 * Checks whether the channel has been closed.
 	 * 
 	 * @return True if the channel has been closed, false otherwise.
+	 * 文件是否已经关闭了
 	 */
 	boolean isClosed();
 
@@ -58,6 +61,7 @@ public interface FileIOChannel {
 	* handled. Even if an exception interrupts the closing, the underlying <tt>FileChannel</tt> is closed.
 	* 
 	* @throws IOException Thrown, if an error occurred while waiting for pending requests.
+	 * 真实去关闭文件
 	*/
 	void close() throws IOException;
 
@@ -65,6 +69,7 @@ public interface FileIOChannel {
 	 * Deletes the file underlying this I/O channel.
 	 *  
 	 * @throws IllegalStateException Thrown, when the channel is still open.
+	 * 删除文件
 	 */
 	void deleteChannel();
 	
@@ -73,9 +78,11 @@ public interface FileIOChannel {
 	* For asynchronous implementations, this method waits until all pending requests are handled;
 	* 
 	* @throws IOException Thrown, if an error occurred while waiting for pending requests.
+	 * 先关闭文件，再删除文件
 	*/
 	public void closeAndDelete() throws IOException;
 
+	//返回文件的channel流 -- 用于读写该文件
 	FileChannel getNioFileChannel();
 	
 	// --------------------------------------------------------------------------------------------
@@ -83,14 +90,15 @@ public interface FileIOChannel {
 	
 	/**
 	 * An ID identifying an underlying file channel.
+	 * 产生一个随机文件名构成的文件 -- 文件名+线程序号,确定文件名
 	 */
 	public static class ID {
 		
 		private static final int RANDOM_BYTES_LENGTH = 16;
 		
-		private final File path;
+		private final File path;//随机产生的文件
 		
-		private final int threadNum;
+		private final int threadNum;//该path是第几个目录的path
 
 		protected ID(File path, int threadNum) {
 			this.path = path;
@@ -98,7 +106,7 @@ public interface FileIOChannel {
 		}
 
 		protected ID(File basePath, int threadNum, Random random) {
-			this.path = new File(basePath, randomString(random) + ".channel");
+			this.path = new File(basePath, randomString(random) + ".channel");//生产.channel文件
 			this.threadNum = threadNum;
 		}
 
@@ -151,6 +159,7 @@ public interface FileIOChannel {
 
 	/**
 	 * An enumerator for channels that logically belong together.
+	 * 在paths[]这些root下,轮训创建.channel文件
 	 */
 	public static final class Enumerator {
 
@@ -158,7 +167,7 @@ public interface FileIOChannel {
 
 		private final File[] paths;
 
-		private final String namePrefix;
+		private final String namePrefix;//随机前缀
 
 		private int localCounter;
 

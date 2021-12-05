@@ -35,22 +35,25 @@ import org.apache.flink.runtime.memory.AbstractPagedOutputView;
 
 /**
  * An output view that buffers written data in memory pages and spills them when they are full.
+ * 外界只需要知道write即可，内部如何切换segment,按照顺序存储,不需要关注
+ *
+ * 先用内存存储数据，在写入到文件中
  */
 public class SpillingBuffer extends AbstractPagedOutputView {
 	
-	private final ArrayList<MemorySegment> fullSegments;
+	private final ArrayList<MemorySegment> fullSegments;//已经写好的,存储在内存里的数据
 	
-	private final MemorySegmentSource memorySource;
+	private final MemorySegmentSource memorySource;//内存的数据源集合
 	
-	private BlockChannelWriter<MemorySegment> writer;
+	private BlockChannelWriter<MemorySegment> writer;//如何往文件写入
 	
 	private RandomAccessInputView inMemInView;
 	
 	private HeaderlessChannelReaderInputView externalInView;
 	
-	private final IOManager ioManager;
+	private final IOManager ioManager;//创建文件
 	
-	private int blockCount;
+	private int blockCount;//已经写好了多少个segment了
 	
 	private int numBytesInLastSegment;
 	
@@ -66,18 +69,19 @@ public class SpillingBuffer extends AbstractPagedOutputView {
 	}
 	
 
+	//要存储参数的segment。返回下一个MemorySegment，用于存储更新的数据
 	@Override
 	protected MemorySegment nextSegment(MemorySegment current, int positionInCurrent) throws IOException {
 		// check if we are still in memory
 		if (this.writer == null) {
 			this.fullSegments.add(current);
 			
-			final MemorySegment nextSeg = this.memorySource.nextSegment();
+			final MemorySegment nextSeg = this.memorySource.nextSegment();//利用内存存储数据
 			if (nextSeg != null) {
 				return nextSeg;
 			} else {
 				// out of memory, need to spill: create a writer
-				this.writer = this.ioManager.createBlockChannelWriter(this.ioManager.createChannel());
+				this.writer = this.ioManager.createBlockChannelWriter(this.ioManager.createChannel());//创建一个文件流
 				
 				// add all segments to the writer
 				this.blockCount = this.fullSegments.size();
@@ -94,10 +98,11 @@ public class SpillingBuffer extends AbstractPagedOutputView {
 			// spilling
 			this.writer.writeBlock(current);
 			this.blockCount++;
-			return this.writer.getNextReturnedBlock();
+			return this.writer.getNextReturnedBlock();//重复利用segment
 		}
 	}
-	
+
+	//写 变成 读
 	public DataInputView flip() throws IOException {
 		// check whether this is the first flip and we need to add the current segment to the full ones
 		if (getCurrentSegment() != null) {
@@ -106,7 +111,7 @@ public class SpillingBuffer extends AbstractPagedOutputView {
 				// in memory
 				this.fullSegments.add(getCurrentSegment());
 				this.numBytesInLastSegment = getCurrentPositionInSegment();
-				this.inMemInView = new RandomAccessInputView(this.fullSegments, this.segmentSize, this.numBytesInLastSegment);
+				this.inMemInView = new RandomAccessInputView(this.fullSegments, this.segmentSize, this.numBytesInLastSegment);//基于内存读
 			} else {
 				// external: write the last segment and collect the memory back
 				this.writer.writeBlock(this.getCurrentSegment());

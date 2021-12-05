@@ -25,15 +25,19 @@ import org.apache.flink.core.memory.MemorySegment;
 /**
  * An asynchronous implementation of the {@link BlockChannelWriterWithCallback} that queues I/O requests
  * and calls a callback once they have been handled.
+ *
+ * 将MemorySegment内容,组装成写请求WriteRequest,写入到文件中。
+ *
+ * 自定义回调函数--写入成功/失败时候如何处理
  */
 public class AsynchronousBlockWriterWithCallback extends AsynchronousFileIOChannel<MemorySegment, WriteRequest> implements BlockChannelWriterWithCallback<MemorySegment> {
 	
 	/**
 	 * Creates a new asynchronous block writer for the given channel.
 	 *  
-	 * @param channelID The ID of the channel to write to.
-	 * @param requestQueue The request queue of the asynchronous writer thread, to which the I/O requests are added.
-	 * @param callback The callback to be invoked when requests are done.
+	 * @param channelID The ID of the channel to write to.向哪个文件写入数据
+	 * @param requestQueue The request queue of the asynchronous writer thread, to which the I/O requests are added.写入数据的请求队列
+	 * @param callback The callback to be invoked when requests are done.写入成功后的回调函数
 	 * @throws IOException Thrown, if the underlying file channel could not be opened exclusively.
 	 */
 	protected AsynchronousBlockWriterWithCallback(FileIOChannel.ID channelID, RequestQueue<WriteRequest> requestQueue,
@@ -47,7 +51,8 @@ public class AsynchronousBlockWriterWithCallback extends AsynchronousFileIOChann
 	 * 
 	 * @param segment The segment to be written.
 	 * @throws IOException Thrown, when the writer encounters an I/O error. Due to the asynchronous nature of the
-	 *                     writer, the exception thrown here may have been caused by an earlier write request. 
+	 *                     writer, the exception thrown here may have been caused by an earlier write request.
+	 * 将参数segment的数据写入到文件中
 	 */
 	@Override
 	public void writeBlock(MemorySegment segment) throws IOException {

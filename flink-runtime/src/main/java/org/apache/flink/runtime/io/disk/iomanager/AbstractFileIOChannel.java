@@ -28,25 +28,27 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.flink.util.Preconditions;
 
+//文件的基础操作
+//传入文件file对象后,产生文件读写流fileChannel,针对该流做操作
 public abstract class AbstractFileIOChannel implements FileIOChannel {
 
 	/** Logger object for channel and its subclasses */
 	protected static final Logger LOG = LoggerFactory.getLogger(FileIOChannel.class);
 	
 	/** The ID of the underlying channel. */
-	protected final FileIOChannel.ID id;
+	protected final FileIOChannel.ID id;//代表一个文件
 	
 	/** A file channel for NIO access to the file. */
-	protected final FileChannel fileChannel;
+	protected final FileChannel fileChannel;//操作该id文件的channel流
 	
 	
 	/**
 	 * Creates a new channel to the path indicated by the given ID. The channel hands IO requests to
 	 * the given request queue to be processed.
 	 * 
-	 * @param channelID The id describing the path of the file that the channel accessed.
+	 * @param channelID The id describing the path of the file that the channel accessed.一个文件路径
 	 * @param writeEnabled Flag describing whether the channel should be opened in read/write mode, rather
-	 *                     than in read-only mode.
+	 *                     than in read-only mode.true表示可以向文件写数据
 	 * @throws IOException Thrown, if the channel could no be opened.
 	 */
 	protected AbstractFileIOChannel(FileIOChannel.ID channelID, boolean writeEnabled) throws IOException {
@@ -74,16 +76,19 @@ public abstract class AbstractFileIOChannel implements FileIOChannel {
 		FileChannel channel = fileChannel;
 		return channel == null ? 0 : channel.size();
 	}
-	
+
+	//能否关闭文件
 	@Override
 	public abstract boolean isClosed();
-	
+
+	//真实关闭操作
 	@Override
 	public abstract void close() throws IOException;
 
+	//删除文件
 	@Override
 	public void deleteChannel() {
-		if (!isClosed() || this.fileChannel.isOpen()) {
+		if (!isClosed() || this.fileChannel.isOpen()) {//文件开着不允许关闭
 			throw new IllegalStateException("Cannot delete a channel that is open.");
 		}
 	
@@ -95,7 +100,8 @@ public abstract class AbstractFileIOChannel implements FileIOChannel {
 			}
 		} catch (Throwable t) {}
 	}
-	
+
+	//关闭 && 删除文件
 	@Override
 	public void closeAndDelete() throws IOException {
 		try {
@@ -105,6 +111,7 @@ public abstract class AbstractFileIOChannel implements FileIOChannel {
 		}
 	}
 
+	//返回流本身
 	@Override
 	public FileChannel getNioFileChannel() {
 		return fileChannel;

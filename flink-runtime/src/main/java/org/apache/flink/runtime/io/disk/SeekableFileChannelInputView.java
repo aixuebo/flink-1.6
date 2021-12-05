@@ -37,6 +37,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * making it effectively a data input stream. The view reads it data in blocks from the underlying channel.
  * The view can read data that has been written by a {@link FileChannelOutputView}, or that was written in blocks
  * in another fashion.
+ *
+ * 1.从构造函数中,传入要读取的文件、以及用于读取文件的内存集合List<MemorySegment>、如何回收内存的MemoryManager
+ * 2.调用read方法,不断读取字节内容,如果字节内容在segment没有,则拿到一个segment去文件中获取数据。
+ * 3.最终调用close方法回收内存
+ *
+ *
+ * 支持从指定位置开始读取文件内容
  */
 public class SeekableFileChannelInputView extends AbstractPagedInputView {
 	
@@ -61,7 +68,17 @@ public class SeekableFileChannelInputView extends AbstractPagedInputView {
 	private int numBlocksRemaining;
 	
 	// --------------------------------------------------------------------------------------------
-	
+
+	/**
+	 *
+	 * @param ioManager
+	 * @param channelId  读取channelId文件
+	 *
+	 * @param memManager  如何回收内存
+	 * @param memory  读取文件到memory中,因此需要现申请存储文件的内存集合
+	 * @param sizeOfLastBlock
+	 * @throws IOException
+	 */
 	public SeekableFileChannelInputView(IOManager ioManager, FileIOChannel.ID channelId, MemoryManager memManager, List<MemorySegment> memory, int sizeOfLastBlock) throws IOException {
 		super(0);
 		
@@ -99,7 +116,8 @@ public class SeekableFileChannelInputView extends AbstractPagedInputView {
 			throw e;
 		}
 	}
-	
+
+	//支持从指定位置开始读取文件内容
 	public void seek(long position) throws IOException {
 		final int block = MathUtils.checkedDownCast(position / segmentSize);
 		final int positionInBlock = (int) (position % segmentSize);

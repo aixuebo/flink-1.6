@@ -31,12 +31,14 @@ import org.apache.flink.util.MathUtils;
 /**
  * The list with the full segments contains at any point all completely full segments, plus the segment that is
  * currently filled.
+ *
+ * 简单是基于内存的方式,存储segment
  */
 public class SimpleCollectingOutputView extends AbstractPagedOutputView {
 	
-	private final List<MemorySegment> fullSegments;
+	private final List<MemorySegment> fullSegments;//已经写完的segment
 	
-	private final MemorySegmentSource memorySource;
+	private final MemorySegmentSource memorySource;//拿到待存储数据的segment
 	
 	private final int segmentSizeBits;
 	
@@ -67,7 +69,8 @@ public class SimpleCollectingOutputView extends AbstractPagedOutputView {
 		}
 		this.segmentNum = 0;
 	}
-	
+
+	//存储segment,切换下一个空的segment
 	@Override
 	protected MemorySegment nextSegment(MemorySegment current, int positionInCurrent) throws EOFException {
 		final MemorySegment next = this.memorySource.nextSegment();
@@ -79,7 +82,8 @@ public class SimpleCollectingOutputView extends AbstractPagedOutputView {
 			throw new EOFException();
 		}
 	}
-	
+
+	//已经写入了多少个字节
 	public long getCurrentOffset() {
 		return (((long) this.segmentNum) << this.segmentSizeBits) + getCurrentPositionInSegment();
 	}

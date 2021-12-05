@@ -26,6 +26,7 @@ import org.apache.flink.core.memory.MemorySegment;
  *
  */
 public interface BulkBlockChannelReader extends FileIOChannel {
-	
+
+	//返回读取的所有数据块
 	List<MemorySegment> getFullSegments();
 }

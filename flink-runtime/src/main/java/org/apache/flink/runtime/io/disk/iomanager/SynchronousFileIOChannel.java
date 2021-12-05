@@ -22,6 +22,10 @@ import java.io.IOException;
 
 /**
  * A base class for synchronous readers and writers.
+ * 同步的方式向文件中写入数据
+ * 拿到fileChannel文件流后,子类自己操作文件的读写
+ * fileChannel.read(ByteBuffer);
+ * fileChannel.write(ByteBuffer);
  */
 public abstract class SynchronousFileIOChannel extends AbstractFileIOChannel {
 	
@@ -30,12 +34,14 @@ public abstract class SynchronousFileIOChannel extends AbstractFileIOChannel {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+
+	//能否关闭
 	@Override
 	public boolean isClosed() {
 		return !this.fileChannel.isOpen();
 	}
-	
+
+	//真实关闭操作
 	@Override
 	public void close() throws IOException {
 		if (this.fileChannel.isOpen()) {

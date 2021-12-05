@@ -22,12 +22,16 @@ import org.apache.flink.runtime.io.network.buffer.Buffer;
 
 import java.io.IOException;
 
+//读取文件
 public interface BufferFileReader extends FileIOChannel {
 
+	//读取数据到buffer参数中
 	void readInto(Buffer buffer) throws IOException;
 
+	//跳跃到position位置
 	void seekToPosition(long position) throws IOException;
 
+	//是否到文件结尾
 	boolean hasReachedEndOfFile();
 
 }

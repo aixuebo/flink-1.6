@@ -23,6 +23,7 @@ import org.apache.flink.runtime.io.network.buffer.Buffer;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+//异步的方式,读取一个buffer内容,即调用完后，只是发送了一个请求，不会同步等待结果返回。
 public class AsynchronousBufferFileReader extends AsynchronousFileIOChannel<Buffer, ReadRequest> implements BufferFileReader {
 
 	private final AtomicBoolean hasReachedEndOfFile = new AtomicBoolean();

@@ -36,6 +36,15 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * making it effectively a data input stream. The view reads it data in blocks from the underlying channel.
  * The view can read data that has been written by a {@link FileChannelOutputView}, or that was written in blocks
  * in another fashion.
+ *
+ * 读取一个文件,一次性读取List<MemorySegment> memory个数据回来,慢慢消化。调用getString等方式可以正常读取数据
+ *
+ *
+ * 1.初始化一组List<MemorySegment>,用于临时存储读取的字节数组。
+ * 2.正常调用reader.readBlock(seg)方法,异步读取数据到MemorySegment。
+ * 3.不断调用read方法读取字节内容。当segment没有内容时,调用下一个方法
+ * 4.MemorySegment nextSegment(MemorySegment current) 获取下一个读满的segment
+ * 5.最终close方法，回收MemorySegment的内存
  */
 public class FileChannelInputView extends AbstractPagedInputView {
 	
@@ -52,7 +61,15 @@ public class FileChannelInputView extends AbstractPagedInputView {
 	private int numBlocksRemaining;
 	
 	// --------------------------------------------------------------------------------------------
-	
+
+	/**
+	 *
+	 * @param reader 如何读取file文件内容
+	 * @param memManager 用于释放segment内存
+	 * @param memory 用于读取文件内容的segment集合，预先申请一批segment代用
+	 * @param sizeOfLastBlock
+	 * @throws IOException
+	 */
 	public FileChannelInputView(BlockChannelReader<MemorySegment> reader, MemoryManager memManager, List<MemorySegment> memory, int sizeOfLastBlock) throws IOException {
 		super(0);
 		
@@ -68,18 +85,18 @@ public class FileChannelInputView extends AbstractPagedInputView {
 		this.sizeOfLastBlock = sizeOfLastBlock;
 		
 		try {
-			final long channelLength = reader.getSize();
-			final int segmentSize = memManager.getPageSize();
+			final long channelLength = reader.getSize();//文件总大小
+			final int segmentSize = memManager.getPageSize();//每一个segment的固定大小
 			
-			this.numBlocksRemaining = MathUtils.checkedDownCast(channelLength / segmentSize);
-			if (channelLength % segmentSize != 0) {
+			this.numBlocksRemaining = MathUtils.checkedDownCast(channelLength / segmentSize);//多少个segment
+			if (channelLength % segmentSize != 0) {//最后一个数据块没装满segment
 				this.numBlocksRemaining++;
 			}
 			
 			this.numRequestsRemaining = numBlocksRemaining;
 			
 			for (int i = 0; i < memory.size(); i++) {
-				sendReadRequest(memory.get(i));
+				sendReadRequest(memory.get(i));//先读取N个segment数据
 			}
 			
 			advance();
@@ -108,12 +125,13 @@ public class FileChannelInputView extends AbstractPagedInputView {
 			}
 		} finally {
 			synchronized (memory) {
-				memManager.release(memory);
+				memManager.release(memory);//释放内存
 				memory.clear();
 			}
 		}
 	}
-	
+
+	//填充参数segment数据,返回上一个填充好的segment
 	@Override
 	protected MemorySegment nextSegment(MemorySegment current) throws IOException {
 		// check for end-of-stream
@@ -129,7 +147,7 @@ public class FileChannelInputView extends AbstractPagedInputView {
 		
 		// get the next segment
 		numBlocksRemaining--;
-		return reader.getNextReturnedBlock();
+		return reader.getNextReturnedBlock();//阻塞,读取下一个有数据的segment
 	}
 	
 	@Override

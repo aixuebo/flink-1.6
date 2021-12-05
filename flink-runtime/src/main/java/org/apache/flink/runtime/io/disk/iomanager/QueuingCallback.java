@@ -23,10 +23,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * A {@link RequestDoneCallback} that adds the memory segments to a blocking queue.
+ * 持有一个队列,向该队列添加数据。(当完成请求成功和失败时的动作)
  */
 public class QueuingCallback<T> implements RequestDoneCallback<T> {
 
-	private final LinkedBlockingQueue<T> queue;
+	private final LinkedBlockingQueue<T> queue;//存储已经完成读取的数据队列
 
 	public QueuingCallback(LinkedBlockingQueue<T> queue) {
 		this.queue = queue;

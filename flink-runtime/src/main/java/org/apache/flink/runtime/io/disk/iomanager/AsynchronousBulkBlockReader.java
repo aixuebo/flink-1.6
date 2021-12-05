@@ -25,11 +25,11 @@ import java.util.List;
 import org.apache.flink.core.memory.MemorySegment;
 
 /**
- *
+ * 批量获取多个数据块
  */
 public class AsynchronousBulkBlockReader extends AsynchronousFileIOChannel<MemorySegment, ReadRequest> implements BulkBlockChannelReader {
 	
-	private final ArrayList<MemorySegment> returnBuffers;
+	private final ArrayList<MemorySegment> returnBuffers;//已经读取成功的数据块
 	
 	
 	protected AsynchronousBulkBlockReader(FileIOChannel.ID channelID, RequestQueue<ReadRequest> requestQueue, 
@@ -38,7 +38,16 @@ public class AsynchronousBulkBlockReader extends AsynchronousFileIOChannel<Memor
 	{
 		this (channelID, requestQueue, sourceSegments, numBlocks, new ArrayList<MemorySegment>(numBlocks));
 	}
-	
+
+	/**
+	 *
+	 * @param channelID 从文件中读取数据
+	 * @param requestQueue 请求队列，用于存储读取请求
+	 * @param sourceSegments 空的MemorySegment,用于存储数据块
+	 * @param numBlocks 目标要读取多少个数据块
+	 * @param target 用于存储每一个成功读取的数据块集合
+	 * @throws IOException
+	 */
 	private AsynchronousBulkBlockReader(FileIOChannel.ID channelID, RequestQueue<ReadRequest> requestQueue, 
 			List<MemorySegment> sourceSegments, int numBlocks, ArrayList<MemorySegment> target)
 	throws IOException
@@ -61,7 +70,8 @@ public class AsynchronousBulkBlockReader extends AsynchronousFileIOChannel<Memor
 	private void readBlock(MemorySegment segment) throws IOException {
 		addRequest(new SegmentReadRequest(this, segment));
 	}
-	
+
+	//返回读取的所有数据块
 	@Override
 	public List<MemorySegment> getFullSegments() {
 		synchronized (this.closeLock) {
@@ -74,10 +84,10 @@ public class AsynchronousBulkBlockReader extends AsynchronousFileIOChannel<Memor
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//回调函数
 	private static final class CollectingCallback implements RequestDoneCallback<MemorySegment> {
 		
-		private final ArrayList<MemorySegment> list;
+		private final ArrayList<MemorySegment> list;//存储已经读取成功的数据块
 
 		public CollectingCallback(ArrayList<MemorySegment> list) {
 			this.list = list;

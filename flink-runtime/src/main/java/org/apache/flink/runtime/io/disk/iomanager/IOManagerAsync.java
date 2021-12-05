@@ -33,20 +33,24 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * A version of the {@link IOManager} that uses asynchronous I/O.
+ * 1.在本地开N个目录,用于存储数据，以文件的形式存储。
+ * 2.每一个目录有一个读线程 && 一个写线程。
+ * 3.由于每一个目录下读写是单线程的，因此不存在并发写数据，因此在线程内持有一个队列，循环依次从队列中取request请求,执行读写操作。
+ * 4.当close时,一些请求request尚未完成,则以request.requestDone(ioex)方式，通知上有任务执行失败。
  */
 public class IOManagerAsync extends IOManager implements UncaughtExceptionHandler {
 	
 	/** The writer threads used for asynchronous block oriented channel writing. */
-	private final WriterThread[] writers;
+	private final WriterThread[] writers;//每一个root目录分配一个写的线程
 
 	/** The reader threads used for asynchronous block oriented channel reading. */
-	private final ReaderThread[] readers;
+	private final ReaderThread[] readers;//每一个root目录分配一个读的线程
 
 	/** Flag to signify that the IOManager has been shut down already */
 	private final AtomicBoolean isShutdown = new AtomicBoolean();
 
 	/** Shutdown hook to make sure that the directories are removed on exit */
-	private final Thread shutdownHook;
+	private final Thread shutdownHook;//shutdown的hook线程
 
 	
 	// -------------------------------------------------------------------------
@@ -78,7 +82,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		super(tempDirs);
 		
 		// start a write worker thread for each directory
-		this.writers = new WriterThread[tempDirs.length];
+		this.writers = new WriterThread[tempDirs.length];//每一个目录是单线程的写入数据,因此只要保证接收的是有顺序即可,不能存在网络延迟导致的乱序即可
 		for (int i = 0; i < this.writers.length; i++) {
 			final WriterThread t = new WriterThread();
 			this.writers[i] = t;
@@ -166,6 +170,7 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	 * to be properly shut down when it is closed and its threads have ceased operation.
 	 * 
 	 * @return True, if the IO manager has properly shut down, false otherwise.
+	 * true表示完美的完成的shutdown动作
 	 */
 	@Override
 	public boolean isProperlyShutDown() {
@@ -192,7 +197,16 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	// ------------------------------------------------------------------------
 	//                        Reader / Writer instantiations
 	// ------------------------------------------------------------------------
-	
+
+	/**
+	 * 向文件中写入MemorySegment格式的数据
+	 * @param channelID The descriptor for the channel to write to.向该文件写入数据
+	 * @param returnQueue The queue to put the written buffers into.存储已经成功写入的MemorySegment
+	 * @return
+	 * @throws IOException
+	 * 比下面的方法,提供更多的选择,比如可以获取已经完成的数据块。
+	 * 下面的方法只能保存一个数据块
+	 */
 	@Override
 	public BlockChannelWriter<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID,
 								LinkedBlockingQueue<MemorySegment> returnQueue) throws IOException
@@ -200,7 +214,15 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		checkState(!isShutdown.get(), "I/O-Manger is shut down.");
 		return new AsynchronousBlockWriter(channelID, this.writers[channelID.getThreadNum()].requestQueue, returnQueue);
 	}
-	
+
+	/**
+	 * 向文件中写入MemorySegment格式的数据
+	 * @param channelID The descriptor for the channel to write to.
+	 * @param callback The callback to be called for 自定义回调函数
+	 * @return
+	 * @throws IOException
+	 * 只能保存一个数据块，回调函数自定义处理保存成功与否的逻辑
+	 */
 	@Override
 	public BlockChannelWriterWithCallback<MemorySegment> createBlockChannelWriter(FileIOChannel.ID channelID, RequestDoneCallback<MemorySegment> callback) throws IOException {
 		checkState(!isShutdown.get(), "I/O-Manger is shut down.");
@@ -212,10 +234,11 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	 * such that a read request is accepted, carried out at some (close) point in time, and the full segment
 	 * is pushed to the given queue.
 	 * 
-	 * @param channelID The descriptor for the channel to write to.
-	 * @param returnQueue The queue to put the full buffers into.
+	 * @param channelID The descriptor for the channel to write to.待读取的文件
+	 * @param returnQueue The queue to put the full buffers into.返回已经读取完成的数据块
 	 * @return A block channel reader that reads from the given channel.
 	 * @throws IOException Thrown, if the channel for the reader could not be opened.
+	 * 以MemorySegment的方式读取数据
 	 */
 	@Override
 	public BlockChannelReader<MemorySegment> createBlockChannelReader(FileIOChannel.ID channelID,
@@ -225,6 +248,12 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		return new AsynchronousBlockReader(channelID, this.readers[channelID.getThreadNum()].requestQueue, returnQueue);
 	}
 
+	/**
+	 * 以Buffer的形式写入数据到channelID中
+	 * @param channelID 要写入的文件
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public BufferFileWriter createBufferFileWriter(FileIOChannel.ID channelID) throws IOException {
 		checkState(!isShutdown.get(), "I/O-Manger is shut down.");
@@ -232,6 +261,13 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		return new AsynchronousBufferFileWriter(channelID, writers[channelID.getThreadNum()].requestQueue);
 	}
 
+	/**
+	 * 以Buffer的形式读取数据
+	 * @param channelID 要读取的文件
+	 * @param callback 读取的数据如何处理回调函数
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public BufferFileReader createBufferFileReader(FileIOChannel.ID channelID, RequestDoneCallback<Buffer> callback) throws IOException {
 		checkState(!isShutdown.get(), "I/O-Manger is shut down.");
@@ -239,6 +275,13 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 		return new AsynchronousBufferFileReader(channelID, readers[channelID.getThreadNum()].requestQueue, callback);
 	}
 
+	/**
+	 * 以BufferFile的方式读取文件
+	 * @param channelID 要读取的文件
+	 * @param callback 读取的数据如何处理回调函数
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public BufferFileSegmentReader createBufferFileSegmentReader(FileIOChannel.ID channelID, RequestDoneCallback<FileSegment> callback) throws IOException {
 		checkState(!isShutdown.get(), "I/O-Manger is shut down.");
@@ -272,11 +315,12 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	// -------------------------------------------------------------------------
 	//                             For Testing
 	// -------------------------------------------------------------------------
-	
+	//获取文件第几个目录的请求队列
 	RequestQueue<ReadRequest> getReadRequestQueue(FileIOChannel.ID channelID) {
 		return this.readers[channelID.getThreadNum()].requestQueue;
 	}
-	
+
+	//获取向第几个目录写数据的队列
 	RequestQueue<WriteRequest> getWriteRequestQueue(FileIOChannel.ID channelID) {
 		return this.writers[channelID.getThreadNum()].requestQueue;
 	}
@@ -392,10 +436,11 @@ public class IOManagerAsync extends IOManager implements UncaughtExceptionHandle
 	
 	/**
 	 * A worker thread that asynchronously writes the buffers to disk.
+	 * 异步的将数据写入到磁盘
 	 */
 	private static final class WriterThread extends Thread {
 		
-		protected final RequestQueue<WriteRequest> requestQueue;
+		protected final RequestQueue<WriteRequest> requestQueue;//接收向该磁盘写入数据的请求
 
 		private volatile boolean alive;
 
