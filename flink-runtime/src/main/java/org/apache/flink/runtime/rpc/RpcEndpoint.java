@@ -52,6 +52,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>The RPC endpoint provides provides {@link #runAsync(Runnable)}, {@link #callAsync(Callable, Time)}
  * and the {@link #getMainThreadExecutor()} to execute code in the RPC endpoint's main thread.
+ *
+ * 子类实现该接口对外提供的服务。三大组件服务接口的公共类
  */
 public abstract class RpcEndpoint implements RpcGateway {
 
@@ -60,13 +62,13 @@ public abstract class RpcEndpoint implements RpcGateway {
 	// ------------------------------------------------------------------------
 
 	/** RPC service to be used to start the RPC server and to obtain rpc gateways. */
-	private final RpcService rpcService;
+	private final RpcService rpcService;//PRC的工具类
 
 	/** Unique identifier for this rpc endpoint. */
-	private final String endpointId;
+	private final String endpointId;//resourcemanager 或者 dispatcher 等uuid唯一标识
 
 	/** Interface to access the underlying rpc server. */
-	protected final RpcServer rpcServer;
+	protected final RpcServer rpcServer;//通过rpcService工具类,在本地开放一个接口服务,对外开放，有网关信息、开启/关闭服务方法、调用线程池的方法
 
 	/** A reference to the endpoint's main thread, if the current method is called by the main thread. */
 	final AtomicReference<Thread> currentMainThread = new AtomicReference<>(null);

@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 
 /**
  * Message for asynchronous callable invocations
+ * 异步的方式执行一个任务
  */
 public final class CallAsync implements Serializable {
 	private static final long serialVersionUID = 2834204738928484060L;

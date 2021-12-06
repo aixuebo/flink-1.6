@@ -38,6 +38,7 @@ public interface MainThreadExecutable {
 	 * Execute the runnable in the main thread of the underlying RPC endpoint.
 	 *
 	 * @param runnable Runnable to be executed
+	 * 异步的方式,执行Runnable,无返回值
 	 */
 	void runAsync(Runnable runnable);
 
@@ -50,6 +51,7 @@ public interface MainThreadExecutable {
 	 * @param callTimeout Timeout for the future to complete
 	 * @param <V> Return value of the callable
 	 * @return Future of the callable result
+	 * 异步的方式,执行Callable,有返回值
 	 */
 	<V> CompletableFuture<V> callAsync(Callable<V> callable, Time callTimeout);
 
@@ -59,6 +61,7 @@ public interface MainThreadExecutable {
 	 *
 	 * @param runnable Runnable to be executed
 	 * @param delay    The delay, in milliseconds, after which the runnable will be executed
+	 * 异步的方式,执行Runnable,无返回值
 	 */
 	void scheduleRunAsync(Runnable runnable, long delay);
 }

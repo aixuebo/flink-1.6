@@ -49,10 +49,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * with the {@link FencedRpcEndpoint}. The fencing is done by wrapping all messages in a {@link FencedMessage}.
  *
  * @param <F> type of the fencing token
+ *
+ * 动态代理的方式实现RPC。
+ * 客户端与服务器之间传递的对象是F
+ *
+ * 服务端持有该对象
  */
 public class FencedAkkaInvocationHandler<F extends Serializable> extends AkkaInvocationHandler implements FencedMainThreadExecutable, FencedRpcGateway<F> {
 
-	private final Supplier<F> fencingTokenSupplier;
+	private final Supplier<F> fencingTokenSupplier;//如何创建F对象
 
 	public FencedAkkaInvocationHandler(
 			String address,
@@ -61,7 +66,7 @@ public class FencedAkkaInvocationHandler<F extends Serializable> extends AkkaInv
 			Time timeout,
 			long maximumFramesize,
 			@Nullable CompletableFuture<Void> terminationFuture,
-			Supplier<F> fencingTokenSupplier) {
+			Supplier<F> fencingTokenSupplier) { //返回F泛型对象
 		super(address, hostname, rpcEndpoint, timeout, maximumFramesize, terminationFuture);
 
 		this.fencingTokenSupplier = Preconditions.checkNotNull(fencingTokenSupplier);
@@ -84,8 +89,7 @@ public class FencedAkkaInvocationHandler<F extends Serializable> extends AkkaInv
 		checkNotNull(runnable, "runnable");
 
 		if (isLocal) {
-			getActorRef().tell(
-				new UnfencedMessage<>(new RunAsync(runnable, 0L)), ActorRef.noSender());
+			getActorRef().tell(new UnfencedMessage<>(new RunAsync(runnable, 0L)), ActorRef.noSender());//tell不需要回复,所以没有发送者
 		} else {
 			throw new RuntimeException("Trying to send a Runnable to a remote actor at " +
 				getActorRef().path() + ". This is not supported.");
@@ -122,6 +126,7 @@ public class FencedAkkaInvocationHandler<F extends Serializable> extends AkkaInv
 		return super.ask(fenceMessage(message), timeout);
 	}
 
+	//创建一个F对象
 	@Override
 	public F getFencingToken() {
 		return fencingTokenSupplier.get();

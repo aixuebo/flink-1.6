@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
  * Interface for rpc services. An rpc service is used to start and connect to a {@link RpcEndpoint}.
  * Connecting to a rpc server will return a {@link RpcGateway} which can be used to call remote
  * procedures.
+ * 本地的一个工具类对象,该服务不是服务器,而是提供了若干种工具包,可以连接到远程服务器,对本地来说,感觉是透明的,因此属于RPC服务
  */
 public interface RpcService {
 
@@ -40,6 +41,7 @@ public interface RpcService {
 	 * If the rpc service cannot be contacted remotely, then it will return an empty string.
 	 *
 	 * @return Address of the rpc service or empty string if local rpc service
+	 * RpcService服务器启动的ip以及端口，可以在该ip上创造服务接口 以及 通过该ip连接其他服务器
 	 */
 	String getAddress();
 
@@ -61,6 +63,7 @@ public interface RpcService {
 	 * @param <C> Type of the rpc gateway to return
 	 * @return Future containing the rpc gateway or an {@link RpcConnectionException} if the
 	 * connection attempt failed
+	 * 连接远程服务器，返回class对象
 	 */
 	<C extends RpcGateway> CompletableFuture<C> connect(
 		String address,
@@ -78,6 +81,7 @@ public interface RpcService {
 	 * @param <C> Type of the rpc gateway to return
 	 * @return Future containing the fenced rpc gateway or an {@link RpcConnectionException} if the
 	 * connection attempt failed
+	 * 连接远程服务器，双方交互传输的对象是支持序列化的F对象，返回class对象
 	 */
 	<F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(
 		String address,
@@ -90,6 +94,7 @@ public interface RpcService {
 	 * @param rpcEndpoint Rpc protocol to dispatch the rpcs to
 	 * @param <C> Type of the rpc endpoint
 	 * @return Self gateway to dispatch remote procedure calls to oneself
+	 * 服务器上具体开启一个接口服务，该服务可以对外提供远程RPC调用
 	 */
 	<C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint);
 

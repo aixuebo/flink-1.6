@@ -23,6 +23,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * Message for asynchronous runnable invocations
+ * 异步执行一个任务
  */
 public final class RunAsync {
 

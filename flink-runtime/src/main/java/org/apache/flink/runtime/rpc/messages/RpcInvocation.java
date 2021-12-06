@@ -23,6 +23,11 @@ import java.io.IOException;
 /**
  * Interface for rpc invocation messages. The interface allows to request all necessary information
  * to lookup a method and call it with the corresponding arguments.
+ *
+ * RPC服务,客户端与服务端之间传输的对象,必须序列化
+ *
+ * 客户端与服务端传递远程调用方法的时候，序列化/反序列化的对象。
+ * 支持序列化方法、参数类型、参数值
  */
 public interface RpcInvocation {
 

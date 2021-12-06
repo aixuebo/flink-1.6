@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc;
 
 /**
  * Handler for fatal errors.
+ * 如何处理错误异常信息
  */
 public interface FatalErrorHandler {
 

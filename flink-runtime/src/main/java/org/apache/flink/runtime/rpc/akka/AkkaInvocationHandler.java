@@ -57,6 +57,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * Invocation handler to be used with an {@link AkkaRpcActor}. The invocation handler wraps the
  * rpc in a {@link LocalRpcInvocation} message and then sends it to the {@link AkkaRpcActor} where it is
  * executed.
+ *
+ * 动态代理的方式实现RPC
+ *
+ * 客户端持有该对象
  */
 class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, RpcServer {
 	private static final Logger LOG = LoggerFactory.getLogger(AkkaInvocationHandler.class);
@@ -64,27 +68,31 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	/**
 	 * The Akka (RPC) address of {@link #rpcEndpoint} including host and port of the ActorSystem in
 	 * which the actor is running.
+	 * 作为客户端上的代理:远程连接的服务器的ip
+	 * 作为服务器上的代理:服务器接口对应的地址,即本地地址
 	 */
 	private final String address;
 
 	/**
 	 * Hostname of the host, {@link #rpcEndpoint} is running on.
+	 * 远程连接的服务器的host
 	 */
 	private final String hostname;
 
-	private final ActorRef rpcEndpoint;
+	//与远程服务器的连接connect对象
+	private final ActorRef rpcEndpoint;//代理类，服务器在本地的代理类，或者本地接口服务对应的类
 
 	// whether the actor ref is local and thus no message serialization is needed
-	protected final boolean isLocal;
+	protected final boolean isLocal;//代理类是否也在同一节点上运行的,true表示远程节点 是不是就是本地节点
 
 	// default timeout for asks
 	private final Time timeout;
 
-	private final long maximumFramesize;
+	private final long maximumFramesize;//最大的传输字节,超过该字节，不允许传输
 
 	// null if gateway; otherwise non-null
 	@Nullable
-	private final CompletableFuture<Void> terminationFuture;
+	private final CompletableFuture<Void> terminationFuture;//与远程对象传输的可序列化对象
 
 	AkkaInvocationHandler(
 			String address,
@@ -113,7 +121,8 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 			declaringClass.equals(Object.class) ||
 			declaringClass.equals(RpcGateway.class) ||
 			declaringClass.equals(StartStoppable.class) ||
-			declaringClass.equals(MainThreadExecutable.class) ||
+			declaringClass.equals(MainThreadExecutable.class) || //当让远程服务器运行一个Runnable、Callable时,由于本身不能序列化,因此无法做到。
+																//但当远程服务器和本地服务器,都在同一台服务器上,这就可以做到了.即rpcEndpoint虽然是远程服务器,但他也可以当本地服务器用
 			declaringClass.equals(RpcServer.class)) {
 			result = method.invoke(this, args);
 		} else if (declaringClass.equals(FencedRpcGateway.class)) {
@@ -122,7 +131,7 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 				"fencing token. Please use RpcService#connect(RpcService, F, Time) with F being the fencing token to " +
 				"retrieve a properly FencedRpcGateway.");
 		} else {
-			result = invokeRpc(method, args);
+			result = invokeRpc(method, args);//远程RPC调用，把需要的信息发送给远程
 		}
 
 		return result;
@@ -133,11 +142,13 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 		return rpcEndpoint;
 	}
 
+	//异步的方式执行一个任务
 	@Override
 	public void runAsync(Runnable runnable) {
 		scheduleRunAsync(runnable, 0L);
 	}
 
+	//异步的方式执行一个任务---无返回值
 	@Override
 	public void scheduleRunAsync(Runnable runnable, long delayMillis) {
 		checkNotNull(runnable, "runnable");
@@ -145,13 +156,14 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 
 		if (isLocal) {
 			long atTimeNanos = delayMillis == 0 ? 0 : System.nanoTime() + (delayMillis * 1_000_000);
-			tell(new RunAsync(runnable, atTimeNanos));
+			tell(new RunAsync(runnable, atTimeNanos));//异步执行一个任务
 		} else {
 			throw new RuntimeException("Trying to send a Runnable to a remote actor at " +
-				rpcEndpoint.path() + ". This is not supported.");
+				rpcEndpoint.path() + ". This is not supported.");//尝试发送一个Runnable去远程服务器.是不允许的，因为Runnable不支持序列化
 		}
 	}
 
+	//异步的方式执行一个任务 -- 有返回值
 	@Override
 	public <V> CompletableFuture<V> callAsync(Callable<V> callable, Time callTimeout) {
 		if (isLocal) {
@@ -161,7 +173,7 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 			return resultFuture;
 		} else {
 			throw new RuntimeException("Trying to send a Callable to a remote actor at " +
-				rpcEndpoint.path() + ". This is not supported.");
+				rpcEndpoint.path() + ". This is not supported.");//尝试发送一个Callable去远程服务器.是不允许的，因为Runnable不支持序列化
 		}
 	}
 
@@ -188,29 +200,29 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	 * @throws Exception if the RPC invocation fails
 	 */
 	private Object invokeRpc(Method method, Object[] args) throws Exception {
+
+		//带着方法名、参数类型、参数值等信息创建RPC
 		String methodName = method.getName();
 		Class<?>[] parameterTypes = method.getParameterTypes();
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-		Time futureTimeout = extractRpcTimeout(parameterAnnotations, args, timeout);
+		Time futureTimeout = extractRpcTimeout(parameterAnnotations, args, timeout);//获取RpcTimeout注解对应的值
 
-		final RpcInvocation rpcInvocation = createRpcInvocationMessage(methodName, parameterTypes, args);
+		final RpcInvocation rpcInvocation = createRpcInvocationMessage(methodName, parameterTypes, args);//可序列化的对象,支持客户端与服务端之间的传输
 
 		Class<?> returnType = method.getReturnType();
 
 		final Object result;
 
 		if (Objects.equals(returnType, Void.TYPE)) {
-			tell(rpcInvocation);
-
+			tell(rpcInvocation);//无返回值,则直接发送异步请求tell即可
 			result = null;
-		} else if (Objects.equals(returnType, CompletableFuture.class)) {
+		} else if (Objects.equals(returnType, CompletableFuture.class)) {//返回异步对象,后期程序自己获取异步对象返回值
 			// execute an asynchronous call
-			result = ask(rpcInvocation, futureTimeout);
+			result = ask(rpcInvocation, futureTimeout);//设置超时时间,返回CompletableFuture对象
 		} else {
 			// execute a synchronous call
 			CompletableFuture<?> futureResult = ask(rpcInvocation, futureTimeout);
-
-			result = futureResult.get(futureTimeout.getSize(), futureTimeout.getUnit());
+			result = futureResult.get(futureTimeout.getSize(), futureTimeout.getUnit());//同步等待返回值
 		}
 
 		return result;
@@ -224,6 +236,7 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	 * @param args of the RPC
 	 * @return RpcInvocation message which encapsulates the RPC details
 	 * @throws IOException if we cannot serialize the RPC invocation parameters
+	 * 可序列化的对象,支持客户端与服务端之间的传输
 	 */
 	protected RpcInvocation createRpcInvocationMessage(
 			final String methodName,
@@ -232,18 +245,18 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 		final RpcInvocation rpcInvocation;
 
 		if (isLocal) {
-			rpcInvocation = new LocalRpcInvocation(
+			rpcInvocation = new LocalRpcInvocation(//因为是本地的执行代理,所以不需要序列化
 				methodName,
 				parameterTypes,
 				args);
 		} else {
 			try {
-				RemoteRpcInvocation remoteRpcInvocation = new RemoteRpcInvocation(
+				RemoteRpcInvocation remoteRpcInvocation = new RemoteRpcInvocation(//因为是远程的执行代理,因此需要序列化
 					methodName,
 					parameterTypes,
 					args);
 
-				if (remoteRpcInvocation.getSize() > maximumFramesize) {
+				if (remoteRpcInvocation.getSize() > maximumFramesize) {//超过了传输字节的限制
 					throw new IOException("The rpc invocation size exceeds the maximum akka framesize.");
 				} else {
 					rpcInvocation = remoteRpcInvocation;
@@ -269,8 +282,9 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	 * @param parameterAnnotations Parameter annotations
 	 * @param args Array of arguments
 	 * @param defaultTimeout Default timeout to return if no {@link RpcTimeout} annotated parameter
-	 *                       has been found
+	 *                       has been found  默认值
 	 * @return Timeout extracted from the array of arguments or the default timeout
+	 * 获取注解RpcTimeout对应的值
 	 */
 	private static Time extractRpcTimeout(Annotation[][] parameterAnnotations, Object[] args, Time defaultTimeout) {
 		if (args != null) {
@@ -312,6 +326,7 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	 * Sends the message to the RPC endpoint.
 	 *
 	 * @param message to send to the RPC endpoint.
+	 * 向服务器异步发送信息,无返回值
 	 */
 	protected void tell(Object message) {
 		rpcEndpoint.tell(message, ActorRef.noSender());
@@ -324,6 +339,8 @@ class AkkaInvocationHandler implements InvocationHandler, AkkaBasedEndpoint, Rpc
 	 * @param message to send to the RPC endpoint
 	 * @param timeout time to wait until the response future is failed with a {@link TimeoutException}
 	 * @return Response future
+	 * 向服务器异步发送信息,但有返回值,返回值是Future模式
+	 *
 	 */
 	protected CompletableFuture<?> ask(Object message, Time timeout) {
 		return FutureUtils.toJava(

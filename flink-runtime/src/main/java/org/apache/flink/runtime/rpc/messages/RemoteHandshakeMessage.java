@@ -25,6 +25,7 @@ import java.io.Serializable;
 /**
  * Handshake message between rpc endpoints. This message can be used
  * to verify compatibility between different endpoints.
+ * 请求远程服务哪个网关对象 --- 用于判定是否支持class这个接口
  */
 public class RemoteHandshakeMessage implements Serializable {
 

@@ -70,13 +70,17 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * discarded.
  *
  * @param <T> Type of the {@link RpcEndpoint}
+ *
+ * 动态代理,服务器接收到客户端请求的方法、参数，调用真实的对象去执行
+ *
+ * 服务端持有该对象 --- 持有一个接口实现类RpcEndpoint
  */
 class AkkaRpcActor<T extends RpcEndpoint & RpcGateway> extends UntypedActor {
 
 	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	/** the endpoint to invoke the methods on. */
-	protected final T rpcEndpoint;
+	protected final T rpcEndpoint;//代理的具体接口服务实现类,具体动作还是rpcEndpoint来执行
 
 	/** the helper that tracks whether calls come from the main thread. */
 	private final MainThreadValidatorUtil mainThreadValidator;
@@ -129,7 +133,7 @@ class AkkaRpcActor<T extends RpcEndpoint & RpcGateway> extends UntypedActor {
 
 	@Override
 	public void onReceive(final Object message) {
-		if (message instanceof RemoteHandshakeMessage) {
+		if (message instanceof RemoteHandshakeMessage) { //用于判定是否支持class这个接口
 			handleHandshakeMessage((RemoteHandshakeMessage) message);
 		} else if (message.equals(Processing.START)) {
 			state = State.STARTED;
@@ -154,6 +158,8 @@ class AkkaRpcActor<T extends RpcEndpoint & RpcGateway> extends UntypedActor {
 	}
 
 	protected void handleRpcMessage(Object message) {
+		// 因为akka任务是单线程调用的，所以runnable不能执行太久,否则会卡住下游所有任务的执行。
+		// 同时不需要调用线程的start方法,因为是单线程一个个调用的，只需要执行run和call方法即可
 		if (message instanceof RunAsync) {
 			handleRunAsync((RunAsync) message);
 		} else if (message instanceof CallAsync) {
@@ -171,20 +177,21 @@ class AkkaRpcActor<T extends RpcEndpoint & RpcGateway> extends UntypedActor {
 		}
 	}
 
+	//用于判定是否支持class这个接口
 	private void handleHandshakeMessage(RemoteHandshakeMessage handshakeMessage) {
-		if (!isCompatibleVersion(handshakeMessage.getVersion())) {
+		if (!isCompatibleVersion(handshakeMessage.getVersion())) {//校验版本号
 			sendErrorIfSender(new AkkaHandshakeException(
 				String.format(
 					"Version mismatch between source (%s) and target (%s) rpc component. Please verify that all components have the same version.",
 					handshakeMessage.getVersion(),
 					getVersion())));
-		} else if (!isGatewaySupported(handshakeMessage.getRpcGateway())) {
+		} else if (!isGatewaySupported(handshakeMessage.getRpcGateway())) {//校验请求的class必须是rpcEndpoint的子类
 			sendErrorIfSender(new AkkaHandshakeException(
 				String.format(
 					"The rpc endpoint does not support the gateway %s.",
 					handshakeMessage.getRpcGateway().getSimpleName())));
 		} else {
-			getSender().tell(new Status.Success(HandshakeSuccessMessage.INSTANCE), getSelf());
+			getSender().tell(new Status.Success(HandshakeSuccessMessage.INSTANCE), getSelf());//说明校验成功,是支持的,发送给客户端回复
 		}
 	}
 
@@ -356,6 +363,7 @@ class AkkaRpcActor<T extends RpcEndpoint & RpcGateway> extends UntypedActor {
 	 * @return Method of the rpc endpoint
 	 * @throws NoSuchMethodException Thrown if the method with the given name and parameter types
 	 * 									cannot be found at the rpc endpoint
+	 * 查找代理的真正的方法，去执行
 	 */
 	private Method lookupRpcMethod(final String methodName, final Class<?>[] parameterTypes) throws NoSuchMethodException {
 		return rpcEndpoint.getClass().getMethod(methodName, parameterTypes);

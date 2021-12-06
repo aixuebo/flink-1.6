@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc;
 
 /**
  * Interface to start and stop the processing of rpc calls in the rpc server.
+ * 服务端的开启和关闭
  */
 public interface StartStoppable {
 

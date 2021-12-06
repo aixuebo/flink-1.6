@@ -79,6 +79,8 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * Akka based {@link RpcService} implementation. The RPC service starts an Akka actor to receive
  * RPC invocations from a {@link RpcGateway}.
+ *
+ * 对外开放一个服务 --- 服务端和客户端都有该服务
  */
 @ThreadSafe
 public class AkkaRpcService implements RpcService {
@@ -87,32 +89,34 @@ public class AkkaRpcService implements RpcService {
 
 	static final int VERSION = 1;
 
-	static final String MAXIMUM_FRAME_SIZE_PATH = "akka.remote.netty.tcp.maximum-frame-size";
+	static final String MAXIMUM_FRAME_SIZE_PATH = "akka.remote.netty.tcp.maximum-frame-size";//最大的传输字节的key
 
 	private final Object lock = new Object();
 
-	private final ActorSystem actorSystem;
+	private final ActorSystem actorSystem;//本节点服务
 	private final Time timeout;
 
+	//key是服务的tcp对应的serverSocket,即AkkaRpcActor,value是服务接口的实现类
+	//服务器端持有该属性,表示服务器上有哪些服务被开启了
 	@GuardedBy("lock")
 	private final Map<ActorRef, RpcEndpoint> actors = new HashMap<>(4);
 
-	private final long maximumFramesize;
+	private final long maximumFramesize;//最大的传输字节
 
-	private final String address;
+	private final String address;//服务对外的ip+port
 	private final int port;
 
 	private final ScheduledExecutor internalScheduledExecutor;
 
-	private final CompletableFuture<Void> terminationFuture;
+	private final CompletableFuture<Void> terminationFuture;//stop服务后,返回的Feature对象
 
-	private volatile boolean stopped;
+	private volatile boolean stopped;//是否本节点服务已经停止了
 
 	public AkkaRpcService(final ActorSystem actorSystem, final Time timeout) {
 		this.actorSystem = checkNotNull(actorSystem, "actor system");
 		this.timeout = checkNotNull(timeout, "timeout");
 
-		if (actorSystem.settings().config().hasPath(MAXIMUM_FRAME_SIZE_PATH)) {
+		if (actorSystem.settings().config().hasPath(MAXIMUM_FRAME_SIZE_PATH)) {//最大的传输字节的key
 			maximumFramesize = actorSystem.settings().config().getBytes(MAXIMUM_FRAME_SIZE_PATH);
 		} else {
 			// only local communication
@@ -159,6 +163,7 @@ public class AkkaRpcService implements RpcService {
 	}
 
 	// this method does not mutate state and is thus thread-safe
+	//返回一个服务器远程代理类 --- 该返回值只是一个服务器,该服务器上部署很多接口,当访问接口的时候,需要startServer方法
 	@Override
 	public <C extends RpcGateway> CompletableFuture<C> connect(
 			final String address,
@@ -167,7 +172,7 @@ public class AkkaRpcService implements RpcService {
 		return connectInternal(
 			address,
 			clazz,
-			(ActorRef actorRef) -> {
+			(ActorRef actorRef) -> {//传入actorRef,输出AkkaInvocationHandler
 				Tuple2<String, String> addressHostname = extractAddressHostname(actorRef);
 
 				return new AkkaInvocationHandler(
@@ -181,13 +186,24 @@ public class AkkaRpcService implements RpcService {
 	}
 
 	// this method does not mutate state and is thus thread-safe
+
+	/**
+	 * 请求远程服务器,返回网关对应的实例化对象
+	 * @param address Address of the remote rpc server 服务器地址
+	 * @param fencingToken Fencing token to be used when communicating with the server 与服务器交互的对象
+	 * @param clazz Class of the rpc gateway to return 要返回的对象
+	 * @return
+	 *
+	 * F extends Serializable,与服务器交互的对象是支持序列化的
+	 * C extends FencedRpcGateway<F> 返回的对象是网关对象的子类,并且该网关是接受F序列化对象的
+	 */
 	@Override
 	public <F extends Serializable, C extends FencedRpcGateway<F>> CompletableFuture<C> connect(String address, F fencingToken, Class<C> clazz) {
 		return connectInternal(
 			address,
 			clazz,
-			(ActorRef actorRef) -> {
-				Tuple2<String, String> addressHostname = extractAddressHostname(actorRef);
+			(ActorRef actorRef) -> {//传入actorRef,输出FencedAkkaInvocationHandler
+				Tuple2<String, String> addressHostname = extractAddressHostname(actorRef);//获取远程服务器的ip+host信息
 
 				return new FencedAkkaInvocationHandler<>(
 					addressHostname.f0,
@@ -200,29 +216,36 @@ public class AkkaRpcService implements RpcService {
 			});
 	}
 
+	/**
+	 * 服务器上具体开启一个接口服务，该服务可以对外提供远程RPC调用---服务度上调用该方法
+	 * @param rpcEndpoint Rpc protocol to dispatch the rpcs to 接口实现类--用于当服务器
+	 * @param <C>
+	 * @return 返回对外开放的一个服务器
+	 */
 	@Override
 	public <C extends RpcEndpoint & RpcGateway> RpcServer startServer(C rpcEndpoint) {
 		checkNotNull(rpcEndpoint, "rpc endpoint");
 
 		CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
-		final Props akkaRpcActorProps;
+		final Props akkaRpcActorProps;//创建一个代理该服务的代理类
 
 		if (rpcEndpoint instanceof FencedRpcEndpoint) {
-			akkaRpcActorProps = Props.create(FencedAkkaRpcActor.class, rpcEndpoint, terminationFuture, getVersion());
+			akkaRpcActorProps = Props.create(FencedAkkaRpcActor.class, rpcEndpoint, terminationFuture, getVersion());//创建class,以及class需要的对应的参数
 		} else {
-			akkaRpcActorProps = Props.create(AkkaRpcActor.class, rpcEndpoint, terminationFuture, getVersion());
+			akkaRpcActorProps = Props.create(AkkaRpcActor.class, rpcEndpoint, terminationFuture, getVersion());//构造AkkaRpcActor对象,后面是需要的参数
 		}
 
-		ActorRef actorRef;
+		ActorRef actorRef;//AkkaRpcActor实例的一个引用,该引用相当于tcp的serversocket
 
 		synchronized (lock) {
 			checkState(!stopped, "RpcService is stopped");
-			actorRef = actorSystem.actorOf(akkaRpcActorProps, rpcEndpoint.getEndpointId());
-			actors.put(actorRef, rpcEndpoint);
+			actorRef = actorSystem.actorOf(akkaRpcActorProps, rpcEndpoint.getEndpointId());//创建一个AkkaRpcActor class实例引用
+			actors.put(actorRef, rpcEndpoint);//key是服务tcp,value是服务接口对应实现类
 		}
 
 		LOG.info("Starting RPC endpoint for {} at {} .", rpcEndpoint.getClass().getName(), actorRef.path());
 
+		//该接口服务对外开放的地址
 		final String akkaAddress = AkkaUtils.getAkkaURL(actorSystem, actorRef);
 		final String hostname;
 		Option<String> host = actorRef.path().address().host();
@@ -237,6 +260,8 @@ public class AkkaRpcService implements RpcService {
 		implementedRpcGateways.add(RpcServer.class);
 		implementedRpcGateways.add(AkkaBasedEndpoint.class);
 
+
+		//代理反射类
 		final InvocationHandler akkaInvocationHandler;
 
 		if (rpcEndpoint instanceof FencedRpcEndpoint) {
@@ -266,6 +291,7 @@ public class AkkaRpcService implements RpcService {
 		// code is loaded dynamically (for example from an OSGI bundle) through a custom ClassLoader
 		ClassLoader classLoader = getClass().getClassLoader();
 
+		//返回服务的代理类
 		@SuppressWarnings("unchecked")
 		RpcServer server = (RpcServer) Proxy.newProxyInstance(
 			classLoader,
@@ -361,16 +387,19 @@ public class AkkaRpcService implements RpcService {
 		return terminationFuture;
 	}
 
+	//返回一个线程执行器
 	@Override
 	public Executor getExecutor() {
 		return actorSystem.dispatcher();
 	}
 
+	//返回本地的定时调度器
 	@Override
 	public ScheduledExecutor getScheduledExecutor() {
 		return internalScheduledExecutor;
 	}
 
+	//定时调度执行runnable
 	@Override
 	public ScheduledFuture<?> scheduleRunnable(Runnable runnable, long delay, TimeUnit unit) {
 		checkNotNull(runnable, "runnable");
@@ -380,14 +409,16 @@ public class AkkaRpcService implements RpcService {
 		return internalScheduledExecutor.schedule(runnable, delay, unit);
 	}
 
+	//具体执行一个无返回值的Runnable调度任务
 	@Override
 	public void execute(Runnable runnable) {
 		actorSystem.dispatcher().execute(runnable);
 	}
 
+	//具体执行一个有返回值的Callable调度任务
 	@Override
 	public <T> CompletableFuture<T> execute(Callable<T> callable) {
-		Future<T> scalaFuture = Futures.<T>future(callable, actorSystem.dispatcher());
+		Future<T> scalaFuture = Futures.<T>future(callable, actorSystem.dispatcher());//actorSystem.dispatcher() 返回Executor线程执行器
 
 		return FutureUtils.toJava(scalaFuture);
 	}
@@ -396,6 +427,10 @@ public class AkkaRpcService implements RpcService {
 	// Private helper methods
 	// ---------------------------------------------------------------------------------------
 
+	/**
+	 * 参数是已经连接到远程服务器endpoint的对象
+	 * 因此返回值是远程服务器的ip地址、host
+	 */
 	private Tuple2<String, String> extractAddressHostname(ActorRef actorRef) {
 		final String actorAddress = AkkaUtils.getAkkaURL(actorSystem, actorRef);
 		final String hostname;
@@ -409,16 +444,18 @@ public class AkkaRpcService implements RpcService {
 		return Tuple2.of(actorAddress, hostname);
 	}
 
+	//连接服务器,请求服务器的某一个接口(class可以确定接口),返回信息可以动态代理的方式实现PRC功能
 	private <C extends RpcGateway> CompletableFuture<C> connectInternal(
 			final String address,
 			final Class<C> clazz,
-			Function<ActorRef, InvocationHandler> invocationHandlerFactory) {
+			Function<ActorRef, InvocationHandler> invocationHandlerFactory) {//函数,传入ActorRef,输出InvocationHandler
 		checkState(!stopped, "RpcService is stopped");
 
 		LOG.debug("Try to connect to remote RPC endpoint with address {}. Returning a {} gateway.",
 			address, clazz.getName());
 
-		final ActorSelection actorSel = actorSystem.actorSelection(address);
+		//远程服务器的引用
+		final ActorSelection actorSel = actorSystem.actorSelection(address);//连接远程服务器,返回连接,可以从该连接中获取信息,信息在box里存储着
 
 		final Future<ActorIdentity> identify = Patterns
 			.ask(actorSel, new Identify(42), timeout.toMilliseconds())
@@ -435,11 +472,12 @@ public class AkkaRpcService implements RpcService {
 				}
 			});
 
+		//ask请求,并且有返回值 --- 返回是否有该class接口的网关
 		final CompletableFuture<HandshakeSuccessMessage> handshakeFuture = actorRefFuture.thenCompose(
 			(ActorRef actorRef) -> FutureUtils.toJava(
 				Patterns
-					.ask(actorRef, new RemoteHandshakeMessage(clazz, getVersion()), timeout.toMilliseconds())
-					.<HandshakeSuccessMessage>mapTo(ClassTag$.MODULE$.<HandshakeSuccessMessage>apply(HandshakeSuccessMessage.class))));
+					.ask(actorRef, new RemoteHandshakeMessage(clazz, getVersion()), timeout.toMilliseconds())//请求远程服务哪个网关对象
+					.<HandshakeSuccessMessage>mapTo(ClassTag$.MODULE$.<HandshakeSuccessMessage>apply(HandshakeSuccessMessage.class)))); //确保请求结果成功
 
 		return actorRefFuture.thenCombineAsync(
 			handshakeFuture,
@@ -451,6 +489,7 @@ public class AkkaRpcService implements RpcService {
 				// code is loaded dynamically (for example from an OSGI bundle) through a custom ClassLoader
 				ClassLoader classLoader = getClass().getClassLoader();
 
+				//返回class的动态代理
 				@SuppressWarnings("unchecked")
 				C proxy = (C) Proxy.newProxyInstance(
 					classLoader,

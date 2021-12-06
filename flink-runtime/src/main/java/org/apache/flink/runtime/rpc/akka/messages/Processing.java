@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rpc.akka.messages;
 
 /**
  * Controls the processing behaviour of the {@link org.apache.flink.runtime.rpc.akka.AkkaRpcActor}
+ * 通知服务器执行start、stop命令
  */
 public enum Processing  {
 	START, // Unstashes all stashed messages and starts processing incoming messages

@@ -46,6 +46,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * These RPC utilities contain helper methods around RPC use, such as starting an RPC service,
  * or constructing RPC addresses.
+ * 工具类,创建一个service服务(RPC客户端,允许该客户端连接其他RPC服务端)
+ *
+ * 根据akkaConfig配置信息,创建节点的ActorSystem对象。
+ * new AkkaRpcService(actorSystem, timeout)
  */
 public class AkkaRpcServiceUtils {
 
@@ -62,6 +66,7 @@ public class AkkaRpcServiceUtils {
 
 	/**
 	 * Utility method to create RPC service from configuration and hostname, port.
+	 * 创建一个RPC客户端
 	 *
 	 * @param hostname   The hostname/address that describes the TaskManager's data location.
 	 * @param port           If true, the TaskManager will not initiate the TCP network stack.
@@ -69,6 +74,11 @@ public class AkkaRpcServiceUtils {
 	 * @return   The rpc service which is used to start and connect to the TaskManager RpcEndpoint .
 	 * @throws IOException      Thrown, if the actor system can not bind to the address
 	 * @throws Exception      Thrown is some other error occurs while creating akka actor system
+	 *
+	 * 创建一个service服务(RPC客户端,允许该客户端连接其他RPC服务端)
+	 *
+	 * 根据akkaConfig配置信息,创建节点的ActorSystem对象。
+	 * new AkkaRpcService(actorSystem, timeout)
 	 */
 	public static RpcService createRpcService(String hostname, int port, Configuration configuration) throws Exception {
 		LOG.info("Starting AkkaRpcService at {}.", NetUtils.unresolvedHostAndPortToNormalizedString(hostname, port));
@@ -119,6 +129,7 @@ public class AkkaRpcServiceUtils {
 	 * @param config The configuration from which to deduce further settings.
 	 *
 	 * @return The RPC URL of the specified RPC endpoint.
+	 * 返回要连接的服务器的url
 	 */
 	public static String getRpcUrl(
 		String hostname,
@@ -185,6 +196,7 @@ public class AkkaRpcServiceUtils {
 	 *
 	 * @param prefix Prefix string to prepend to the monotonically increasing name offset number
 	 * @return A random name of the form prefix_X where X is an increasing number
+	 * 获取一个名字  前缀+序号
 	 */
 	public static String createRandomName(String prefix) {
 		Preconditions.checkNotNull(prefix, "Prefix must not be null.");

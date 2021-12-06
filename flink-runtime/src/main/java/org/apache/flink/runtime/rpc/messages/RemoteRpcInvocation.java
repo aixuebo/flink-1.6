@@ -33,6 +33,8 @@ import java.io.Serializable;
  * In order to fail fast and report an appropriate error message to the user, the method name, the
  * parameter types and the arguments are eagerly serialized. In case the invocation call
  * contains a non-serializable object, then an {@link IOException} is thrown.
+ *
+ * 因为是远程的执行代理,因此需要序列化 --- 客户端与服务端传递远程调用方法的时候，序列化/反序列化的对象
  */
 public class RemoteRpcInvocation implements RpcInvocation, Serializable {
 	private static final long serialVersionUID = 6179354390913843809L;

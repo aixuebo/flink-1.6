@@ -43,6 +43,7 @@ public class RpcUtils {
 	 *
 	 * @param clazz from which to extract the implemented RpcGateway interfaces
 	 * @return A set of all implemented RpcGateway interfaces
+	 * 提取class参数对应的所有RpcGateway接口集合
 	 */
 	public static Set<Class<? extends RpcGateway>> extractImplementedRpcGateways(Class<?> clazz) {
 		HashSet<Class<? extends RpcGateway>> interfaces = new HashSet<>();
@@ -82,9 +83,11 @@ public class RpcUtils {
 	 * @throws InterruptedException if the operation has been interrupted
 	 * @throws ExecutionException if a problem occurred
 	 * @throws TimeoutException if a timeout occurred
+	 * 通过rpc的方式停止远程一台服务
 	 */
 	public static void terminateRpcService(RpcService rpcService, Time timeout) throws InterruptedException, ExecutionException, TimeoutException {
-		rpcService.stopService().get(timeout.toMilliseconds(), TimeUnit.MILLISECONDS);
+		rpcService.stopService() //停止远程的服务,异步任务,返回Feature对象
+			.get(timeout.toMilliseconds(), TimeUnit.MILLISECONDS);//获取Feature对象真实的返回值
 	}
 
 	// We don't want this class to be instantiable
