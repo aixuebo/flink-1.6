@@ -49,8 +49,28 @@ import java.util.UUID;
  * Leader election service for multiple JobManager. The leading JobManager is elected using
  * ZooKeeper. The current leader's address as well as its leader session ID is published via
  * ZooKeeper as well.
+ * leader选举服务   在每一个节点都会启动一个该服务
+ * 选举服务  该服务持有一个竞选者对象，目标是无论成功、失败、出错都会通知该竞选者，这样服务就比较独立化了
+ *
+ *
+ *
+ 1.开启竞选start
+ 2.当选择成功，则调isLeader()，产生一个issuedLeaderSessionID = UUID.randomUUID();
+ 该uuid通知竞选者。
+ 竟选择做初始化操作，比如开启master服务，开启成功后，会将uuid传给服务confirmLeaderSessionID()，说明leader确定可以对外服务了。
+ 3.confirmLeaderSessionID(UUID leaderSessionID)
+ 当收到竞选者提供的uuid后，更新confirmedLeaderSessionID = leaderSessionID;
+ writeLeaderInformation(confirmedLeaderSessionID);并且将uuid和leader对外暴露的master服务地址写到zookeeper上。
+ 4.当uuid从leader变成非leader,调用notLeader()。
+ leaderContender.revokeLeadership();通知竞选者他不是leader了。
+
+ 总结:该服务只是在zookeeper上做竞选，一旦成功后，会回调竞选者，竞选者做一些操作后，如果操作都成功，会再回调给服务，通知确定可以服务了，此时就会将master的leader信息写到zookeeper
+ 上。这样外部任何服务就永远都都知道master是谁了。。master具备的能力是可以随时启动一个服务，恢复元数据的能力。
  */
-public class ZooKeeperLeaderElectionService implements LeaderElectionService, LeaderLatchListener, NodeCacheListener, UnhandledErrorListener {
+public class ZooKeeperLeaderElectionService implements LeaderElectionService,
+	LeaderLatchListener,//监听leaderLatch是否选中leader,
+	NodeCacheListener,//监听leaderPath节点本身被创建，更新或者删除
+	UnhandledErrorListener {//出现异常时,如何处理
 
 	private static final Logger LOG = LoggerFactory.getLogger(ZooKeeperLeaderElectionService.class);
 
@@ -60,23 +80,24 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 	private final CuratorFramework client;
 
 	/** Curator recipe for leader election. */
-	private final LeaderLatch leaderLatch;
+	private final LeaderLatch leaderLatch;//zookeeper自带的选举器 --- 可以知道该节点是否是leader节点
 
 	/** Curator recipe to watch a given ZooKeeper node for changes. */
 	private final NodeCache cache;
 
 	/** ZooKeeper path of the node which stores the current leader information. */
-	private final String leaderPath;
+	private final String leaderPath;//选举服务的base path  存储当前leader的信息
 
-	private volatile UUID issuedLeaderSessionID;
+	private volatile UUID issuedLeaderSessionID;//发布的id
 
-	private volatile UUID confirmedLeaderSessionID;
+	private volatile UUID confirmedLeaderSessionID;//确定是ID
 
 	/** The leader contender which applies for leadership. */
-	private volatile LeaderContender leaderContender;
+	private volatile LeaderContender leaderContender;//竞选者对象
 
 	private volatile boolean running;
 
+	//当zookeeper有变化时，触发
 	private final ConnectionStateListener listener = new ConnectionStateListener() {
 		@Override
 		public void stateChanged(CuratorFramework client, ConnectionState newState) {
@@ -88,15 +109,15 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 	 * Creates a ZooKeeperLeaderElectionService object.
 	 *
 	 * @param client Client which is connected to the ZooKeeper quorum
-	 * @param latchPath ZooKeeper node path for the leader election latch
-	 * @param leaderPath ZooKeeper node path for the node which stores the current leader information
+	 * @param latchPath ZooKeeper node path for the leader election latch 存储选举过程中的信息path,以及建立选举时需要创建临时节点的path
+	 * @param leaderPath ZooKeeper node path for the node which stores the current leader information 存储leader的信息path
 	 */
 	public ZooKeeperLeaderElectionService(CuratorFramework client, String latchPath, String leaderPath) {
 		this.client = Preconditions.checkNotNull(client, "CuratorFramework client");
 		this.leaderPath = Preconditions.checkNotNull(leaderPath, "leaderPath");
 
 		leaderLatch = new LeaderLatch(client, latchPath);
-		cache = new NodeCache(client, leaderPath);
+		cache = new NodeCache(client, leaderPath);//监听leaderPath节点本身被创建，更新或者删除
 
 		issuedLeaderSessionID = null;
 		confirmedLeaderSessionID = null;
@@ -114,6 +135,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 		return confirmedLeaderSessionID;
 	}
 
+	//start方法,传入竞选者对象,参与竞选--即服务对外提供接口能力。
 	@Override
 	public void start(LeaderContender contender) throws Exception {
 		Preconditions.checkNotNull(contender, "Contender must not be null.");
@@ -123,17 +145,17 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 
 		synchronized (lock) {
 
-			client.getUnhandledErrorListenable().addListener(this);
+			client.getUnhandledErrorListenable().addListener(this);//添加UnhandledErrorListener接口监听器,出现异常时,如何处理
 
 			leaderContender = contender;
 
-			leaderLatch.addListener(this);
-			leaderLatch.start();
+			leaderLatch.addListener(this);//添加LeaderLatchListener回调函数,选举有结果了如何通知,监听leaderLatch是否选中leader,
+			leaderLatch.start();//开始参与选举
 
-			cache.getListenable().addListener(this);
+			cache.getListenable().addListener(this);//监听NodeCacheListener回调函数,监听leaderPath的内容是否发生变化
 			cache.start();
 
-			client.getConnectionStateListenable().addListener(listener);
+			client.getConnectionStateListenable().addListener(listener);//监听ConnectionStateListener回调函数,当zookeeper有变化时,监听变化情况
 
 			running = true;
 		}
@@ -176,6 +198,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 		}
 	}
 
+	//设置leader的sessionId
 	@Override
 	public void confirmLeaderSessionID(UUID leaderSessionID) {
 		if (LOG.isDebugEnabled()) {
@@ -187,13 +210,13 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 
 		Preconditions.checkNotNull(leaderSessionID);
 
-		if (leaderLatch.hasLeadership()) {
+		if (leaderLatch.hasLeadership()) {//该节点必须是leader节点
 			// check if this is an old confirmation call
 			synchronized (lock) {
 				if (running) {
 					if (leaderSessionID.equals(this.issuedLeaderSessionID)) {
 						confirmedLeaderSessionID = leaderSessionID;
-						writeLeaderInformation(confirmedLeaderSessionID);
+						writeLeaderInformation(confirmedLeaderSessionID);//会触发nodeChanged函数执行
 					}
 				} else {
 					LOG.debug("Ignoring the leader session Id {} confirmation, since the " +
@@ -206,11 +229,14 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 		}
 	}
 
+	//该sessionId是否是leader的sessionId
 	@Override
 	public boolean hasLeadership(@Nonnull UUID leaderSessionId) {
+		//该节点必须是leader节点，并且id与leaderId相同
 		return leaderLatch.hasLeadership() && leaderSessionId.equals(issuedLeaderSessionID);
 	}
 
+	//该节点竞选成功,确定是leader  选举成功会调用isLeader方法
 	@Override
 	public void isLeader() {
 		synchronized (lock) {
@@ -233,6 +259,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 		}
 	}
 
+	//确定不是leader  ，由leader变为非leader调用notLeader方法
 	@Override
 	public void notLeader() {
 		synchronized (lock) {
@@ -244,7 +271,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 					LOG.debug("Revoke leadership of {}.", leaderContender.getAddress());
 				}
 
-				leaderContender.revokeLeadership();
+				leaderContender.revokeLeadership();//通知竟选择,你没有竞选成功,接下来如何做,是竞选者自己的事儿
 			} else {
 				LOG.debug("Ignoring the revoke leadership notification since the service " +
 					"has already been stopped.");
@@ -252,11 +279,13 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 		}
 	}
 
+	//监听leaderPath节点本身被创建，更新或者删除
+	//不管谁更新了zookeeper上的内容,都会立刻被leader节点刷新最新的leader信息
 	@Override
 	public void nodeChanged() throws Exception {
 		try {
 			// leaderSessionID is null if the leader contender has not yet confirmed the session ID
-			if (leaderLatch.hasLeadership()) {
+			if (leaderLatch.hasLeadership()) { //说明当前节点是leader,将leader信息写入到path内
 				synchronized (lock) {
 					if (running) {
 						if (LOG.isDebugEnabled()) {
@@ -279,7 +308,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 							} else {
 								byte[] data = childData.getData();
 
-								if (data == null || data.length == 0) {
+								if (data == null || data.length == 0) {//说明path内容是无,因此写入数据
 									// the data field seems to be empty, rewrite information
 									if (LOG.isDebugEnabled()) {
 										LOG.debug(
@@ -287,7 +316,7 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 											leaderContender.getAddress());
 									}
 									writeLeaderInformation(confirmedLeaderSessionID);
-								} else {
+								} else {//说明path已经有内容了,如果该内容就是leader节点已经写入过的,因此没必要再次重新写入数据了
 									ByteArrayInputStream bais = new ByteArrayInputStream(data);
 									ObjectInputStream ois = new ObjectInputStream(bais);
 
@@ -322,6 +351,9 @@ public class ZooKeeperLeaderElectionService implements LeaderElectionService, Le
 	 * Writes the current leader's address as well the given leader session ID to ZooKeeper.
 	 *
 	 * @param leaderSessionID Leader session ID which is written to ZooKeeper
+	 * 将确定的sessionId写到zookeeper下
+	 *
+	 * 当调用到该方法的时候，该节点一定是leader节点
 	 */
 	protected void writeLeaderInformation(UUID leaderSessionID) {
 		// this method does not have to be synchronized because the curator framework client

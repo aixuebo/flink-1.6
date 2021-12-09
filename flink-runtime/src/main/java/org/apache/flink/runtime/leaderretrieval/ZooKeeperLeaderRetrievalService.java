@@ -42,8 +42,14 @@ import java.util.UUID;
  * This implementation of the {@link LeaderRetrievalService} retrieves the current leader which has
  * been elected by the {@link org.apache.flink.runtime.leaderelection.ZooKeeperLeaderElectionService}.
  * The leader address as well as the current leader session ID is retrieved from ZooKeeper.
+ *
+ * 同步leaderAddress+leaderSessionID
+ *
+ * 对外提供了一种服务，当监听的path发生变化的时候，则需要实时获取到最新的leader地址。因此通知给下游LeaderRetrievalListener做相应处理
  */
-public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, NodeCacheListener, UnhandledErrorListener {
+public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService,
+	NodeCacheListener, //node节点的创建、删除、更新监听
+	UnhandledErrorListener {
 	private static final Logger LOG = LoggerFactory.getLogger(
 		ZooKeeperLeaderRetrievalService.class);
 
@@ -53,19 +59,21 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 	private final CuratorFramework client;
 
 	/** Curator recipe to watch changes of a specific ZooKeeper node. */
-	private final NodeCache cache;
+	private final NodeCache cache;//节点的内容是存储leaderAddress+leaderSessionID
 
-	private final String retrievalPath;
+	private final String retrievalPath;//base path
 
 	/** Listener which will be notified about leader changes. */
-	private volatile LeaderRetrievalListener leaderListener;
+	private volatile LeaderRetrievalListener leaderListener;//如果leader被更新了,如何更新
 
+	//记录leader是谁
 	private String lastLeaderAddress;
 
 	private UUID lastLeaderSessionID;
 
 	private volatile boolean running;
 
+	//zookeeper状态变更
 	private final ConnectionStateListener connectionStateListener = new ConnectionStateListener() {
 		@Override
 		public void stateChanged(CuratorFramework client, ConnectionState newState) {
@@ -91,6 +99,7 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 		running = false;
 	}
 
+	//传入监听器,核心目的用于当leader节点发生变化后,从节点如何快速适配
 	@Override
 	public void start(LeaderRetrievalListener listener) throws Exception {
 		Preconditions.checkNotNull(listener, "Listener must not be null.");
@@ -102,11 +111,12 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 		synchronized (lock) {
 			leaderListener = listener;
 
-			client.getUnhandledErrorListenable().addListener(this);
-			cache.getListenable().addListener(this);
+			client.getUnhandledErrorListenable().addListener(this);//添加UnhandledErrorListener监听器,监听异常
+
+			cache.getListenable().addListener(this);//监听NodeCacheListener,对应retrievalPath的内容
 			cache.start();
 
-			client.getConnectionStateListenable().addListener(connectionStateListener);
+			client.getConnectionStateListenable().addListener(connectionStateListener);//监听zookeeper的状态
 
 			running = true;
 		}
@@ -134,6 +144,7 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 		}
 	}
 
+	//节点有变化，即leader有变化  1.获取最新的leader节点地址+uuid,调接口让业务适配新的地址
 	@Override
 	public void nodeChanged() throws Exception {
 		synchronized (lock) {
@@ -141,8 +152,10 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 				try {
 					LOG.debug("Leader node has changed.");
 
-					ChildData childData = cache.getCurrentData();
+					//更新最新的leaderAddress+leaderSessionID
+					ChildData childData = cache.getCurrentData();//节点的内容是存储leaderAddress+leaderSessionID
 
+					//获取最新的leader节点地址+uuid信息
 					String leaderAddress;
 					UUID leaderSessionID;
 
@@ -164,6 +177,7 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 						}
 					}
 
+					//说明leader被更新了
 					if (!(Objects.equals(leaderAddress, lastLeaderAddress) &&
 						Objects.equals(leaderSessionID, lastLeaderSessionID))) {
 						LOG.debug(
@@ -173,7 +187,7 @@ public class ZooKeeperLeaderRetrievalService implements LeaderRetrievalService, 
 
 						lastLeaderAddress = leaderAddress;
 						lastLeaderSessionID = leaderSessionID;
-						leaderListener.notifyLeaderAddress(leaderAddress, leaderSessionID);
+						leaderListener.notifyLeaderAddress(leaderAddress, leaderSessionID);//通知下游,leader被更新了
 					}
 				} catch (Exception e) {
 					leaderListener.handleError(new Exception("Could not handle node changed event.", e));

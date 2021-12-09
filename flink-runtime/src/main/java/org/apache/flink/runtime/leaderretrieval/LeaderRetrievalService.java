@@ -27,6 +27,11 @@ package org.apache.flink.runtime.leaderretrieval;
  * once.
  *
  * <p>The service should be stopped by calling the stop method.
+ * 整个目录的核心前提是已经知道有一个leader被选举出来了
+ *
+ * 参考 JobLeaderIdListener
+ *
+ * 对外提供了一种服务，当监听的path发生变化的时候，则需要实时获取到最新的leader地址。因此通知给下游LeaderRetrievalListener做相应处理
  */
 public interface LeaderRetrievalService {
 

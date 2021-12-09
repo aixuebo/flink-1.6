@@ -24,6 +24,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A combination of a leader address and leader id.
+ * 定义一个leader的地址和id
  */
 public class LeaderAddressAndId {
 

@@ -1,0 +1,12 @@
+核心目的:从节点用于实时同步主节点的信息，得到主节点的地址+uuid后，从节点做一些列操作
+
+整个目录的核心前提是已经知道有一个leader被选举出来了，但如何选举不是该目录解决的，而是leaderelection解决的
+
+
+一、LeaderRetrievalService
+用于开启一个服务,该服务目的是当leader发生变化的时候，该服务第一时间受到信息。
+该服务接收LeaderRetrievalListener。用于通知新的leader信息。
+
+
+二、LeaderRetrievalListener是监听器，由不同业务自己处理逻辑。
+比如jobManager需要实现该接口，确定当leader发生变化的时候，jobManager要如何做HA处理。比如清理资源等信息

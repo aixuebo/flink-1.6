@@ -33,6 +33,7 @@ import java.util.UUID;
  * by calling the method confirmLeaderSessionID. This will notify the leader election service, that
  * the contender has received the new leader session ID and that it can now be published for
  * leader retrieval services.
+ * leader选举服务
  */
 public interface LeaderElectionService {
 
@@ -41,12 +42,14 @@ public interface LeaderElectionService {
 	 *
 	 * @param contender LeaderContender which applies for the leadership
 	 * @throws Exception
+	 * 打开一个zookeeper客户端,参与选举
 	 */
 	void start(LeaderContender contender) throws Exception;
 
 	/**
 	 * Stops the leader election service.
 	 * @throws Exception
+	 * 该客户端停止参与选举
 	 */
 	void stop() throws Exception;
 
@@ -59,6 +62,7 @@ public interface LeaderElectionService {
 	 * leader retrieval services.
 	 *
 	 * @param leaderSessionID The new leader session ID
+	 * 确认该客户端是leader并且告诉该客户端的leader的id
 	 */
 	void confirmLeaderSessionID(UUID leaderSessionID);
 
@@ -69,6 +73,7 @@ public interface LeaderElectionService {
 	 * @param leaderSessionId identifying the current leader
 	 *
 	 * @return true if the associated {@link LeaderContender} is the leader, otherwise false
+	 * true 表示该节点是leader节点 && leaderid与参数相同
 	 */
 	boolean hasLeadership(@Nonnull UUID leaderSessionId);
 }
