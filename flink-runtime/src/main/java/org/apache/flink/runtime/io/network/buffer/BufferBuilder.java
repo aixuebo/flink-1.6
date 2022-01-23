@@ -31,16 +31,19 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * Not thread safe class for filling in the content of the {@link MemorySegment}. To access written data please use
  * {@link BufferConsumer} which allows to build {@link Buffer} instances from the written data.
+ *
+ * 1.数据生产，将数据写入到MemorySegment。
+ * 2.数据消费者，消费MemorySegment数据
  */
 @NotThreadSafe
 public class BufferBuilder {
-	private final MemorySegment memorySegment;
+	private final MemorySegment memorySegment;//内存--存储字节数组数据，支持将基础对象string、int等，转换成字节数组
 
 	private final BufferRecycler recycler;
 
 	private final SettablePositionMarker positionMarker = new SettablePositionMarker();
 
-	private boolean bufferConsumerCreated = false;
+	private boolean bufferConsumerCreated = false;//true表示buffer的消费者已经创建完
 
 	public BufferBuilder(MemorySegment memorySegment, BufferRecycler recycler) {
 		this.memorySegment = checkNotNull(memorySegment);
@@ -50,6 +53,7 @@ public class BufferBuilder {
 	/**
 	 * @return created matching instance of {@link BufferConsumer} to this {@link BufferBuilder}. There can exist only
 	 * one {@link BufferConsumer} per each {@link BufferBuilder} and vice versa.
+	 * 创建一个buffer的消费者
 	 */
 	public BufferConsumer createBufferConsumer() {
 		checkState(!bufferConsumerCreated, "There can not exists two BufferConsumer for one BufferBuilder");
@@ -60,8 +64,10 @@ public class BufferBuilder {
 			positionMarker);
 	}
 
+	//------数据向bufferConsumer生产数据
 	/**
 	 * Same as {@link #append(ByteBuffer)} but additionally {@link #commit()} the appending.
+	 * 返回添加了多少个字节
 	 */
 	public int appendAndCommit(ByteBuffer source) {
 		int writtenBytes = append(source);
@@ -73,23 +79,26 @@ public class BufferBuilder {
 	 * Append as many data as possible from {@code source}. Not everything might be copied if there is not enough
 	 * space in the underlying {@link MemorySegment}
 	 *
-	 * @return number of copied bytes
+	 * @return number of copied bytes 返回写了多少个字节
+	 * 因为容器最多填满memorySegment，所以source的数据量可能比容器容器memorySegment大
 	 */
 	public int append(ByteBuffer source) {
 		checkState(!isFinished());
 
-		int needed = source.remaining();
-		int available = getMaxCapacity() - positionMarker.getCached();
+		int needed = source.remaining();//需要写入多少字节数组
+		int available = getMaxCapacity() - positionMarker.getCached();//buffer剩余多少字节位置
 		int toCopy = Math.min(needed, available);
 
-		memorySegment.put(positionMarker.getCached(), source, toCopy);
-		positionMarker.move(toCopy);
+		//将source输出到内存
+		memorySegment.put(positionMarker.getCached(), source, toCopy);//从positionMarker.getCached()位置开始写入数据
+		positionMarker.move(toCopy);//移动指针
 		return toCopy;
 	}
 
 	/**
 	 * Make the change visible to the readers. This is costly operation (volatile access) thus in case of bulk writes
 	 * it's better to commit them all together instead one by one.
+	 * 切换指针,设置position位置
 	 */
 	public void commit() {
 		positionMarker.commit();
@@ -118,6 +127,7 @@ public class BufferBuilder {
 		return positionMarker.getCached() == getMaxCapacity();
 	}
 
+	//返回内存容量
 	public int getMaxCapacity() {
 		return memorySegment.size();
 	}
@@ -128,7 +138,7 @@ public class BufferBuilder {
 	 */
 	@ThreadSafe
 	interface PositionMarker {
-		int FINISHED_EMPTY = Integer.MIN_VALUE;
+		int FINISHED_EMPTY = Integer.MIN_VALUE;//-2147483648
 
 		int get();
 
@@ -151,6 +161,15 @@ public class BufferBuilder {
 	 * of one another - so that the cached values can not accidentally leak from one to another.
 	 *
 	 * <p>Remember to commit the {@link SettablePositionMarker} to make the changes visible.
+	 *
+	 * 调用流程 move + commit ，或者 move + markFinished + commit
+	 *
+	 1.在commit前,使用cachedPosition临时计数,此时position永远等于0;
+	 2.写入数后,调用move(int offset),移动cachedPosition,此时cachedPosition永远>0.
+	 3.当数据全部完成写入后,调用markFinished()方法,此时设置cachedPosition=-cachedPosition，即cachedPosition是负数。
+	 4.因此调用boolean isFinished()方法，只有在调用markFinished()方法后，才会返回true，即已经写入完成。否则都是未完成。
+	 5.commit() position = cachedPosition; 切换position。
+	 *
 	 */
 	private static class SettablePositionMarker implements PositionMarker {
 		private volatile int position = 0;
@@ -166,7 +185,7 @@ public class BufferBuilder {
 		}
 
 		public boolean isFinished() {
-			return PositionMarker.isFinished(cachedPosition);
+			return PositionMarker.isFinished(cachedPosition);//负数说明已经完成
 		}
 
 		public int getCached() {
@@ -184,7 +203,7 @@ public class BufferBuilder {
 			if (newValue == 0) {
 				newValue = FINISHED_EMPTY;
 			}
-			set(newValue);
+			set(newValue);//设置成负数
 			return currentPosition;
 		}
 
@@ -196,6 +215,7 @@ public class BufferBuilder {
 			cachedPosition = value;
 		}
 
+		//切换
 		public void commit() {
 			position = cachedPosition;
 		}

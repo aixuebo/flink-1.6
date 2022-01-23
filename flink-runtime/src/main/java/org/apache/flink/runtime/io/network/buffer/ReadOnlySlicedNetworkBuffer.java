@@ -35,6 +35,7 @@ import java.nio.ReadOnlyBufferException;
  *
  * <p><strong>BEWARE:</strong> We do not guarantee to block every operation that is able to write
  * data but all returned data structures should be handled as if it was!.
+ * 只能读数据
  */
 public final class ReadOnlySlicedNetworkBuffer extends ReadOnlyByteBuf implements Buffer {
 
@@ -50,6 +51,7 @@ public final class ReadOnlySlicedNetworkBuffer extends ReadOnlyByteBuf implement
 	 * @param buffer the buffer to derive from
 	 * @param index the index to start from
 	 * @param length the length of the slice
+	 * 读取buffer的数据，从index开始，读取index+length长度
 	 */
 	ReadOnlySlicedNetworkBuffer(NetworkBuffer buffer, int index, int length) {
 		super(new SlicedByteBuf(buffer, index, length));

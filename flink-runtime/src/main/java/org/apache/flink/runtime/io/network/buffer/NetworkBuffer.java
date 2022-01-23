@@ -46,20 +46,21 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Buffer {
 
 	/** The backing {@link MemorySegment} instance. */
-	private final MemorySegment memorySegment;
+	private final MemorySegment memorySegment;//存储数据的容器
 
 	/** The recycler for the backing {@link MemorySegment}. */
-	private final BufferRecycler recycler;
+	private final BufferRecycler recycler;//如何回收MemorySegment
 
 	/** Whether this buffer represents a buffer or an event. */
-	private boolean isBuffer;
+	private boolean isBuffer;//true表示缓冲,false表示存储的事件
 
 	/** Allocator for further byte buffers (needed by netty). */
-	private ByteBufAllocator allocator;
+	private ByteBufAllocator allocator;//如何分配buffer
 
 	/**
 	 * The current size of the buffer in the range from 0 (inclusive) to the
 	 * size of the backing {@link MemorySegment} (inclusive).
+	 * 内存容量 --- 返回内存容量，而不是已经用了多少内存
 	 */
 	private int currentSize;
 
@@ -118,6 +119,7 @@ public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Bu
 		return isBuffer;
 	}
 
+	//标记buffer存储的是事件
 	@Override
 	public void tagAsEvent() {
 		ensureAccessible();
@@ -137,21 +139,25 @@ public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Bu
 		return 0;
 	}
 
+	//回收器
 	@Override
 	public BufferRecycler getRecycler(){
 		return recycler;
 	}
 
+	//减少一个引用
 	@Override
 	public void recycleBuffer() {
 		release();
 	}
 
+	//引用数量是0,则可以回收
 	@Override
 	public boolean isRecycled() {
 		return refCnt() == 0;
 	}
 
+	//保留缓冲器，未来使用，同时引用增加1
 	@Override
 	public NetworkBuffer retainBuffer() {
 		return (NetworkBuffer) super.retain();
@@ -167,6 +173,7 @@ public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Bu
 		return new ReadOnlySlicedNetworkBuffer(this, index, length);
 	}
 
+	//回收
 	@Override
 	protected void deallocate() {
 		recycler.recycle(memorySegment);
@@ -290,21 +297,25 @@ public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Bu
 		readerIndex(readerIndex);
 	}
 
+	//写到哪个位置了
 	@Override
 	public int getSizeUnsafe() {
 		return writerIndex();
 	}
 
+	//已经写到哪个位置了
 	@Override
 	public int getSize() {
 		return writerIndex();
 	}
 
+	//设置写到哪个位置了
 	@Override
 	public void setSize(int writerIndex) {
 		writerIndex(writerIndex);
 	}
 
+	//设置新的容量
 	@Override
 	public ByteBuf capacity(int newCapacity) {
 		ensureAccessible();
@@ -379,9 +390,9 @@ public class NetworkBuffer extends AbstractReferenceCountedByteBuf implements Bu
 
 		if (memorySegment.isOffHeap()) {
 			byte[] tmp = new byte[length];
-			ByteBuffer tmpBuf = memorySegment.wrap(index, length);
-			tmpBuf.get(tmp);
-			out.write(tmp);
+			ByteBuffer tmpBuf = memorySegment.wrap(index, length);//从memorySegment读取数据
+			tmpBuf.get(tmp);//数据写入到字节数组中
+			out.write(tmp);//数据输出
 		} else {
 			out.write(memorySegment.getArray(), index, length);
 		}

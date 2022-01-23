@@ -22,6 +22,7 @@ import java.io.IOException;
 
 /**
  * A factory for buffer pools.
+ * 如何创建子缓冲区
  */
 public interface BufferPoolFactory {
 
@@ -32,14 +33,16 @@ public interface BufferPoolFactory {
 	 * <p> The buffer pool is of dynamic size with at least <tt>numRequiredBuffers</tt> buffers.
 	 *
 	 * @param numRequiredBuffers
-	 * 		minimum number of network buffers in this pool
+	 * 		minimum number of network buffers in this pool 最少提供多少个buffer
 	 * @param maxUsedBuffers
-	 * 		maximum number of network buffers this pool offers
+	 * 		maximum number of network buffers this pool offers 最多多少个buffer被使用
+	 * 创建N个子缓冲区LocalBufferPool
 	 */
 	BufferPool createBufferPool(int numRequiredBuffers, int maxUsedBuffers) throws IOException;
 
 	/**
 	 * Destroy callback for updating factory book keeping.
+	 * 销毁一个BufferPool
 	 */
 	void destroyBufferPool(BufferPool bufferPool) throws IOException;
 

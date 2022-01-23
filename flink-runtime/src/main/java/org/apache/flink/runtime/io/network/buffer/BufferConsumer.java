@@ -40,16 +40,16 @@ import static org.apache.flink.util.Preconditions.checkState;
 public class BufferConsumer implements Closeable {
 	private final Buffer buffer;
 
-	private final CachedPositionMarker writerPosition;
+	private final CachedPositionMarker writerPosition;//写到哪个位置了
 
-	private int currentReaderPosition;
+	private int currentReaderPosition;//当前读到哪个位置了
 
 	/**
 	 * Constructs {@link BufferConsumer} instance with content that can be changed by {@link BufferBuilder}.
 	 */
 	public BufferConsumer(
-			MemorySegment memorySegment,
-			BufferRecycler recycler,
+			MemorySegment memorySegment,//等待消费的MemorySegment
+			BufferRecycler recycler,//如何回收MemorySegment
 			PositionMarker currentWriterPosition) {
 		this(
 			new NetworkBuffer(checkNotNull(memorySegment), checkNotNull(recycler), true),
@@ -89,11 +89,13 @@ public class BufferConsumer implements Closeable {
 	/**
 	 * @return sliced {@link Buffer} containing the not yet consumed data. Returned {@link Buffer} shares the reference
 	 * counter with the parent {@link BufferConsumer} - in order to recycle memory both of them must be recycled/closed.
+	 *
+	 * 读取剩余的内容,组成新的Buffer
 	 */
 	public Buffer build() {
 		writerPosition.update();
 		int cachedWriterPosition = writerPosition.getCached();
-		Buffer slice = buffer.readOnlySlice(currentReaderPosition, cachedWriterPosition - currentReaderPosition);
+		Buffer slice = buffer.readOnlySlice(currentReaderPosition, cachedWriterPosition - currentReaderPosition);//读取一个子分片
 		currentReaderPosition = cachedWriterPosition;
 		return slice.retainBuffer();
 	}

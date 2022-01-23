@@ -25,6 +25,7 @@ import java.io.IOException;
  *
  * <p>The data producing side (result partition writers) request buffers in a synchronous fashion,
  * whereas the input side requests asynchronously.
+ * 如何提供缓冲区
  */
 public interface BufferProvider {
 
@@ -32,6 +33,7 @@ public interface BufferProvider {
 	 * Returns a {@link Buffer} instance from the buffer provider, if one is available.
 	 *
 	 * <p>Returns <code>null</code> if no buffer is available or the buffer provider has been destroyed.
+	 * 提供一个缓冲区，如果是null,说明没有资源了
 	 */
 	Buffer requestBuffer() throws IOException;
 
@@ -40,6 +42,7 @@ public interface BufferProvider {
 	 *
 	 * <p>If there is no buffer available, the call will block until one becomes available again or the
 	 * buffer provider has been destroyed.
+	 * 提供一个缓冲区，阻塞方式,如果没有缓冲区资源，则一直会等待
 	 */
 	Buffer requestBufferBlocking() throws IOException, InterruptedException;
 
@@ -61,12 +64,14 @@ public interface BufferProvider {
 
 	/**
 	 * Returns whether the buffer provider has been destroyed.
+	 * 是否buffer提供者已经销毁,即不再提供buffer能力
 	 */
 	boolean isDestroyed();
 
 	/**
 	 * Returns the size of the underlying memory segments. This is the maximum size a {@link Buffer}
 	 * instance can have.
+	 * 每一个MemorySegment占用内存大小
 	 */
 	int getMemorySegmentSize();
 

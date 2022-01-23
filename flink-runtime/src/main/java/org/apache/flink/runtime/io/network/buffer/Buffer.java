@@ -44,6 +44,10 @@ import java.nio.ByteBuffer;
  * #getMemorySegment()} directly, or on {@link ByteBuffer} wrappers of this buffer which do not
  * modify either index, so the indices need to be updated manually via {@link #setReaderIndex(int)}
  * and {@link #setSize(int)}.
+ *
+ * 提供2个能力
+ * 1.重复使用该buffer，每一次持有者可以增加一个buffer的引用。
+ * 2.有2个index,readerIndex和writerIndex，readerIndex之前的可以被丢弃了，writerIndex-readerIndex是未来可以读取的。
  */
 public interface Buffer {
 
@@ -51,11 +55,13 @@ public interface Buffer {
 	 * Returns whether this buffer represents a buffer or an event.
 	 *
 	 * @return <tt>true</tt> if this is a real buffer, <tt>false</tt> if this is an event
+	 * true代表是buffer,false代表不是buffer,而是一个event,事件表示特殊含义
 	 */
 	boolean isBuffer();
 
 	/**
 	 * Tags this buffer to represent an event.
+	 * 表示event,即设置isBuffer = false
 	 */
 	void tagAsEvent();
 
@@ -66,14 +72,16 @@ public interface Buffer {
 	 * <p>This method will be removed in the future. For writing use {@link BufferBuilder}.
 	 *
 	 * @return the memory segment backing this buffer
+	 * 返回buffer对应的内存对象,从该对象获取字节、int等信息 --- 从该对象中读取数据
 	 */
 	@Deprecated
 	MemorySegment getMemorySegment();
 
 	/**
 	 * This method will be removed in the future. For writing use {@link BufferBuilder}.
-	 *
+	 * 该方法未来会被删除
 	 * @return the offset where this (potential slice) {@link Buffer}'s data start in the underlying memory segment.
+	 * 表示MemorySegment的开始位置
 	 */
 	@Deprecated
 	int getMemorySegmentOffset();
@@ -82,6 +90,7 @@ public interface Buffer {
 	 * Gets the buffer's recycler.
 	 *
 	 * @return buffer recycler
+	 * 回收该内存对象的对象
 	 */
 	BufferRecycler getRecycler();
 
@@ -90,6 +99,7 @@ public interface Buffer {
 	 * reference count reaches <tt>0</tt>.
 	 *
 	 * @see #retainBuffer()
+	 * 减少一个引用，当引用对象是0的时候，就可以回收了
 	 */
 	void recycleBuffer();
 
@@ -97,6 +107,7 @@ public interface Buffer {
 	 * Returns whether this buffer has been recycled or not.
 	 *
 	 * @return <tt>true</tt> if already recycled, <tt>false</tt> otherwise
+	 * 是否可回收 -- 即引用对象是否是0
 	 */
 	boolean isRecycled();
 
@@ -106,6 +117,7 @@ public interface Buffer {
 	 * @return <tt>this</tt> instance (for chained calls)
 	 *
 	 * @see #recycleBuffer()
+	 * 保留缓冲器，未来使用，同时引用增加1
 	 */
 	Buffer retainBuffer();
 
@@ -117,6 +129,7 @@ public interface Buffer {
 	 * shared but the slice is not {@link #retainBuffer() retained} automatically.
 	 *
 	 * @return a read-only sliced buffer
+	 * 返回一个只读的buffer，读取index开始 - 所有可读的字节信息
 	 */
 	Buffer readOnlySlice();
 
@@ -130,6 +143,7 @@ public interface Buffer {
 	 * @param length the length of the slice
 	 *
 	 * @return a read-only sliced buffer
+	 * 返回一个只读的buffer，读取index开始，length长度字节
 	 */
 	Buffer readOnlySlice(int index, int length);
 
@@ -137,6 +151,7 @@ public interface Buffer {
 	 * Returns the maximum size of the buffer, i.e. the capacity of the underlying {@link MemorySegment}.
 	 *
 	 * @return size of the buffer
+	 * buffer最大的容量,该容量不指代已经存储的数据量,只表示容量
 	 */
 	int getMaxCapacity();
 
@@ -147,6 +162,7 @@ public interface Buffer {
 	 *
 	 * @return reader index (from 0 (inclusive) to the size of the backing {@link MemorySegment}
 	 * (inclusive))
+	 * 获取可读的index位置
 	 */
 	int getReaderIndex();
 
@@ -155,6 +171,7 @@ public interface Buffer {
 	 *
 	 * @throws IndexOutOfBoundsException
 	 * 		if the index is less than <tt>0</tt> or greater than {@link #getSize()}
+	 * 设置reader的index
 	 */
 	void setReaderIndex(int readerIndex) throws IndexOutOfBoundsException;
 
@@ -166,6 +183,7 @@ public interface Buffer {
 	 *
 	 * @return writer index (from 0 (inclusive) to the size of the backing {@link MemorySegment}
 	 * (inclusive))
+	 * 非安全的方式获取writerIndex
 	 */
 	int getSizeUnsafe();
 
@@ -176,6 +194,7 @@ public interface Buffer {
 	 *
 	 * @return writer index (from 0 (inclusive) to the size of the backing {@link MemorySegment}
 	 * (inclusive))
+	 * 获取writerIndex位置
 	 */
 	int getSize();
 
@@ -184,12 +203,14 @@ public interface Buffer {
 	 *
 	 * @throws IndexOutOfBoundsException
 	 * 		if the index is less than {@link #getReaderIndex()} or greater than {@link #getMaxCapacity()}
+	 * 设置writerIndex
 	 */
 	void setSize(int writerIndex);
 
 	/**
 	 * Returns the number of readable bytes (same as <tt>{@link #getSize()} -
 	 * {@link #getReaderIndex()}</tt>).
+	 * this.writerIndex - this.readerIndex; 还可以读取多少个字节
 	 */
 	int readableBytes();
 
@@ -214,6 +235,7 @@ public interface Buffer {
 	 * @throws IndexOutOfBoundsException
 	 * 		if the indexes are not without the buffer's bounds
 	 * @see #getNioBufferReadable()
+	 * 裁剪成一个新的buffer对象,只有length个字节
 	 */
 	ByteBuffer getNioBuffer(int index, int length) throws IndexOutOfBoundsException;
 
@@ -221,6 +243,7 @@ public interface Buffer {
 	 * Sets the buffer allocator for use in netty.
 	 *
 	 * @param allocator netty buffer allocator
+	 * buffer分配器
 	 */
 	void setAllocator(ByteBufAllocator allocator);
 

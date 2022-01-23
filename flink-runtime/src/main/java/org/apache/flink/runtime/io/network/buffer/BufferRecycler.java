@@ -20,6 +20,7 @@ package org.apache.flink.runtime.io.network.buffer;
 
 import org.apache.flink.core.memory.MemorySegment;
 
+//定义如何回收不用的MemorySegment资源策略
 public interface BufferRecycler {
 
 	/**
@@ -27,6 +28,7 @@ public interface BufferRecycler {
 	 * instance.
 	 *
 	 * @param memorySegment The memory segment to be recycled.
+	 * 回收一个内存对象
 	 */
 	void recycle(MemorySegment memorySegment);
 }

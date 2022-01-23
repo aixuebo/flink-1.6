@@ -38,11 +38,15 @@ public interface BufferListener {
 	 *
 	 * @param buffer buffer that becomes available in buffer pool.
 	 * @return true if the listener wants to be notified next time.
+	 * 当buffer可用时,调用该函数
+	 *
+	 * true返回值,说明下次还是要继续通知
 	 */
 	boolean notifyBufferAvailable(Buffer buffer);
 
 	/**
 	 * Notification callback if the buffer provider is destroyed.
+	 * 当buffer被销毁的时候调用
 	 */
 	void notifyBufferDestroyed();
 }

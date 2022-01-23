@@ -48,29 +48,40 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>The NetworkBufferPool creates {@link LocalBufferPool}s from which the individual tasks draw
  * the buffers for the network data transfer. When new local buffer pools are created, the
  * NetworkBufferPool dynamically redistributes the buffers between the pools.
+ *
+ * 1.构造函数，分配totalNumberOfMemorySegments/numberOfSegmentsToAllocate个MemorySegment对象,存储在availableMemorySegments里。每一个是segmentSize大小
+ * 2.MemorySegment requestMemorySegment() 从队列中返回一个MemorySegment对象
+ * 3.recycle(MemorySegment segment) 向队列中添加一个MemorySegment对象,内存不释放。
+ * recycleMemorySegments(List<MemorySegment> segments)
+ * 4.destroy() 释放内存
+ *
  */
 public class NetworkBufferPool implements BufferPoolFactory {
 
 	private static final Logger LOG = LoggerFactory.getLogger(NetworkBufferPool.class);
 
-	private final int totalNumberOfMemorySegments;
+	private final int totalNumberOfMemorySegments;//需要多少个MemorySegment内存对象--应该分配的最多数
 
-	private final int memorySegmentSize;
+	private final int memorySegmentSize;//每一个MemorySegment占用内存大小
 
-	private final ArrayBlockingQueue<MemorySegment> availableMemorySegments;
+	private final ArrayBlockingQueue<MemorySegment> availableMemorySegments;//分配的内存池,等待被使用
 
-	private volatile boolean isDestroyed;
+	private volatile boolean isDestroyed;//true表示销毁,不再支持buffer内存提供 --- 释放availableMemorySegments所占用的内存
 
 	// ---- Managed buffer pools ----------------------------------------------
 
-	private final Object factoryLock = new Object();
+	private final Object factoryLock = new Object();//锁对象
 
-	private final Set<LocalBufferPool> allBufferPools = new HashSet<>();
+	private final Set<LocalBufferPool> allBufferPools = new HashSet<>();//分配的每一个小的缓冲池
 
-	private int numTotalRequiredBuffers;
+	private int numTotalRequiredBuffers;//已经分配了多少个MemorySegment
 
 	/**
+	 * 构造函数，分配totalNumberOfMemorySegments/numberOfSegmentsToAllocate个MemorySegment对象,存储在availableMemorySegments里。每一个是segmentSize大小
 	 * Allocates all {@link MemorySegment} instances managed by this pool.
+	 * 分配所有的MemorySegments内存对象,初始化的时候创建好所有的MemorySegments内存对象，等待分配
+	 * @numberOfSegmentsToAllocate 分配多少个MemorySegments内存对象
+	 * @segmentSize 每一个MemorySegments需要多少内存
 	 */
 	public NetworkBufferPool(int numberOfSegmentsToAllocate, int segmentSize) {
 
@@ -87,21 +98,22 @@ public class NetworkBufferPool implements BufferPoolFactory {
 					+ numberOfSegmentsToAllocate + " - " + err.getMessage());
 		}
 
+		//预分配MemorySegments集合
 		try {
 			for (int i = 0; i < numberOfSegmentsToAllocate; i++) {
 				ByteBuffer memory = ByteBuffer.allocateDirect(segmentSize);
 				availableMemorySegments.add(MemorySegmentFactory.wrapPooledOffHeapMemory(memory, null));
 			}
 		}
-		catch (OutOfMemoryError err) {
-			int allocated = availableMemorySegments.size();
+		catch (OutOfMemoryError err) {//内存溢出
+			int allocated = availableMemorySegments.size();//已经分配了多少个MemorySegment对象
 
 			// free some memory
 			availableMemorySegments.clear();
 
-			long requiredMb = (sizeInLong * numberOfSegmentsToAllocate) >> 20;
-			long allocatedMb = (sizeInLong * allocated) >> 20;
-			long missingMb = requiredMb - allocatedMb;
+			long requiredMb = (sizeInLong * numberOfSegmentsToAllocate) >> 20;//要求请求多少内存 单位M
+			long allocatedMb = (sizeInLong * allocated) >> 20;//已经确定分配了多少内存 单位M
+			long missingMb = requiredMb - allocatedMb;//确实多少M内存
 
 			throw new OutOfMemoryError("Could not allocate enough memory segments for NetworkBufferPool " +
 					"(required (Mb): " + requiredMb +
@@ -109,17 +121,19 @@ public class NetworkBufferPool implements BufferPoolFactory {
 					", missing (Mb): " + missingMb + "). Cause: " + err.getMessage());
 		}
 
-		long allocatedMb = (sizeInLong * availableMemorySegments.size()) >> 20;
+		long allocatedMb = (sizeInLong * availableMemorySegments.size()) >> 20;//打印日志,已经分配了内存多少M
 
 		LOG.info("Allocated {} MB for network buffer pool (number of memory segments: {}, bytes per segment: {}).",
 				allocatedMb, availableMemorySegments.size(), segmentSize);
 	}
 
+	//返回一个可用的MemorySegment内存对象
 	@Nullable
 	public MemorySegment requestMemorySegment() {
 		return availableMemorySegments.poll();
 	}
 
+	//回收一个MemorySegment
 	public void recycle(MemorySegment segment) {
 		// Adds the segment back to the queue, which does not immediately free the memory
 		// however, since this happens when references to the global pool are also released,
@@ -127,6 +141,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		availableMemorySegments.add(checkNotNull(segment));
 	}
 
+	//返回参数个MemorySegment对象
 	public List<MemorySegment> requestMemorySegments(int numRequiredBuffers) throws IOException {
 		checkArgument(numRequiredBuffers > 0, "The number of required buffers should be larger than 0.");
 
@@ -135,7 +150,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 				throw new IllegalStateException("Network buffer pool has already been destroyed.");
 			}
 
-			if (numTotalRequiredBuffers + numRequiredBuffers > totalNumberOfMemorySegments) {
+			if (numTotalRequiredBuffers + numRequiredBuffers > totalNumberOfMemorySegments) {//空间不足分配
 				throw new IOException(String.format("Insufficient number of network buffers: " +
 								"required %d, but only %d available. The total number of network " +
 								"buffers is currently set to %d of %d bytes each. You can increase this " +
@@ -165,6 +180,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 			}
 		}
 
+		//返回分配的MemorySegment
 		final List<MemorySegment> segments = new ArrayList<>(numRequiredBuffers);
 		try {
 			while (segments.size() < numRequiredBuffers) {
@@ -189,10 +205,12 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		return segments;
 	}
 
+	//回收MemorySegment资源
 	public void recycleMemorySegments(List<MemorySegment> segments) throws IOException {
 		recycleMemorySegments(segments, segments.size());
 	}
 
+	//回收MemorySegment资源
 	private void recycleMemorySegments(List<MemorySegment> segments, int size) throws IOException {
 		synchronized (factoryLock) {
 			numTotalRequiredBuffers -= size;
@@ -204,6 +222,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		}
 	}
 
+	//销毁
 	public void destroy() {
 		synchronized (factoryLock) {
 			isDestroyed = true;
@@ -227,6 +246,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		return totalNumberOfMemorySegments;
 	}
 
+	//有效的可以被利用的MemorySegment内存对象数量
 	public int getNumberOfAvailableMemorySegments() {
 		return availableMemorySegments.size();
 	}
@@ -252,7 +272,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 	// ------------------------------------------------------------------------
 	// BufferPoolFactory
 	// ------------------------------------------------------------------------
-
+    //创建一个子buffer缓冲池LocalBufferPool
 	@Override
 	public BufferPool createBufferPool(int numRequiredBuffers, int maxUsedBuffers) throws IOException {
 		// It is necessary to use a separate lock from the one used for buffer
@@ -302,6 +322,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		}
 	}
 
+	//销毁某一个子缓冲区LocalBufferPool
 	@Override
 	public void destroyBufferPool(BufferPool bufferPool) throws IOException {
 		if (!(bufferPool instanceof LocalBufferPool)) {
@@ -338,13 +359,15 @@ public class NetworkBufferPool implements BufferPoolFactory {
 	}
 
 	// Must be called from synchronized block
+	//重新分配内存数
+	//重新设置每一个LocalBufferPool应该可以超出使用多少个segment
 	private void redistributeBuffers() throws IOException {
 		assert Thread.holdsLock(factoryLock);
 
 		// All buffers, which are not among the required ones
-		final int numAvailableMemorySegment = totalNumberOfMemorySegments - numTotalRequiredBuffers;
+		final int numAvailableMemorySegment = totalNumberOfMemorySegments - numTotalRequiredBuffers;//剩余多少个MemorySegment
 
-		if (numAvailableMemorySegment == 0) {
+		if (numAvailableMemorySegment == 0) {//没有剩余公用的内存可以被子缓冲池复用,因此每一个缓冲池只能有自己应该有的数量
 			// in this case, we need to redistribute buffers so that every pool gets its minimum
 			for (LocalBufferPool bufferPool : allBufferPools) {
 				bufferPool.setNumBuffers(bufferPool.getNumberOfRequiredMemorySegments());
@@ -360,11 +383,11 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		 * a ratio that we use to distribute the buffers.
 		 */
 
-		long totalCapacity = 0; // long to avoid int overflow
+		long totalCapacity = 0; // long to avoid int overflow 还需要多少空间
 
 		for (LocalBufferPool bufferPool : allBufferPools) {
 			int excessMax = bufferPool.getMaxNumberOfMemorySegments() -
-				bufferPool.getNumberOfRequiredMemorySegments();
+				bufferPool.getNumberOfRequiredMemorySegments();//允许超出的最大数
 			totalCapacity += Math.min(numAvailableMemorySegment, excessMax);
 		}
 
@@ -383,7 +406,7 @@ public class NetworkBufferPool implements BufferPoolFactory {
 		int numDistributedMemorySegment = 0;
 		for (LocalBufferPool bufferPool : allBufferPools) {
 			int excessMax = bufferPool.getMaxNumberOfMemorySegments() -
-				bufferPool.getNumberOfRequiredMemorySegments();
+				bufferPool.getNumberOfRequiredMemorySegments();//允许超出的最大数
 
 			// shortcut
 			if (excessMax == 0) {
