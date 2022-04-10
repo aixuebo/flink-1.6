@@ -487,7 +487,8 @@ public abstract class OptimizerNode implements Visitable<OptimizerNode>, Estimat
 	public void setEstimatedNumRecords(long estimatedNumRecords) {
 		this.estimatedNumRecords = estimatedNumRecords;
 	}
-	
+
+	//估算平均每一条记录需要多少字节
 	@Override
 	public float getEstimatedAvgWidthPerOutputRecord() {
 		if (this.estimatedOutputSize > 0 && this.estimatedNumRecords > 0) {

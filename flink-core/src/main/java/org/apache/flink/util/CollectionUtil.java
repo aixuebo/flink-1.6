@@ -31,6 +31,7 @@ public final class CollectionUtil {
 
 	/**
 	 * A safe maximum size for arrays in the JVM.
+	 * jvm数组安全的size范围内
 	 */
 	public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 

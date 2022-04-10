@@ -32,6 +32,7 @@ import org.apache.flink.shaded.netty4.io.netty.handler.stream.ChunkedWriteHandle
  * respecting the high and low watermarks.
  *
  * @see <a href="http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html#10.0">Low/High Watermarks</a>
+ * 每次消费固定chunk长度的字节数组
  */
 @Internal
 public class ChunkedByteBuf implements ChunkedInput<ByteBuf> {
@@ -39,13 +40,13 @@ public class ChunkedByteBuf implements ChunkedInput<ByteBuf> {
 	/** The buffer to chunk. */
 	private final ByteBuf buf;
 
-	/** Size of chunks. */
+	/** Size of chunks. 每次读取chunk数量的字节数组*/
 	private final int chunkSize;
 
-	/** Closed flag. */
+	/** Closed flag. 表示关闭*/
 	private boolean isClosed;
 
-	/** End of input flag. */
+	/** End of input flag.true表示输入读取到结尾了 */
 	private boolean isEndOfInput;
 
 	public ChunkedByteBuf(ByteBuf buf, int chunkSize) {
@@ -72,16 +73,19 @@ public class ChunkedByteBuf implements ChunkedInput<ByteBuf> {
 		}
 	}
 
+	//读取一个chunk数据,返回读取的数据
 	@Override
 	public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
 		return readChunk();
 	}
 
+	//读取一个chunk数据,返回读取的数据
 	@Override
 	public ByteBuf readChunk(ByteBufAllocator byteBufAllocator) throws Exception {
 		return readChunk();
 	}
 
+	//读取一个chunk数据,返回读取的数据
 	private ByteBuf readChunk() {
 		if (isClosed) {
 			return null;
@@ -103,6 +107,7 @@ public class ChunkedByteBuf implements ChunkedInput<ByteBuf> {
 		return -1;
 	}
 
+	//处理进展到哪个字节位置了
 	@Override
 	public long progress() {
 		return buf.readerIndex();

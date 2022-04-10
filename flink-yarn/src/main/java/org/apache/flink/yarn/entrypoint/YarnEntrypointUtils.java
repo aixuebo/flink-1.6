@@ -135,6 +135,7 @@ public class YarnEntrypointUtils {
 		return configuration;
 	}
 
+	//记录日志
 	public static void logYarnEnvironmentInformation(Map<String, String> env, Logger log) throws IOException {
 		final String yarnClientUsername = env.get(YarnConfigKeys.ENV_HADOOP_USER_NAME);
 		Preconditions.checkArgument(

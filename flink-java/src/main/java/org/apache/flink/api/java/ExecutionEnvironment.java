@@ -93,6 +93,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * @see LocalEnvironment
  * @see RemoteEnvironment
+ *
+ * 1.三种方式创建环境:LocalEnvironment或者RemoteEnvironment,或者传入contextEnvironmentFactory环境工厂
+ *
  */
 @Public
 public abstract class ExecutionEnvironment {
@@ -101,9 +104,9 @@ public abstract class ExecutionEnvironment {
 	protected static final Logger LOG = LoggerFactory.getLogger(ExecutionEnvironment.class);
 
 	/** The environment of the context (local by default, cluster if invoked through command line). */
-	private static ExecutionEnvironmentFactory contextEnvironmentFactory;
+	private static ExecutionEnvironmentFactory contextEnvironmentFactory;//环境工厂
 
-	/** The default parallelism used by local environments. */
+	/** The default parallelism used by local environments. 本地cpu并行度*/
 	private static int defaultLocalDop = Runtime.getRuntime().availableProcessors();
 
 	// --------------------------------------------------------------------------------------------
@@ -935,7 +938,7 @@ public abstract class ExecutionEnvironment {
 	 */
 	@Internal
 	public Plan createProgramPlan(String jobName, boolean clearSinks) {
-		if (this.sinks.isEmpty()) {
+		if (this.sinks.isEmpty()) {//没有sink肯定没办法执行
 			if (wasExecuted) {
 				throw new RuntimeException("No new data sinks have been defined since the " +
 						"last execution. The last execution refers to the latest call to " +
@@ -1217,6 +1220,7 @@ public abstract class ExecutionEnvironment {
 	 * {@link #createLocalEnvironment()}.
 	 *
 	 * @return The default local parallelism
+	 * 获取本地环境的并行度
 	 */
 	public static int getDefaultLocalParallelism() {
 		return defaultLocalDop;
@@ -1245,6 +1249,7 @@ public abstract class ExecutionEnvironment {
 	 * <p>When the context environment factory is set, no other environments can be explicitly used.
 	 *
 	 * @param ctx The context environment factory.
+	 * 设置初始化环境的工厂
 	 */
 	protected static void initializeContextEnvironment(ExecutionEnvironmentFactory ctx) {
 		contextEnvironmentFactory = Preconditions.checkNotNull(ctx);
@@ -1254,6 +1259,7 @@ public abstract class ExecutionEnvironment {
 	 * Un-sets the context environment factory. After this method is called, the call to
 	 * {@link #getExecutionEnvironment()} will again return a default local execution environment, and
 	 * it is possible to explicitly instantiate the LocalEnvironment and the RemoteEnvironment.
+	 * 重置工厂接口，让其设置为null
 	 */
 	protected static void resetContextEnvironment() {
 		contextEnvironmentFactory = null;
@@ -1265,6 +1271,7 @@ public abstract class ExecutionEnvironment {
 	 *
 	 * @return True, if it is possible to explicitly instantiate a LocalEnvironment or a
 	 *         RemoteEnvironment, false otherwise.
+	 * true,表示必须显示的使用LocalEnvironment或者RemoteEnvironment。说明没有定义工厂接口
 	 */
 	@Internal
 	public static boolean areExplicitEnvironmentsAllowed() {

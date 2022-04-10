@@ -66,7 +66,7 @@ public class CoBroadcastWithKeyedOperator<KS, IN1, IN2, OUT>
 
 	private static final long serialVersionUID = 5926499536290284870L;
 
-	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;
+	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;//要广播的集合,即一个流可以向N个Map结构存储数据
 
 	private transient TimestampedCollector<OUT> collector;
 

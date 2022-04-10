@@ -129,10 +129,11 @@ public class JobManagerSharedServices {
 		checkNotNull(blobServer);
 
 		final String classLoaderResolveOrder =
-			config.getString(CoreOptions.CLASSLOADER_RESOLVE_ORDER);
+			config.getString(CoreOptions.CLASSLOADER_RESOLVE_ORDER);//类加载器如何加载class
 
-		final String[] alwaysParentFirstLoaderPatterns = CoreOptions.getParentFirstLoaderPatterns(config);
+		final String[] alwaysParentFirstLoaderPatterns = CoreOptions.getParentFirstLoaderPatterns(config);//需要父类root类加载器加载的class前缀
 
+		//如何加载和下载jar
 		final BlobLibraryCacheManager libraryCacheManager =
 			new BlobLibraryCacheManager(
 				blobServer,
@@ -146,13 +147,14 @@ public class JobManagerSharedServices {
 			throw new IllegalConfigurationException(AkkaUtils.formatDurationParsingErrorMessage());
 		}
 
+		//线程池
 		final ScheduledExecutorService futureExecutor = Executors.newScheduledThreadPool(
 				Hardware.getNumberCPUCores(),
 				new ExecutorThreadFactory("jobmanager-future"));
 
-		final StackTraceSampleCoordinator stackTraceSampleCoordinator =
-			new StackTraceSampleCoordinator(futureExecutor, timeout.toMillis());
+		final StackTraceSampleCoordinator stackTraceSampleCoordinator = new StackTraceSampleCoordinator(futureExecutor, timeout.toMillis());
 		final int cleanUpInterval = config.getInteger(WebOptions.BACKPRESSURE_CLEANUP_INTERVAL);
+
 		final BackPressureStatsTrackerImpl backPressureStatsTracker = new BackPressureStatsTrackerImpl(
 			stackTraceSampleCoordinator,
 			cleanUpInterval,

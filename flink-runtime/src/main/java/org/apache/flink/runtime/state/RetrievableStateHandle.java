@@ -23,11 +23,13 @@ import java.io.Serializable;
 
 /**
  * Handle to state that can be read back again via {@link #retrieveState()}.
+ * 反序列化对象
  */
 public interface RetrievableStateHandle<T extends Serializable> extends StateObject {
 
 	/**
 	 * Retrieves the object that was previously written to state.
+	 * 反序列化成T对象,至于如何反序列化,从hdfs上还是从其他数据源读取数据流返序列化成T,由方法实现
 	 */
 	T retrieveState() throws IOException, ClassNotFoundException;
 }

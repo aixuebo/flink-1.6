@@ -26,18 +26,22 @@ import java.io.Serializable;
 
 /**
  * Describe the slot offering to job manager provided by task manager.
+ * 描述 一个slot用于 jobManager，提供给task manager执行
+ *
+ * 描述第几个slot、以及slot的资源属性、slot唯一id属性
+ * 其实知道slotIndex或者allocationId,都可以作为唯一id,去slot数据库查询到slot的资源情况
  */
 public class SlotOffer implements Serializable {
 
 	private static final long serialVersionUID = -7067814231108250971L;
 
-	/** Allocation id of this slot, this would be the only identifier for this slot offer */
+	/** Allocation id of this slot, this would be the only identifier for this slot offer ,slot的唯一id*/
 	private AllocationID allocationId;
 
-	/** Index of the offered slot */
+	/** Index of the offered slot ,slot序号*/
 	private final int slotIndex;
 
-	/** The resource profile of the offered slot */
+	/** The resource profile of the offered slot ,slot资源情况*/
 	private final ResourceProfile resourceProfile;
 
 	public SlotOffer(final AllocationID allocationID, final int index, final ResourceProfile resourceProfile) {

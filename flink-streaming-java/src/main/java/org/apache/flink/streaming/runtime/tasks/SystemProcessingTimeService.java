@@ -43,41 +43,44 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * A {@link ProcessingTimeService} which assigns as current processing time the result of calling
  * {@link System#currentTimeMillis()} and registers timers using a {@link ScheduledThreadPoolExecutor}.
+ * 时间服务:计算当前处理时间戳、定时执行任务的能力
  */
 public class SystemProcessingTimeService extends ProcessingTimeService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SystemProcessingTimeService.class);
 
-	private static final int STATUS_ALIVE = 0;
-	private static final int STATUS_QUIESCED = 1;
-	private static final int STATUS_SHUTDOWN = 2;
+	private static final int STATUS_ALIVE = 0;//活着
+	private static final int STATUS_QUIESCED = 1;//静止休眠状态
+	private static final int STATUS_SHUTDOWN = 2;//shutdown
 
 	// ------------------------------------------------------------------------
 
 	/** The containing task that owns this time service provider. */
-	private final AsyncExceptionHandler task;
+	private final AsyncExceptionHandler task;//如何处理其他线程产生的异常
 
 	/** The lock that timers acquire upon triggering. */
 	private final Object checkpointLock;
 
-	/** The executor service that schedules and calls the triggers of this task. */
-	private final ScheduledThreadPoolExecutor timerService;
+	/** The executor service that schedules and calls the triggers of this task.
+	 * 定时调度器,用于执行定时调度回调事件
+	 **/
+	private final ScheduledThreadPoolExecutor timerService;//调度器
 
-	private final AtomicInteger status;
+	private final AtomicInteger status;//对应枚举值状态
 
 	public SystemProcessingTimeService(AsyncExceptionHandler failureHandler, Object checkpointLock) {
 		this(failureHandler, checkpointLock, null);
 	}
 
 	public SystemProcessingTimeService(
-			AsyncExceptionHandler task,
+			AsyncExceptionHandler task,//出现异常的时候如何处理
 			Object checkpointLock,
-			ThreadFactory threadFactory) {
+			ThreadFactory threadFactory) {//线程工厂
 
 		this.task = checkNotNull(task);
 		this.checkpointLock = checkNotNull(checkpointLock);
 
-		this.status = new AtomicInteger(STATUS_ALIVE);
+		this.status = new AtomicInteger(STATUS_ALIVE);//设置默认的服务状态
 
 		if (threadFactory == null) {
 			this.timerService = new ScheduledThreadPoolExecutor(1);
@@ -93,6 +96,7 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		this.timerService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 	}
 
+	//返回当前时间戳,表示处理数据的当前时间
 	@Override
 	public long getCurrentProcessingTime() {
 		return System.currentTimeMillis();
@@ -102,10 +106,11 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 	 * Registers a task to be executed no sooner than time {@code timestamp}, but without strong
 	 * guarantees of order.
 	 *
-	 * @param timestamp Time when the task is to be enabled (in processing time)
+	 * @param timestamp Time when the task is to be enabled (in processing time) 当处理时间戳是该时间点时,执行target子任务
 	 * @param target    The task to be executed
 	 * @return The future that represents the scheduled task. This always returns some future,
 	 *         even if the timer was shut down
+	 * 注册一个延期执行的任务
 	 */
 	@Override
 	public ScheduledFuture<?> registerTimer(long timestamp, ProcessingTimeCallback target) {
@@ -113,21 +118,22 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		// delay the firing of the timer by 1 ms to align the semantics with watermark. A watermark
 		// T says we won't see elements in the future with a timestamp smaller or equal to T.
 		// With processing time, we therefore need to delay firing the timer by one ms.
-		long delay = Math.max(timestamp - getCurrentProcessingTime(), 0) + 1;
+		long delay = Math.max(timestamp - getCurrentProcessingTime(), 0) + 1;//计算延迟多久后,要执行target
 
 		// we directly try to register the timer and only react to the status on exception
 		// that way we save unnecessary volatile accesses for each timer
 		try {
+			//定时器调度
 			return timerService.schedule(
-					new TriggerTask(status, task, checkpointLock, target, timestamp), delay, TimeUnit.MILLISECONDS);
+					new TriggerTask(status, task, checkpointLock, target, timestamp), delay, TimeUnit.MILLISECONDS);//调度,延迟delay后,执行TriggerTask
 		}
 		catch (RejectedExecutionException e) {
 			final int status = this.status.get();
 			if (status == STATUS_QUIESCED) {
-				return new NeverCompleteFuture(delay);
+				return new NeverCompleteFuture(delay);//服务暂时静止中,无法提供服务
 			}
 			else if (status == STATUS_SHUTDOWN) {
-				throw new IllegalStateException("Timer service is shut down");
+				throw new IllegalStateException("Timer service is shut down");//不再提供服务
 			}
 			else {
 				// something else happened, so propagate the exception
@@ -136,6 +142,7 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		}
 	}
 
+	//当前时间戳+initialDelay后,开始周期性的执行callback任务
 	@Override
 	public ScheduledFuture<?> scheduleAtFixedRate(ProcessingTimeCallback callback, long initialDelay, long period) {
 		long nextTimestamp = getCurrentProcessingTime() + initialDelay;
@@ -144,9 +151,9 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		// that way we save unnecessary volatile accesses for each timer
 		try {
 			return timerService.scheduleAtFixedRate(
-				new RepeatedTriggerTask(status, task, checkpointLock, callback, nextTimestamp, period),
-				initialDelay,
-				period,
+				new RepeatedTriggerTask(status, task, checkpointLock, callback, nextTimestamp, period),//执行该任务
+				initialDelay,//初始时,延迟多久
+				period,//周期性的执行该任务
 				TimeUnit.MILLISECONDS);
 		} catch (RejectedExecutionException e) {
 			final int status = this.status.get();
@@ -177,6 +184,7 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		return status.get() == STATUS_SHUTDOWN;
 	}
 
+	//设置休眠状态
 	@Override
 	public void quiesce() throws InterruptedException {
 		if (status.compareAndSet(STATUS_ALIVE, STATUS_QUIESCED)) {
@@ -202,6 +210,7 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		}
 	}
 
+	//等候一阵子后,进行终止服务
 	@Override
 	public boolean shutdownAndAwaitPending(long time, TimeUnit timeUnit) throws InterruptedException {
 		shutdownService();
@@ -240,6 +249,7 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		timerService.shutdownNow();
 	}
 
+	//队列中有多少个任务在调度中
 	@VisibleForTesting
 	int getNumTasksScheduled() {
 		BlockingQueue<?> queue = timerService.getQueue();
@@ -254,14 +264,15 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 
 	/**
 	 * Internal task that is invoked by the timer service and triggers the target.
+	 * 回调函数---时间到期后,定时器线程执行该任务
 	 */
 	private static final class TriggerTask implements Runnable {
 
 		private final AtomicInteger serviceStatus;
 		private final Object lock;
-		private final ProcessingTimeCallback target;
-		private final long timestamp;
-		private final AsyncExceptionHandler exceptionHandler;
+		private final ProcessingTimeCallback target;//需要执行的任务
+		private final long timestamp;//期待到这个时间点,则执行target任务
+		private final AsyncExceptionHandler exceptionHandler;//出现异常时,如何处理
 
 		private TriggerTask(
 				final AtomicInteger serviceStatus,
@@ -281,12 +292,12 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 		public void run() {
 			synchronized (lock) {
 				try {
-					if (serviceStatus.get() == STATUS_ALIVE) {
-						target.onProcessingTime(timestamp);
+					if (serviceStatus.get() == STATUS_ALIVE) {//状态是活着时,执行触发函数
+						target.onProcessingTime(timestamp);//传入期待的执行时间点
 					}
 				} catch (Throwable t) {
 					TimerException asyncException = new TimerException(t);
-					exceptionHandler.handleAsyncException("Caught exception while processing timer.", asyncException);
+					exceptionHandler.handleAsyncException("Caught exception while processing timer.", asyncException);//执行异常函数
 				}
 			}
 		}
@@ -294,16 +305,17 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 
 	/**
 	 * Internal task which is repeatedly called by the processing time service.
+	 * 周期性的重复执行该任务
 	 */
 	private static final class RepeatedTriggerTask implements Runnable {
 
-		private final AtomicInteger serviceStatus;
+		private final AtomicInteger serviceStatus;//服务的状态,可能服务已经停止对外提供了
 		private final Object lock;
-		private final ProcessingTimeCallback target;
-		private final long period;
-		private final AsyncExceptionHandler exceptionHandler;
+		private final ProcessingTimeCallback target;//任务本身
+		private final long period;//执行周期
+		private final AsyncExceptionHandler exceptionHandler;//出现异常时,如何处理
 
-		private long nextTimestamp;
+		private long nextTimestamp;//下一次执行的时间戳
 
 		private RepeatedTriggerTask(
 				final AtomicInteger serviceStatus,
@@ -330,17 +342,17 @@ public class SystemProcessingTimeService extends ProcessingTimeService {
 						target.onProcessingTime(nextTimestamp);
 					}
 
-					nextTimestamp += period;
+					nextTimestamp += period;//下一次调用run方法的时候,nextTimestamp要产生新的,因此本轮计算好
 				} catch (Throwable t) {
 					TimerException asyncException = new TimerException(t);
-					exceptionHandler.handleAsyncException("Caught exception while processing repeated timer task.", asyncException);
+					exceptionHandler.handleAsyncException("Caught exception while processing repeated timer task.", asyncException);//处理异常任务
 				}
 			}
 		}
 	}
 
 	// ------------------------------------------------------------------------
-
+    //当服务暂时不对外提供时,如何返回值
 	private static final class NeverCompleteFuture implements ScheduledFuture<Object> {
 
 		private final Object lock = new Object();

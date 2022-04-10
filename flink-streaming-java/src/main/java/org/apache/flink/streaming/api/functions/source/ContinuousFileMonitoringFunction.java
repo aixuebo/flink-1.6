@@ -57,11 +57,20 @@ import java.util.TreeMap;
  *     <li>Assigning them to downstream tasks for further processing.</li>
  * </ol>
  *
+ * 非并行任务。
+ * 1.监控给定路径下的文件。
+ * 2.决定应该进一步读取/操作的是哪些文件。
+ * 3.对待读取的信息创建FileInputSplit
+ * 4.分发出去,让下游去读取/处理这些FileInputSplit
+ *
  * <p>The splits to be read are forwarded to the downstream {@link ContinuousFileReaderOperator}
  * which can have parallelism greater than one.
+ * 下游ContinuousFileReaderOperator是可以并行的去读取/操作文件的
  *
  * <p><b>IMPORTANT NOTE: </b> Splits are forwarded downstream for reading in ascending modification time order,
  * based on the modification time of the files they belong to.
+ *
+ * 监控一个目录，如果目录下文件被修改了，则返回哪些文件被修改了，发送给下游哪些文件被修改了，让下游去重新加载数据。
  */
 @Internal
 public class ContinuousFileMonitoringFunction<OUT>
@@ -79,19 +88,19 @@ public class ContinuousFileMonitoringFunction<OUT>
 	public static final long MIN_MONITORING_INTERVAL = 1L;
 
 	/** The path to monitor. */
-	private final String path;
+	private final String path;//监听目录
 
 	/** The parallelism of the downstream readers. */
-	private final int readerParallelism;
+	private final int readerParallelism;//下游读取的并发度
 
 	/** The {@link FileInputFormat} to be read. */
 	private final FileInputFormat<OUT> format;
 
-	/** The interval between consecutive path scans. */
+	/** The interval between consecutive path scans. 扫描文件的时间间隔*/
 	private final long interval;
 
 	/** Which new data to process (see {@link FileProcessingMode}. */
-	private final FileProcessingMode watchType;
+	private final FileProcessingMode watchType;//监听文件的模式
 
 	/** The maximum file modification time seen so far. */
 	private volatile long globalModificationTime = Long.MIN_VALUE;
@@ -104,10 +113,11 @@ public class ContinuousFileMonitoringFunction<OUT>
 
 	public ContinuousFileMonitoringFunction(
 		FileInputFormat<OUT> format,
-		FileProcessingMode watchType,
-		int readerParallelism,
-		long interval) {
+		FileProcessingMode watchType,//监控模式
+		int readerParallelism,//下游读取的并发度
+		long interval) {//扫描文件的时间间隔
 
+		//interval不允许比最小值小,即interval要>最小值
 		Preconditions.checkArgument(
 			watchType == FileProcessingMode.PROCESS_ONCE || interval >= MIN_MONITORING_INTERVAL,
 			"The specified monitoring interval (" + interval + " ms) is smaller than the minimum " +
@@ -192,6 +202,7 @@ public class ContinuousFileMonitoringFunction<OUT>
 
 	@Override
 	public void run(SourceFunction.SourceContext<TimestampedFileInputSplit> context) throws Exception {
+		//读取文件路径
 		Path p = new Path(path);
 		FileSystem fileSystem = FileSystem.get(p.toUri());
 		if (!fileSystem.exists(p)) {
@@ -221,9 +232,9 @@ public class ContinuousFileMonitoringFunction<OUT>
 					// after a failure and we managed to have a successful
 					// checkpoint, we will not reprocess the directory.
 
-					if (globalModificationTime == Long.MIN_VALUE) {
+					if (globalModificationTime == Long.MIN_VALUE) {//保险起见,设置最后修改时间为最小值,确保文件可以被处理
 						monitorDirAndForwardSplits(fileSystem, context);
-						globalModificationTime = Long.MAX_VALUE;
+						globalModificationTime = Long.MAX_VALUE;//设置最后修改时间为最大值,因为不需要再处理未来追加的文件信息了
 					}
 					isRunning = false;
 				}
@@ -234,21 +245,24 @@ public class ContinuousFileMonitoringFunction<OUT>
 		}
 	}
 
+	//真实处理文件
 	private void monitorDirAndForwardSplits(FileSystem fs,
 											SourceContext<TimestampedFileInputSplit> context) throws IOException {
 		assert (Thread.holdsLock(checkpointLock));
 
-		Map<Path, FileStatus> eligibleFiles = listEligibleFiles(fs, new Path(path));
-		Map<Long, List<TimestampedFileInputSplit>> splitsSortedByModTime = getInputSplitsSortedByModTime(eligibleFiles);
+		Map<Path, FileStatus> eligibleFiles = listEligibleFiles(fs, new Path(path));//返回已经发生修改的<文件路径,文件状态>
+
+		//key最后修改时间 value同时间的数据块集合
+		Map<Long, List<TimestampedFileInputSplit>> splitsSortedByModTime = getInputSplitsSortedByModTime(eligibleFiles);//对修改过的文件,进行拆分成数据块,并且数据块按照时间顺序排序
 
 		for (Map.Entry<Long, List<TimestampedFileInputSplit>> splits: splitsSortedByModTime.entrySet()) {
 			long modificationTime = splits.getKey();
 			for (TimestampedFileInputSplit split: splits.getValue()) {
 				LOG.info("Forwarding split: " + split);
-				context.collect(split);
+				context.collect(split);//发送每一个数据块
 			}
 			// update the global modification time
-			globalModificationTime = Math.max(globalModificationTime, modificationTime);
+			globalModificationTime = Math.max(globalModificationTime, modificationTime);//修改最后时间戳更新到哪里了
 		}
 	}
 
@@ -257,7 +271,8 @@ public class ContinuousFileMonitoringFunction<OUT>
 	 * {@link ContinuousFileReaderOperator}. Splits are sorted <b>by modification time</b> before
 	 * being forwarded and only splits belonging to files in the {@code eligibleFiles}
 	 * list will be processed.
-	 * @param eligibleFiles The files to process.
+	 * @param eligibleFiles The files to process. 等待处理的文件<文件路径,文件状态>
+	 * 返回排序后的结果集
 	 */
 	private Map<Long, List<TimestampedFileInputSplit>> getInputSplitsSortedByModTime(
 				Map<Path, FileStatus> eligibleFiles) throws IOException {
@@ -267,10 +282,10 @@ public class ContinuousFileMonitoringFunction<OUT>
 			return splitsByModTime;
 		}
 
-		for (FileInputSplit split: format.createInputSplits(readerParallelism)) {
-			FileStatus fileStatus = eligibleFiles.get(split.getPath());
+		for (FileInputSplit split: format.createInputSplits(readerParallelism)) {//拆分成若干个文件块
+			FileStatus fileStatus = eligibleFiles.get(split.getPath());//该数据块是否在待处理的文件中
 			if (fileStatus != null) {
-				Long modTime = fileStatus.getModificationTime();
+				Long modTime = fileStatus.getModificationTime();//文件被处理的最后时间戳
 				List<TimestampedFileInputSplit> splitsToForward = splitsByModTime.get(modTime);
 				if (splitsToForward == null) {
 					splitsToForward = new ArrayList<>();
@@ -287,6 +302,7 @@ public class ContinuousFileMonitoringFunction<OUT>
 	/**
 	 * Returns the paths of the files not yet processed.
 	 * @param fileSystem The filesystem where the monitored directory resides.
+	 * 返回已经发生修改的<文件路径,文件状态>
 	 */
 	private Map<Path, FileStatus> listEligibleFiles(FileSystem fileSystem, Path path) throws IOException {
 
@@ -309,7 +325,7 @@ public class ContinuousFileMonitoringFunction<OUT>
 				if (!status.isDir()) {
 					Path filePath = status.getPath();
 					long modificationTime = status.getModificationTime();
-					if (!shouldIgnore(filePath, modificationTime)) {
+					if (!shouldIgnore(filePath, modificationTime)) {//不应该忽略,说明有新修改的文件了
 						files.put(filePath, status);
 					}
 				} else if (format.getNestedFileEnumeration() && format.acceptFile(status)){
@@ -326,6 +342,7 @@ public class ContinuousFileMonitoringFunction<OUT>
 	 * the {@link #globalModificationTime}.
 	 * @param filePath the path of the file to check.
 	 * @param modificationTime the modification time of the file.
+	 * true表示应该忽略
 	 */
 	private boolean shouldIgnore(Path filePath, long modificationTime) {
 		assert (Thread.holdsLock(checkpointLock));

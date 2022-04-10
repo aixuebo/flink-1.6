@@ -29,6 +29,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 /**
  * A reduce operator that takes 2-tuples (key-value pairs), and applies the reduce operation only
  * on the unwrapped values.
+ * 针对2元tupe，针对相同key的情况下，value做聚合。返回Tuple<原始key,相同key的聚合值>
  */
 @Internal
 public class PlanUnwrappingReduceOperator<T, K> extends ReduceOperatorBase<Tuple2<K, T>, ReduceFunction<Tuple2<K, T>>> {

@@ -39,10 +39,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class MapTypeInfo<K, V> extends TypeInformation<Map<K, V>> {
 
 	/* The type information for the keys in the map*/
-	private final TypeInformation<K> keyTypeInfo;
+	private final TypeInformation<K> keyTypeInfo;//key的class对象
 
 	/* The type information for the values in the map */
-	private final TypeInformation<V> valueTypeInfo;
+	private final TypeInformation<V> valueTypeInfo;//value的class对象
 
 	public MapTypeInfo(TypeInformation<K> keyTypeInfo, TypeInformation<V> valueTypeInfo) {
 		this.keyTypeInfo = Preconditions.checkNotNull(keyTypeInfo, "The key type information cannot be null.");
@@ -96,6 +96,7 @@ public class MapTypeInfo<K, V> extends TypeInformation<Map<K, V>> {
 		return 1;
 	}
 
+	//他就是Map对象
 	@SuppressWarnings("unchecked")
 	@Override
 	public Class<Map<K, V>> getTypeClass() {

@@ -52,6 +52,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <IN1> The input type of the non-broadcast side.
  * @param <IN2> The input type of the broadcast side.
+ *
+ * 相当于ConnectedStream的特例,即一个是数据量很大的流，一个是广播流(数据量很小,可以广播的流)
  */
 @PublicEvolving
 public class BroadcastConnectedStream<IN1, IN2> {
@@ -59,7 +61,7 @@ public class BroadcastConnectedStream<IN1, IN2> {
 	private final StreamExecutionEnvironment environment;
 	private final DataStream<IN1> inputStream1;
 	private final BroadcastStream<IN2> inputStream2;
-	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;
+	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;//存储一个Map类型,存储广播数据在该任务节点的内容
 
 	protected BroadcastConnectedStream(
 			final StreamExecutionEnvironment env,
@@ -232,6 +234,8 @@ public class BroadcastConnectedStream<IN1, IN2> {
 
 		if (inputStream1 instanceof KeyedStream) {
 			KeyedStream<IN1, ?> keyedInput1 = (KeyedStream<IN1, ?>) inputStream1;
+
+			//设置key的类型  以及 如何数据转换成key
 			TypeInformation<?> keyType1 = keyedInput1.getKeyType();
 			transform.setStateKeySelectors(keyedInput1.getKeySelector(), null);
 			transform.setStateKeyType(keyType1);

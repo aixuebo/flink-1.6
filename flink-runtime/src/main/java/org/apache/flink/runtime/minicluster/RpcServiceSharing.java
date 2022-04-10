@@ -23,6 +23,6 @@ package org.apache.flink.runtime.minicluster;
  * or whether every component gets its own dedicated RpcService started.
  */
 public enum RpcServiceSharing {
-	SHARED, // a single shared rpc service
-	DEDICATED // every component gets his own dedicated rpc service
+	SHARED, // a single shared rpc service 共享同一个rpc服务
+	DEDICATED // every component gets his own dedicated rpc service 每一个组件都有自己的独立的rpc服务
 }

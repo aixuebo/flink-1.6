@@ -26,6 +26,8 @@ import java.io.Serializable;
  * This class wraps user value of state with TTL.
  *
  * @param <T> Type of the user value of state with TTL
+ *
+ * 由value+最近访问时间组成的对象
  */
 class TtlValue<T> implements Serializable {
 	private static final long serialVersionUID = 5221129704201125020L;

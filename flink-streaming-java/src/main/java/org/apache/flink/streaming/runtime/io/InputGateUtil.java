@@ -29,10 +29,14 @@ import java.util.List;
  * Utility for dealing with input gates. This will either just return
  * the single {@link InputGate} that was passed in or create a {@link UnionInputGate} if several
  * {@link InputGate input gates} are given.
+ *
+ * 结果是InputGate 或者是 UnionInputGate
  */
 @Internal
 public class InputGateUtil {
 
+	//参数是第1个流的数据源、第2个流的数据源
+	//2个数据源时,说明传入的是join方法
 	public static InputGate createInputGate(Collection<InputGate> inputGates1, Collection<InputGate> inputGates2) {
 		List<InputGate> gates = new ArrayList<InputGate>(inputGates1.size() + inputGates2.size());
 		gates.addAll(inputGates1);
@@ -40,6 +44,7 @@ public class InputGateUtil {
 		return createInputGate(gates.toArray(new InputGate[gates.size()]));
 	}
 
+	//结果是InputGate 或者是 UnionInputGate
 	public static InputGate createInputGate(InputGate[] inputGates) {
 		if (inputGates.length <= 0) {
 			throw new RuntimeException("No such input gate.");

@@ -37,24 +37,27 @@ import static org.apache.flink.util.CollectionUtil.MAX_ARRAY_SIZE;
  * via {@link HeapPriorityQueueElement}.
  *
  * @param <T> type of the elements contained in the priority queue.
+ * 堆内数组的方式实现优先队列
  */
 public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueElement>
 	implements InternalPriorityQueue<T> {
 
 	/** The array that represents the heap-organized priority queue. */
 	@Nonnull
-	protected T[] queue;
+	protected T[] queue;//HeapPriorityQueueElement数组,存储HeapPriorityQueueElement元素
 
 	/** The current size of the priority queue. */
 	@Nonnegative
-	protected int size;
+	protected int size;//当前数组内真实元素数量
 
 	@SuppressWarnings("unchecked")
 	public AbstractHeapPriorityQueue(@Nonnegative int minimumCapacity) {
+		//初始化数组
 		this.queue = (T[]) new HeapPriorityQueueElement[getHeadElementIndex() + minimumCapacity];
-		this.size = 0;
+		this.size = 0;//此时数组内元素数量为0
 	}
 
+	//有元素,则移除最上层元素
 	@Override
 	@Nullable
 	public T poll() {
@@ -141,6 +144,7 @@ public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueEleme
 		size = 0;
 	}
 
+	//数组扩容,参数表示数组真实要存放的元素数量
 	protected void resizeForBulkLoad(int totalSize) {
 		if (totalSize > queue.length) {
 			int desiredSize = totalSize + (totalSize >>> 3);
@@ -148,9 +152,16 @@ public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueEleme
 		}
 	}
 
+	/**
+	 * 扩容
+	 * @param desiredSize 需要设计的容量,比如10,说明我希望数组有10个空位允许我放元素
+	 * @param minRequiredSize 真实需要的容量,比如是5,说明数组肯定有5个元素了
+	 *
+	 * 基本上按照desiredSize需要的size扩容
+	 */
 	protected void resizeQueueArray(int desiredSize, int minRequiredSize) {
 		if (isValidArraySize(desiredSize)) {
-			queue = Arrays.copyOf(queue, desiredSize);
+			queue = Arrays.copyOf(queue, desiredSize);//扩容
 		} else if (isValidArraySize(minRequiredSize)) {
 			queue = Arrays.copyOf(queue, MAX_ARRAY_SIZE);
 		} else {
@@ -159,6 +170,7 @@ public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueEleme
 		}
 	}
 
+	//存储该元素到idx位置
 	protected void moveElementToIdx(T element, int idx) {
 		queue[idx] = element;
 		element.setInternalIndex(idx);
@@ -181,9 +193,11 @@ public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueEleme
 
 	/**
 	 * Returns the start index of the queue elements in the array.
+	 * 队列top元素的index
 	 */
 	protected abstract int getHeadElementIndex();
 
+	//size是安全的
 	private static boolean isValidArraySize(int size) {
 		return size >= 0 && size <= MAX_ARRAY_SIZE;
 	}
@@ -198,7 +212,7 @@ public abstract class AbstractHeapPriorityQueue<T extends HeapPriorityQueueEleme
 		private final int endIdx;
 
 		HeapIterator() {
-			this.runningIdx = getHeadElementIndex();
+			this.runningIdx = getHeadElementIndex();//头部索引
 			this.endIdx = runningIdx + size;
 		}
 

@@ -116,9 +116,10 @@ public class StreamGraphGenerator {
 	 *
 	 * @param env The {@code StreamExecutionEnvironment} that is used to set some parameters of the
 	 *            job
-	 * @param transformations The transformations starting from which to transform the graph
+	 * @param transformations The transformations starting from which to transform the graph 需要的每一个操作集合,比如map，keyby等操作
 	 *
 	 * @return The generated {@code StreamGraph}
+	 * 构建无环图
 	 */
 	public static StreamGraph generate(StreamExecutionEnvironment env, List<StreamTransformation<?>> transformations) {
 		return new StreamGraphGenerator(env).generateInternal(transformations);
@@ -159,7 +160,7 @@ public class StreamGraphGenerator {
 		}
 
 		// call at least once to trigger exceptions about MissingTypeInfo
-		transform.getOutputType();
+		transform.getOutputType();//调用,目标是触发看看类型是否可以找到匹配合适的类型。
 
 		Collection<Integer> transformedIds;
 		if (transform instanceof OneInputTransformation<?, ?>) {
@@ -472,7 +473,7 @@ public class StreamGraphGenerator {
 				slotSharingGroup,
 				source.getCoLocationGroupKey(),
 				source.getOperator(),
-				null,
+				null,//数据源不需要输入,因此是NULL
 				source.getOutputType(),
 				"Source: " + source.getName());
 		if (source.getOperator().getUserFunction() instanceof InputFormatSourceFunction) {
@@ -536,6 +537,7 @@ public class StreamGraphGenerator {
 
 		String slotSharingGroup = determineSlotSharingGroup(transform.getSlotSharingGroup(), inputIds);
 
+		//添加该操作
 		streamGraph.addOperator(transform.getId(),
 				slotSharingGroup,
 				transform.getCoLocationGroupKey(),
@@ -544,7 +546,7 @@ public class StreamGraphGenerator {
 				transform.getOutputType(),
 				transform.getName());
 
-		if (transform.getStateKeySelector() != null) {
+		if (transform.getStateKeySelector() != null) { //存在shuffle过程中的key转换
 			TypeSerializer<?> keySerializer = transform.getStateKeyType().createSerializer(env.getConfig());
 			streamGraph.setOneInputStateKey(transform.getId(), transform.getStateKeySelector(), keySerializer);
 		}
@@ -552,6 +554,7 @@ public class StreamGraphGenerator {
 		streamGraph.setParallelism(transform.getId(), transform.getParallelism());
 		streamGraph.setMaxParallelism(transform.getId(), transform.getMaxParallelism());
 
+		//添加上下游关系
 		for (Integer inputId: inputIds) {
 			streamGraph.addEdge(inputId, transform.getId(), 0);
 		}

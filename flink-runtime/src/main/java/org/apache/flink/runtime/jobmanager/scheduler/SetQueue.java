@@ -29,11 +29,14 @@ import java.util.Queue;
  * that are already in the queue may not be added another time.
  *
  * @param <E> The type of the elements in the queue.
+ *
+ * set的队列
  */
 public class SetQueue<E> extends AbstractQueue<E> implements Queue<E> {
 
 	private final LinkedHashSet<E> set = new LinkedHashSet<E>();
-	
+
+	//添加一个元素
 	@Override
 	public boolean offer(E e) {
 		if (e == null) {
@@ -48,6 +51,7 @@ public class SetQueue<E> extends AbstractQueue<E> implements Queue<E> {
 		return true;
 	}
 
+	//弹出一个
 	@Override
 	public E poll() {
 		Iterator<E> iter = set.iterator();
@@ -60,6 +64,7 @@ public class SetQueue<E> extends AbstractQueue<E> implements Queue<E> {
 		}
 	}
 
+	//只是查看，不删除
 	@Override
 	public E peek() {
 		Iterator<E> iter = set.iterator();

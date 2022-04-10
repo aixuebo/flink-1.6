@@ -29,6 +29,9 @@ import java.util.Collections;
 /**
  * Internal {@link WindowFunction} that is used for implementing a fold on a window configuration
  * that only allows {@link WindowFunction} and cannot directly execute a {@link ReduceFunction}.
+ * 针对key分组的窗口,计算Reduce方法
+ *
+ * 参见 ReduceApplyAllWindowFunction
  */
 @Internal
 public class ReduceApplyWindowFunction<K, W extends Window, T, R>

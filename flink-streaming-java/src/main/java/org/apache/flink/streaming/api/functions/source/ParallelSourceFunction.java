@@ -31,6 +31,7 @@ import org.apache.flink.annotation.Public;
  * task the current instance is.
  *
  * @param <OUT> The type of the records produced by this source.
+ * 可以并发读取的数据源
  */
 @Public
 public interface ParallelSourceFunction<OUT> extends SourceFunction<OUT> {

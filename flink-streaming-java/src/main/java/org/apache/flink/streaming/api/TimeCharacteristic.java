@@ -37,6 +37,7 @@ public enum TimeCharacteristic {
 	 * results, because the contents of the windows depends on the speed in which elements arrive.
 	 * It is, however, the cheapest method of forming windows and the method that introduces the
 	 * least latency.
+	 * 算子操作的时间
 	 */
 	ProcessingTime,
 
@@ -53,6 +54,7 @@ public enum TimeCharacteristic {
 	 * elements are not very much out-of-order means that the latency increase is moderate,
 	 * compared to event
 	 * time.
+	 * 进入Flink系统的时间；
 	 */
 	IngestionTime,
 
@@ -81,6 +83,7 @@ public enum TimeCharacteristic {
 	 * event's original time, rather than the time assigned at the data source. Practically, that
 	 * means that event time has generally more meaning, but also that it takes longer to determine
 	 * that all elements for a certain time have arrived.
+	 * 元素中提取时间
 	 */
 	EventTime
 }

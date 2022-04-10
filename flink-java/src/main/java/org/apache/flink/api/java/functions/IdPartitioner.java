@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.Partitioner;
 
 /**
  * Partitioner that partitions by id.
+ * 分区只和key有关系,与分区数量无关。。注意前提key一定是int类型的,即key已经决定了是哪个分区了
  */
 @Internal
 public class IdPartitioner implements Partitioner<Integer> {

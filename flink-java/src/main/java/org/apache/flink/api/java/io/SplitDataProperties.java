@@ -59,7 +59,7 @@ import java.util.Arrays;
 @PublicEvolving
 public class SplitDataProperties<T> implements GenericDataSourceBase.SplitDataProperties<T> {
 
-	private TypeInformation<T> type;
+	private TypeInformation<T> type;//数据源类型
 
 	private int[] splitPartitionKeys;
 

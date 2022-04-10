@@ -36,6 +36,8 @@ import java.io.Serializable;
  *
  * @param <IN> The data type processed by the combine function.
  * @param <OUT> The data type emitted by the combine function.
+ * List<I> --> List<O> 转换
+ * 不会shuffle数据,即不会重新分区,只是在map端进行一次合并相同key的数据操作
  */
 @Public
 @FunctionalInterface
@@ -44,8 +46,8 @@ public interface GroupCombineFunction<IN, OUT> extends Function, Serializable {
 	/**
 	 * The combine method, called (potentially multiple timed) with subgroups of elements.
 	 *
-	 * @param values The elements to be combined.
-	 * @param out The collector to use to return values from the function.
+	 * @param values The elements to be combined. 确保相同key的数据集合,该集合用于合并
+	 * @param out The collector to use to return values from the function.合并结果集输出
 	 *
 	 * @throws Exception The function may throw Exceptions, which will cause the program to cancel,
 	 *                   and may trigger the recovery logic.

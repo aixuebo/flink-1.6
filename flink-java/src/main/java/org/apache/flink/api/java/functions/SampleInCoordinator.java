@@ -36,12 +36,13 @@ import java.util.Iterator;
  * random generator seed as the parallelism must be 1.
  *
  * @param <T> the data type wrapped in ElementWithRandom as input.
+ * 属于GroupReduceFunction函数,即对同一个key的所有元素进行抽样
  */
 @Internal
 public class SampleInCoordinator<T> implements GroupReduceFunction<IntermediateSampleData<T>, T> {
 
-	private boolean withReplacement;
-	private int numSample;
+	private boolean withReplacement;//是否放回重复抽样
+	private int numSample;//抽样数量
 	private long seed;
 
 	/**

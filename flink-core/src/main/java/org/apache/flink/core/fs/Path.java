@@ -356,6 +356,7 @@ public class Path implements IOReadableWritable, Serializable {
 	 *
 	 * @param suffix The suffix to be added
 	 * @return the new path including the suffix
+	 * 追加后缀
 	 */
 	public Path suffix(String suffix) {
 		return new Path(getParent(), getName() + suffix);

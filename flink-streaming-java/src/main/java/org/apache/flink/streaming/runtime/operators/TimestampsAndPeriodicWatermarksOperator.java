@@ -30,6 +30,8 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeCallback;
  * generates periodic watermarks.
  *
  * @param <T> The type of the input elements
+ *
+ * 周期性的生产water水印 --- 核心方法
  */
 public class TimestampsAndPeriodicWatermarksOperator<T>
 		extends AbstractUdfStreamOperator<T, AssignerWithPeriodicWatermarks<T>>
@@ -37,9 +39,9 @@ public class TimestampsAndPeriodicWatermarksOperator<T>
 
 	private static final long serialVersionUID = 1L;
 
-	private transient long watermarkInterval;
+	private transient long watermarkInterval;//发送水印时间戳间隔
 
-	private transient long currentWatermark;
+	private transient long currentWatermark;//最后一次发送水印的时间戳
 
 	public TimestampsAndPeriodicWatermarksOperator(AssignerWithPeriodicWatermarks<T> assigner) {
 		super(assigner);
@@ -51,40 +53,44 @@ public class TimestampsAndPeriodicWatermarksOperator<T>
 		super.open();
 
 		currentWatermark = Long.MIN_VALUE;
-		watermarkInterval = getExecutionConfig().getAutoWatermarkInterval();
+		watermarkInterval = getExecutionConfig().getAutoWatermarkInterval();//生产水印周期
 
 		if (watermarkInterval > 0) {
-			long now = getProcessingTimeService().getCurrentProcessingTime();
-			getProcessingTimeService().registerTimer(now + watermarkInterval, this);
+			long now = getProcessingTimeService().getCurrentProcessingTime();//当前时间戳
+			getProcessingTimeService().registerTimer(now + watermarkInterval, this);//设置定时任务,定时产生水印
 		}
 	}
 
 	@Override
 	public void processElement(StreamRecord<T> element) throws Exception {
+		//function是AssignerWithPeriodicWatermarks
 		final long newTimestamp = userFunction.extractTimestamp(element.getValue(),
 				element.hasTimestamp() ? element.getTimestamp() : Long.MIN_VALUE);
 
-		output.collect(element.replace(element.getValue(), newTimestamp));
+		output.collect(element.replace(element.getValue(), newTimestamp));//产生新的StreamRecord
 	}
 
+	//触发定时任务--该输出水印了
 	@Override
 	public void onProcessingTime(long timestamp) throws Exception {
 		// register next timer
+		//function是AssignerWithPeriodicWatermarks
 		Watermark newWatermark = userFunction.getCurrentWatermark();
 		if (newWatermark != null && newWatermark.getTimestamp() > currentWatermark) {
 			currentWatermark = newWatermark.getTimestamp();
 			// emit watermark
-			output.emitWatermark(newWatermark);
+			output.emitWatermark(newWatermark);//发送水印
 		}
 
 		long now = getProcessingTimeService().getCurrentProcessingTime();
-		getProcessingTimeService().registerTimer(now + watermarkInterval, this);
+		getProcessingTimeService().registerTimer(now + watermarkInterval, this);//再次设置定时任务,定时产生水印
 	}
 
 	/**
 	 * Override the base implementation to completely ignore watermarks propagated from
 	 * upstream (we rely only on the {@link AssignerWithPeriodicWatermarks} to emit
 	 * watermarks from here).
+	 * 正常处理水印，但大多数情况不会走到该方法，因为该流本身是产生水印的流,不会接收到水印
 	 */
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {

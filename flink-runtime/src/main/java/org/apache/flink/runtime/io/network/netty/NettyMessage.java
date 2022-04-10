@@ -55,6 +55,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>This class must be public as long as we are using a Netty version prior to 4.0.45. Please check FLINK-7845 for
  * more information.
+ * 表示一条信息
  */
 public abstract class NettyMessage {
 
@@ -63,10 +64,12 @@ public abstract class NettyMessage {
 	// constructor in order to work with the generic deserializer.
 	// ------------------------------------------------------------------------
 
-	static final int FRAME_HEADER_LENGTH = 4 + 4 + 1; // frame length (4), magic number (4), msg ID (1)
+	static final int FRAME_HEADER_LENGTH = 4 + 4 + 1; // frame length (4), magic number (4), msg ID (1) --表示NettyMessage的具体子类
 
 	static final int MAGIC_NUMBER = 0xBADC0FFE;
 
+	//将信息分配一个buffer，写入到该buffer中，返回内存的buffer
+	//即将信息写入buffer,并且返回 --- 该buffer是由参数创建的
 	abstract ByteBuf write(ByteBufAllocator allocator) throws Exception;
 
 	// ------------------------------------------------------------------------
@@ -85,6 +88,7 @@ public abstract class NettyMessage {
 	 *
 	 * @return a newly allocated direct buffer with header data written for {@link
 	 * NettyMessageDecoder}
+	 * 分配一个buffer,里面存储格式:总字节+模+id+内容
 	 */
 	private static ByteBuf allocateBuffer(ByteBufAllocator allocator, byte id) {
 		return allocateBuffer(allocator, id, -1);
@@ -106,6 +110,9 @@ public abstract class NettyMessage {
 	 *
 	 * @return a newly allocated direct buffer with header data written for {@link
 	 * NettyMessageDecoder}
+	 * 分配一个buffer,里面存储格式:总字节+模+id+内容
+	 * 其中如果contentLength>0，表示已经知道内容长度,则不需要添加完内容后，去头部更新总字节数。
+	 * 如果contentLength = -1,表示不知道内容长度，因此添加完成内容后，要去头部更新总字节数
 	 */
 	private static ByteBuf allocateBuffer(ByteBufAllocator allocator, byte id, int contentLength) {
 		return allocateBuffer(allocator, id, 0, contentLength, true);
@@ -128,29 +135,32 @@ public abstract class NettyMessage {
 	 * 		content length (or <tt>-1</tt> if unknown)
 	 * @param allocateForContent
 	 * 		whether to make room for the actual content in the buffer (<tt>true</tt>) or whether to
-	 * 		only return a buffer with the header information (<tt>false</tt>)
+	 * 		only return a buffer with the header information (<tt>false</tt>) ,true表示要存储内容，false表示只存储头文件
 	 *
 	 * @return a newly allocated direct buffer with header data written for {@link
 	 * NettyMessageDecoder}
+	 * 分配一个buffer,里面存储格式:总字节+模+id+额外头文件+内容
+	 * 其中如果contentLength>0，表示已经知道内容长度,则不需要添加完内容后，去头部更新总字节数。
+	 * 如果contentLength = -1,表示不知道内容长度，因此添加完成内容后，要去头部更新总字节数
 	 */
 	private static ByteBuf allocateBuffer(
 			ByteBufAllocator allocator,
 			byte id,
-			int messageHeaderLength,
+			int messageHeaderLength,//额外头文件内容
 			int contentLength,
 			boolean allocateForContent) {
 		checkArgument(contentLength <= Integer.MAX_VALUE - FRAME_HEADER_LENGTH);
 
 		final ByteBuf buffer;
-		if (!allocateForContent) {
+		if (!allocateForContent) {//说明只要头文件，不需要内容，因此分配空间是 模+id+额外头文件
 			buffer = allocator.directBuffer(FRAME_HEADER_LENGTH + messageHeaderLength);
-		} else if (contentLength != -1) {
+		} else if (contentLength != -1) {//说明已经知道了文件内容大小,因此分配空间为 模+id+额外头文件+文件内容
 			buffer = allocator.directBuffer(FRAME_HEADER_LENGTH + messageHeaderLength + contentLength);
-		} else {
+		} else {//说明不知道文件内容大小,分配空间
 			// content length unknown -> start with the default initial size (rather than FRAME_HEADER_LENGTH only):
 			buffer = allocator.directBuffer();
 		}
-		buffer.writeInt(FRAME_HEADER_LENGTH + messageHeaderLength + contentLength); // may be updated later, e.g. if contentLength == -1
+		buffer.writeInt(FRAME_HEADER_LENGTH + messageHeaderLength + contentLength); // may be updated later, e.g. if contentLength == -1,如果是-1的时候,要重新分配字节大小
 		buffer.writeInt(MAGIC_NUMBER);
 		buffer.writeByte(id);
 
@@ -161,6 +171,8 @@ public abstract class NettyMessage {
 	// Generic NettyMessage encoder and decoder
 	// ------------------------------------------------------------------------
 
+	//如何对外输出信息 --- 比如客户端发送给服务器,再客户端侧,就要继承ChannelOutboundHandlerAdapter,用于实现write方法
+	//将NettyMessage转换成字节数组,并且发送出去
 	@ChannelHandler.Sharable
 	static class NettyMessageEncoder extends ChannelOutboundHandlerAdapter {
 
@@ -171,19 +183,19 @@ public abstract class NettyMessage {
 				ByteBuf serialized = null;
 
 				try {
-					serialized = ((NettyMessage) msg).write(ctx.alloc());
+					serialized = ((NettyMessage) msg).write(ctx.alloc());//将msg信息输出到内存的buffer中,并且返回包含信息的buffer
 				}
 				catch (Throwable t) {
 					throw new IOException("Error while serializing message: " + msg, t);
 				}
 				finally {
 					if (serialized != null) {
-						ctx.write(serialized, promise);
+						ctx.write(serialized, promise);//向上继续输出buffer
 					}
 				}
 			}
 			else {
-				ctx.write(msg, promise);
+				ctx.write(msg, promise);//直接向上输出msg对象
 			}
 		}
 	}
@@ -199,7 +211,13 @@ public abstract class NettyMessage {
 	 * +------------------+------------------+--------++----------------+
 	 * | FRAME LENGTH (4) | MAGIC NUMBER (4) | ID (1) || CUSTOM MESSAGE |
 	 * +------------------+------------------+--------++----------------+
+	 * 固定长度，MAGIC，message类型,自定义内容   格式:长度+魔+NettyMessage类型的id+内容
 	 * </pre>
+	 *
+	 * 他是一个ChannelInboundHandlerAdapter，读取的是ByteBuf
+	 * 固定长度的字节数组
+	 *
+	 * 即如何将ByteBuf转换成NettyMessage对象
 	 */
 	static class NettyMessageDecoder extends LengthFieldBasedFrameDecoder {
 		private final boolean restoreOldNettyBehaviour;
@@ -218,21 +236,22 @@ public abstract class NettyMessage {
 
 		@Override
 		protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-			ByteBuf msg = (ByteBuf) super.decode(ctx, in);
+			ByteBuf msg = (ByteBuf) super.decode(ctx, in);//读取第一个int值,获取buffer字节长度,填充buffer
 			if (msg == null) {
 				return null;
 			}
 
 			try {
-				int magicNumber = msg.readInt();
+				int magicNumber = msg.readInt();//获取魔
 
 				if (magicNumber != MAGIC_NUMBER) {
 					throw new IllegalStateException(
 						"Network stream corrupted: received incorrect magic number.");
 				}
 
-				byte msgId = msg.readByte();
+				byte msgId = msg.readByte();//id类型
 
+				//继续反序列化成对象NettyMessage
 				final NettyMessage decodedMsg;
 				switch (msgId) {
 					case BufferResponse.ID:
@@ -301,11 +320,11 @@ public abstract class NettyMessage {
 
 		private static final byte ID = 0;
 
-		final ByteBuf buffer;
+		final ByteBuf buffer;//具体内容
 
-		final InputChannelID receiverId;
+		final InputChannelID receiverId;//16个字节 --- 发送方是哪个流ID
 
-		final int sequenceNumber;
+		final int sequenceNumber;//buffer是tcp第几个序号流
 
 		final int backlog;
 
@@ -365,9 +384,9 @@ public abstract class NettyMessage {
 				}
 
 				// only allocate header buffer - we will combine it with the data buffer below
-				headerBuf = allocateBuffer(allocator, ID, messageHeaderLength, buffer.readableBytes(), false);
-
-				receiverId.writeTo(headerBuf);
+				headerBuf = allocateBuffer(allocator, ID, messageHeaderLength, buffer.readableBytes(), false);//分配已知道内容的头文件
+				//此时已经追加了总长度、模、id到headerBuf中
+				receiverId.writeTo(headerBuf);//16个字节
 				headerBuf.writeInt(sequenceNumber);
 				headerBuf.writeInt(backlog);
 				headerBuf.writeBoolean(isBuffer);
@@ -475,18 +494,18 @@ public abstract class NettyMessage {
 	}
 
 	// ------------------------------------------------------------------------
-	// Client requests
+	// Client requests 客户端请求去拉去某一个partition分区结果数据
 	// ------------------------------------------------------------------------
 
 	static class PartitionRequest extends NettyMessage {
 
 		private static final byte ID = 2;
 
-		final ResultPartitionID partitionId;
+		final ResultPartitionID partitionId;//16字节 获取partition的ID
 
-		final int queueIndex;
+		final int queueIndex;//获取第几个子partition信息
 
-		final InputChannelID receiverId;
+		final InputChannelID receiverId;//16字节 返回的信息拉回来后，存储在哪个流里? 暂时还不确定
 
 		final int credit;
 
@@ -502,13 +521,13 @@ public abstract class NettyMessage {
 			ByteBuf result = null;
 
 			try {
-				result = allocateBuffer(allocator, ID, 16 + 16 + 4 + 16 + 4);
-
-				partitionId.getPartitionId().writeTo(result);
-				partitionId.getProducerId().writeTo(result);
-				result.writeInt(queueIndex);
-				receiverId.writeTo(result);
-				result.writeInt(credit);
+				result = allocateBuffer(allocator, ID, 16 + 16 + 4 + 16 + 4);//设置已经固定长度的字节内容
+				//此时已经追加了总长度、模、id到result中
+				partitionId.getPartitionId().writeTo(result);//16个字节
+				partitionId.getProducerId().writeTo(result);//16个字节
+				result.writeInt(queueIndex);//4个字节
+				receiverId.writeTo(result);//16个字节
+				result.writeInt(credit);//4个字节
 
 				return result;
 			}
@@ -543,7 +562,7 @@ public abstract class NettyMessage {
 
 		private static final byte ID = 3;
 
-		final TaskEvent event;
+		final TaskEvent event;//需要被序列化
 
 		final InputChannelID receiverId;
 
@@ -563,15 +582,15 @@ public abstract class NettyMessage {
 				// TODO Directly serialize to Netty's buffer
 				ByteBuffer serializedEvent = EventSerializer.toSerializedEvent(event);
 
-				result = allocateBuffer(allocator, ID, 4 + serializedEvent.remaining() + 16 + 16 + 16);
+				result = allocateBuffer(allocator, ID, 4 + serializedEvent.remaining() + 16 + 16 + 16);//设置已经固定长度的字节内容
+				//此时已经追加了总长度、模、id到result中
+				result.writeInt(serializedEvent.remaining());//写入4个字节--代表长度
+				result.writeBytes(serializedEvent);//写入具体的内容
 
-				result.writeInt(serializedEvent.remaining());
-				result.writeBytes(serializedEvent);
+				partitionId.getPartitionId().writeTo(result);//写入16个字节
+				partitionId.getProducerId().writeTo(result);//写入16个字节
 
-				partitionId.getPartitionId().writeTo(result);
-				partitionId.getProducerId().writeTo(result);
-
-				receiverId.writeTo(result);
+				receiverId.writeTo(result);//写入16个字节
 
 				return result;
 			}
@@ -616,7 +635,7 @@ public abstract class NettyMessage {
 
 		private static final byte ID = 4;
 
-		final InputChannelID receiverId;
+		final InputChannelID receiverId;//本地的该流要被取消，通知服务器也一并删除了吧
 
 		CancelPartitionRequest(InputChannelID receiverId) {
 			this.receiverId = checkNotNull(receiverId);
@@ -627,8 +646,9 @@ public abstract class NettyMessage {
 			ByteBuf result = null;
 
 			try {
-				result = allocateBuffer(allocator, ID, 16);
-				receiverId.writeTo(result);
+				result = allocateBuffer(allocator, ID, 16);//设置已经固定长度的字节内容
+				//此时已经追加了总长度、模、id到result中
+				receiverId.writeTo(result);//写入16个字节
 			}
 			catch (Throwable t) {
 				if (result != null) {
@@ -655,7 +675,7 @@ public abstract class NettyMessage {
 
 		@Override
 		ByteBuf write(ByteBufAllocator allocator) throws Exception {
-			return allocateBuffer(allocator, ID, 0);
+			return allocateBuffer(allocator, ID, 0);//此时已经追加了总长度、模、id到buffer中
 		}
 
 		static CloseRequest readFrom(@SuppressWarnings("unused") ByteBuf buffer) throws Exception {
@@ -689,12 +709,12 @@ public abstract class NettyMessage {
 			ByteBuf result = null;
 
 			try {
-				result = allocateBuffer(allocator, ID, 16 + 16 + 4 + 16);
-
-				partitionId.getPartitionId().writeTo(result);
-				partitionId.getProducerId().writeTo(result);
-				result.writeInt(credit);
-				receiverId.writeTo(result);
+				result = allocateBuffer(allocator, ID, 16 + 16 + 4 + 16);//设置已经固定长度的字节内容
+				//此时已经追加了总长度、模、id到result中
+				partitionId.getPartitionId().writeTo(result);//写入16个字节
+				partitionId.getProducerId().writeTo(result);//写入16个字节
+				result.writeInt(credit);//写入4个字节
+				receiverId.writeTo(result);//写入16个字节
 
 				return result;
 			}

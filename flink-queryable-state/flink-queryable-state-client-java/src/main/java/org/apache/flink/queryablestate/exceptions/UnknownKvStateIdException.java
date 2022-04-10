@@ -25,6 +25,7 @@ import org.apache.flink.util.Preconditions;
 
 /**
  * Thrown if no KvState with the given ID cannot found by the server handler.
+ * 找不到状态id的值
  */
 @Internal
 public class UnknownKvStateIdException extends BadRequestException {

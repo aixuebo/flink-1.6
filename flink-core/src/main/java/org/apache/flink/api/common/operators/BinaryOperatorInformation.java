@@ -28,6 +28,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
  * @param <IN1> Output type of first input operator
  * @param <IN2> Output type of second input operator
  * @param <OUT> Output type of the records output by the operator described by this information
+ * 定义二元操作类型,需要知道输入类型、输出类型 --- 定义2个输入、一个输出类型
  */
 @Internal
 public class BinaryOperatorInformation<IN1, IN2, OUT> extends OperatorInformation<OUT> {

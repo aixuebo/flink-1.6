@@ -108,13 +108,14 @@ import java.util.List;
  * </ul>
  *
  * @param <T> The type of the elements in this stream.
+ * 代表一个流
  */
 @Public
 public class DataStream<T> {
 
-	protected final StreamExecutionEnvironment environment;
+	protected final StreamExecutionEnvironment environment;//环境信息
 
-	protected final StreamTransformation<T> transformation;
+	protected final StreamTransformation<T> transformation;//表示一个流
 
 	/**
 	 * Create a new {@link DataStream} in the given execution environment with
@@ -170,6 +171,7 @@ public class DataStream<T> {
 	 * Gets the type of the stream.
 	 *
 	 * @return The type of the datastream.
+	 * 流的元素类型
 	 */
 	public TypeInformation<T> getType() {
 		return transformation.getOutputType();
@@ -180,6 +182,7 @@ public class DataStream<T> {
 	 * on the given function if closure cleaning is enabled in the {@link ExecutionConfig}.
 	 *
 	 * @return The cleaned Function
+	 * 校验 && 确保参数Function支持序列化。返回Function本身
 	 */
 	protected <F> F clean(F f) {
 		return getExecutionEnvironment().clean(f);
@@ -311,6 +314,9 @@ public class DataStream<T> {
 	 *            The position of the fields on which the {@link DataStream}
 	 *            will be grouped.
 	 * @return The {@link DataStream} with partitioned state (i.e. KeyedStream)
+	 *
+	 * 输入是数组，输出是tuple。
+	 * 比如 IN数组有10个位置,返回1 2 5 三个位置的值,因此fields.length=3 分别存储 1 2 5从数组中返回1  2 5三个位置的数据组成tuple
 	 */
 	public KeyedStream<T, Tuple> keyBy(int... fields) {
 		if (getType() instanceof BasicArrayTypeInfo || getType() instanceof PrimitiveArrayTypeInfo) {
@@ -346,9 +352,10 @@ public class DataStream<T> {
 	 *
 	 * <p>Note: This method works only on single field keys.
 	 *
-	 * @param partitioner The partitioner to assign partitions to keys.
-	 * @param field The field index on which the DataStream is to partitioned.
+	 * @param partitioner The partitioner to assign partitions to keys.给定key返回对应第几个分区
+	 * @param field The field index on which the DataStream is to partitioned.如何定义key
 	 * @return The partitioned DataStream.
+	 * 用户自己定义重分区方式。
 	 */
 	public <K> DataStream<T> partitionCustom(Partitioner<K> partitioner, int field) {
 		Keys.ExpressionKeys<T> outExpressionKeys = new Keys.ExpressionKeys<>(new int[]{field}, getType());
@@ -417,14 +424,15 @@ public class DataStream<T> {
 	 * it implicitly as many {@link org.apache.flink.api.common.state.BroadcastState broadcast states}
 	 * as the specified descriptors which can be used to store the element of the stream.
 	 *
-	 * @param broadcastStateDescriptors the descriptors of the broadcast states to create.
+	 * @param broadcastStateDescriptors the descriptors of the broadcast states to create. 定义广播的变量名字 以及 key和value类型
 	 * @return A {@link BroadcastStream} which can be used in the {@link #connect(BroadcastStream)} to
 	 * create a {@link BroadcastConnectedStream} for further processing of the elements.
+	 * 将datasream的内容,转换成广播,广播的数据类型是MapStateDescriptor控制。
 	 */
 	@PublicEvolving
 	public BroadcastStream<T> broadcast(final MapStateDescriptor<?, ?>... broadcastStateDescriptors) {
 		Preconditions.checkNotNull(broadcastStateDescriptors);
-		final DataStream<T> broadcastStream = setConnectionType(new BroadcastPartitioner<>());
+		final DataStream<T> broadcastStream = setConnectionType(new BroadcastPartitioner<>());//形成新的数据源,该数据源只有一个分区，或者每一个分区都有全量数据
 		return new BroadcastStream<>(environment, broadcastStream, broadcastStateDescriptors);
 	}
 
@@ -455,6 +463,7 @@ public class DataStream<T> {
 	 * fashion.
 	 *
 	 * @return The DataStream with rebalance partitioning set.
+	 * 采用轮训的方式,比如下游有4个节点，则上游每一个分区的结果,都会依次向1-4个节点发送信息。
 	 */
 	public DataStream<T> rebalance() {
 		return setConnectionType(new RebalancePartitioner<T>());
@@ -479,6 +488,8 @@ public class DataStream<T> {
 	 * downstream operations will have a differing number of inputs from upstream operations.
 	 *
 	 * @return The DataStream with rescale partitioning set.
+	 * 与rebalance相似,但不是上游每一个节点都向下游所有节点轮训发送数据。
+	 * 而是假设上游2个节点，下游4个节点，上游第一个节点会轮训的发送到下游1-2节点。上游第2个节点，会轮训发送到下游3-4节点。
 	 */
 	@PublicEvolving
 	public DataStream<T> rescale() {
@@ -492,6 +503,7 @@ public class DataStream<T> {
 	 * in the application.
 	 *
 	 * @return The DataStream with shuffle partitioning set.
+	 * 所有上游数据都会发送到下游第一个节点，即数据会汇总，这个很少用,因为有性能问题
 	 */
 	@PublicEvolving
 	public DataStream<T> global() {
@@ -809,6 +821,7 @@ public class DataStream<T> {
 	 *
 	 * @param assigner The {@code WindowAssigner} that assigns elements to windows.
 	 * @return The trigger windows data stream.
+	 * datastream的所有数据都会进入下游的唯一的一个分区中，类似于global操作,既然是windowall，就是将所有数据一起聚合,因此自然不能并行,只有一个下游节点
 	 */
 	@PublicEvolving
 	public <W extends Window> AllWindowedStream<T, W> windowAll(WindowAssigner<? super T, W> assigner) {
@@ -835,6 +848,8 @@ public class DataStream<T> {
 	 *             instead.
 	 * @see #assignTimestampsAndWatermarks(AssignerWithPeriodicWatermarks)
 	 * @see #assignTimestampsAndWatermarks(AssignerWithPunctuatedWatermarks)
+	//1.设置定时任务，从函数中提取水印时间戳,发送给下游。
+	//2.每次从数据元素中提取事件时间戳，更新元素时间戳信息；每次从数据元素中提取水印时间戳，如果水印时间戳发生变化,则随时发送给下游
 	 */
 	@Deprecated
 	public SingleOutputStreamOperator<T> assignTimestamps(TimestampExtractor<T> extractor) {
@@ -877,6 +892,7 @@ public class DataStream<T> {
 	 * @see AssignerWithPeriodicWatermarks
 	 * @see AssignerWithPunctuatedWatermarks
 	 * @see #assignTimestampsAndWatermarks(AssignerWithPunctuatedWatermarks)
+	 * 参数:目的是提取时间戳 并且 分配 Watermark
 	 */
 	public SingleOutputStreamOperator<T> assignTimestampsAndWatermarks(
 			AssignerWithPeriodicWatermarks<T> timestampAndWatermarkAssigner) {
@@ -1128,20 +1144,21 @@ public class DataStream<T> {
 	 * information that will transform the DataStream.
 	 *
 	 * @param operatorName
-	 *            name of the operator, for logging purposes
+	 *            name of the operator, for logging purposes 操作的名字
 	 * @param outTypeInfo
-	 *            the output type of the operator
+	 *            the output type of the operator 输出类型
 	 * @param operator
-	 *            the object containing the transformation logic
+	 *            the object containing the transformation logic 如何操作转换
 	 * @param <R>
 	 *            type of the return stream
 	 * @return the data stream constructed
+	 * 针对该数据源做转换操作operator,产生新的类型outTypeInfo的流。操作名字
 	 */
 	@PublicEvolving
 	public <R> SingleOutputStreamOperator<R> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator) {
 
 		// read the output type of the input Transform to coax out errors about MissingTypeInfo
-		transformation.getOutputType();
+		transformation.getOutputType();//目的是明确该数据源已经没用了,不能再重新设置类型了
 
 		OneInputTransformation<T, R> resultTransform = new OneInputTransformation<>(
 				this.transformation,
@@ -1163,7 +1180,10 @@ public class DataStream<T> {
 	 *
 	 * @param partitioner
 	 *            Partitioner to set.
-	 * @return The modified DataStream.
+	 * @return The modified DataStream. 设置如何分发数据流
+	 * 分区策略决定了一条数据如何发送给下游 。相当于spark的shuffle操作
+	 *
+	 * 重新设置repatition操作,即针对原始的流,重新分配数据到下游
 	 */
 	protected DataStream<T> setConnectionType(StreamPartitioner<T> partitioner) {
 		return new DataStream<>(this.getExecutionEnvironment(), new PartitionTransformation<>(this.getTransformation(), partitioner));

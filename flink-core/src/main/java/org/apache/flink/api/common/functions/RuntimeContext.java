@@ -52,6 +52,7 @@ import java.util.Map;
  *
  * <p>A function can, during runtime, obtain the RuntimeContext via a call to
  * {@link AbstractRichFunction#getRuntimeContext()}.
+ * 运行上下文信息
  */
 @Public
 public interface RuntimeContext {
@@ -60,6 +61,7 @@ public interface RuntimeContext {
 	 * Returns the name of the task in which the UDF runs, as assigned during plan construction.
 	 *
 	 * @return The name of the task in which the UDF runs.
+	 * 任务名称
 	 */
 	String getTaskName();
 
@@ -160,6 +162,7 @@ public interface RuntimeContext {
 
 	/**
 	 * Convenience function to create a counter object for longs.
+	 * 通过key对应的long值
 	 */
 	@PublicEvolving
 	LongCounter getLongCounter(String name);

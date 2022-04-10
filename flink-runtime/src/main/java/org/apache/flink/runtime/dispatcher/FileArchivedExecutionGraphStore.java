@@ -59,16 +59,17 @@ import java.util.concurrent.TimeUnit;
  * Store for {@link ArchivedExecutionGraph}. The store writes the archived execution graph to disk
  * and keeps the most recently used execution graphs in a memory cache for faster serving. Moreover,
  * the stored execution graphs are periodically cleaned up.
+ * 基于文件的方式,存储每个job的结果
  */
 public class FileArchivedExecutionGraphStore implements ArchivedExecutionGraphStore {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FileArchivedExecutionGraphStore.class);
 
-	private final File storageDir;
+	private final File storageDir;//创建临时目录 /$rootDir/$uuid
 
-	private final Cache<JobID, JobDetails> jobDetailsCache;
+	private final Cache<JobID, JobDetails> jobDetailsCache;//缓存集合,存储每一个job的详细信息
 
-	private final LoadingCache<JobID, ArchivedExecutionGraph> archivedExecutionGraphCache;
+	private final LoadingCache<JobID, ArchivedExecutionGraph> archivedExecutionGraphCache;//存储每一个job的结果集
 
 	private final ScheduledFuture<?> cleanupFuture;
 
@@ -82,12 +83,12 @@ public class FileArchivedExecutionGraphStore implements ArchivedExecutionGraphSt
 
 	public FileArchivedExecutionGraphStore(
 			File rootDir,
-			Time expirationTime,
-			long maximumCacheSizeBytes,
+			Time expirationTime,//过期时间
+			long maximumCacheSizeBytes,//最多存储字节数
 			ScheduledExecutor scheduledExecutor,
 			Ticker ticker) throws IOException {
 
-		final File storageDirectory = initExecutionGraphStorageDirectory(rootDir);
+		final File storageDirectory = initExecutionGraphStorageDirectory(rootDir);//创建临时目录 /$rootDir/$uuid
 
 		LOG.info(
 			"Initializing {}: Storage directory {}, expiration time {}, maximum cache size {} bytes.",
@@ -100,10 +101,12 @@ public class FileArchivedExecutionGraphStore implements ArchivedExecutionGraphSt
 		Preconditions.checkArgument(
 			storageDirectory.exists() && storageDirectory.isDirectory(),
 			"The storage directory must exist and be a directory.");
+
+		//过去方式,缓存数据
 		this.jobDetailsCache = CacheBuilder.newBuilder()
 			.expireAfterWrite(expirationTime.toMilliseconds(), TimeUnit.MILLISECONDS)
 			.removalListener(
-				(RemovalListener<JobID, JobDetails>) notification -> deleteExecutionGraphFile(notification.getKey()))
+				(RemovalListener<JobID, JobDetails>) notification -> deleteExecutionGraphFile(notification.getKey()))//当发生过期时,触发删除函数
 			.ticker(ticker)
 			.build();
 
@@ -122,7 +125,7 @@ public class FileArchivedExecutionGraphStore implements ArchivedExecutionGraphSt
 			expirationTime.toMilliseconds(),
 			TimeUnit.MILLISECONDS);
 
-		this.shutdownHook = ShutdownHookUtil.addShutdownHook(this, getClass().getSimpleName(), LOG);
+		this.shutdownHook = ShutdownHookUtil.addShutdownHook(this, getClass().getSimpleName(), LOG);//调用close方法
 
 		this.numFinishedJobs = 0;
 		this.numFailedJobs = 0;
@@ -266,6 +269,7 @@ public class FileArchivedExecutionGraphStore implements ArchivedExecutionGraphSt
 		jobDetailsCache.invalidate(jobId);
 	}
 
+	//创建临时目录
 	private static File initExecutionGraphStorageDirectory(File tmpDir) throws IOException {
 		final int maxAttempts = 10;
 

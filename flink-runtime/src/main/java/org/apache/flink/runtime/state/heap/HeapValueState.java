@@ -27,9 +27,11 @@ import org.apache.flink.runtime.state.internal.InternalValueState;
 /**
  * Heap-backed partitioned {@link ValueState} that is snapshotted into files.
  *
- * @param <K> The type of the key.
+ * @param <K> The type of the key.key的类型
  * @param <N> The type of the namespace.
- * @param <V> The type of the value.
+ * @param <V> The type of the value.value的类型
+ *
+ * 一个key对应一个基础类型的value,而不是List/map复杂对象
  */
 class HeapValueState<K, N, V>
 	extends AbstractHeapState<K, N, V>
@@ -38,7 +40,7 @@ class HeapValueState<K, N, V>
 	/**
 	 * Creates a new key/value state for the given hash map of key/value pairs.
 	 *
-	 * @param stateTable The state table for which this state is associated to.
+	 * @param stateTable The state table for which this state is associated to.存储key的容器
 	 * @param keySerializer The serializer for the keys.
 	 * @param valueSerializer The serializer for the state.
 	 * @param namespaceSerializer The serializer for the namespace.
@@ -49,7 +51,7 @@ class HeapValueState<K, N, V>
 		TypeSerializer<K> keySerializer,
 		TypeSerializer<V> valueSerializer,
 		TypeSerializer<N> namespaceSerializer,
-		V defaultValue) {
+		V defaultValue) {//状态的默认值
 		super(stateTable, keySerializer, valueSerializer, namespaceSerializer, defaultValue);
 	}
 
@@ -68,6 +70,7 @@ class HeapValueState<K, N, V>
 		return valueSerializer;
 	}
 
+	//get操作
 	@Override
 	public V value() {
 		final V result = stateTable.get(currentNamespace);
@@ -79,15 +82,16 @@ class HeapValueState<K, N, V>
 		return result;
 	}
 
+	//更新
 	@Override
 	public void update(V value) {
 
 		if (value == null) {
-			clear();
+			clear();//做删除处理
 			return;
 		}
 
-		stateTable.put(currentNamespace, value);
+		stateTable.put(currentNamespace, value);//做更新处理
 	}
 
 	@SuppressWarnings("unchecked")

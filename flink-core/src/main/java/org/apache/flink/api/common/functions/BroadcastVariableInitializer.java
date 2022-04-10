@@ -43,7 +43,7 @@ import org.apache.flink.annotation.Public;
  *     private Map<Long, String> map;
  *
  *     public void open(Configuration cfg) throws Exception {
- *         getRuntimeContext().getBroadcastVariableWithInitializer("mapvar",
+ *         this.map = getRuntimeContext().getBroadcastVariableWithInitializer("mapvar",
  *             new BroadcastVariableInitializer<Tuple2<Long, String>, Map<Long, String>>() {
  *
  *                 public Map<Long, String> initializeBroadcastVariable(Iterable<Tuple2<Long, String>> data) {
@@ -65,9 +65,10 @@ import org.apache.flink.annotation.Public;
  * }
  *
  * }</pre>
- *
+ * 注意:mapvar 是广播的变量
  * @param <T> The type of the elements in the list of the original untransformed broadcast variable.
  * @param <O> The type of the transformed broadcast variable.
+ * 任务节点如何对广播变量进行处理。
  */
 @Public
 @FunctionalInterface
@@ -82,6 +83,7 @@ public interface BroadcastVariableInitializer<T, O> {
 	 *
 	 * @param data The sequence of elements in the broadcast variable.
 	 * @return The transformed broadcast variable.
+	 * 广播变量集合,转换成一个具体的对象,该对象可以是集合
 	 */
 	O initializeBroadcastVariable(Iterable<T> data);
 }

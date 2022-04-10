@@ -29,16 +29,18 @@ import org.apache.flink.core.memory.DataOutputView;
  * A block of 24 bytes written at the <i>end</i> of a block in a binary file, and containing
  * i) the number of records in the block, ii) the accumulated number of records, and
  * iii) the offset of the first record in the block.
+ * 代表数据块如何存储,虽然数据块内存储的是字节数组数据，但数据块的最后24位置是存的数据块元数据信息
  * */
 @Public
 public class BlockInfo implements IOReadableWritable {
 
-	private long recordCount;
+	private long recordCount;//数据块中有多少条数据
 
-	private long accumulatedRecordCount;
+	private long accumulatedRecordCount;//全部数据块中包含多少条数据
 
-	private long firstRecordStart;
+	private long firstRecordStart;//第一条记录在该数据块中的偏移量
 
+	//数据块元数据占用字节数
 	public int getInfoSize() {
 		return 8 + 8 + 8;
 	}

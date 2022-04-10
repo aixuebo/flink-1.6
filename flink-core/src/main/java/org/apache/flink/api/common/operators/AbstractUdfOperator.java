@@ -36,6 +36,7 @@ public abstract class AbstractUdfOperator<OUT, FT extends Function> extends Oper
 	
 	/**
 	 * The object or class containing the user function.
+	 * 自定义函数
 	 */
 	protected final UserCodeWrapper<FT> userFunction;
 
@@ -118,7 +119,7 @@ public abstract class AbstractUdfOperator<OUT, FT extends Function> extends Oper
 
 	/**
 	 * Gets the number of inputs for this operator.
-	 * 
+	 * 获取输入的数量,正常都是1,如果是join等操作的时候,可能是2等
 	 * @return The number of inputs for this operator.
 	 */
 	public abstract int getNumberOfInputs();
@@ -126,7 +127,8 @@ public abstract class AbstractUdfOperator<OUT, FT extends Function> extends Oper
 	/**
 	 * Gets the column numbers of the key fields in the input records for the given input.
 	 *  
-	 * @return The column numbers of the key fields.
+	 * @return The column numbers of the key fields.第几个输入input,正常都是0,如果是join的情况,可能参数是0和1，//获取第几个数据源的key集合,从0开始计数
+	 * 返回key在原始数据中的位置
 	 */
 	public abstract int[] getKeyColumns(int inputNum);
 	

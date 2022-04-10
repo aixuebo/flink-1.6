@@ -31,7 +31,12 @@ import org.apache.flink.types.NullFieldException;
 public class TupleSerializer<T extends Tuple> extends TupleSerializerBase<T> {
 
 	private static final long serialVersionUID = 1L;
-	
+
+	/**
+	 *
+	 * @param tupleClass 具体tuple实例,比如tuple7
+	 * @param fieldSerializers 每一个元素对应的序列化器
+	 */
 	public TupleSerializer(Class<T> tupleClass, TypeSerializer<?>[] fieldSerializers) {
 		super(tupleClass, fieldSerializers);
 	}

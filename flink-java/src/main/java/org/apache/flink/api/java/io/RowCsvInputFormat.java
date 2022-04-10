@@ -31,14 +31,16 @@ import java.util.Arrays;
 
 /**
  * Input format that reads csv into {@link Row}.
+ * 将每一个字段转换成row一行数据
+ * 感觉没意义,用tuple就可以了，没必要使用row。即使tuple只支持25个,但超过25个的时候，可以用pojo,不然转换成row的时候还需要提供每一个元素的类型，也是很麻烦的。
  */
 @PublicEvolving
 public class RowCsvInputFormat extends CsvInputFormat<Row> implements ResultTypeQueryable<Row> {
 
 	private static final long serialVersionUID = 1L;
 
-	private int arity;
-	private TypeInformation[] fieldTypeInfos;
+	private int arity;//多少个属性
+	private TypeInformation[] fieldTypeInfos;//每一个属性的类型实例
 	private int[] fieldPosMap;
 	private boolean emptyColumnAsNull;
 

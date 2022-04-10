@@ -26,6 +26,7 @@ import java.util.List;
 
 /**
  * Generic response body for communicating errors on the server.
+ * 返回错误信息
  */
 public final class ErrorResponseBody implements ResponseBody {
 

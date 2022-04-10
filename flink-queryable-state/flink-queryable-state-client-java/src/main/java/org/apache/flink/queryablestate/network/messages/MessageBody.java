@@ -33,6 +33,7 @@ public abstract class MessageBody {
 	/**
 	 * Serializes the message into a byte array.
 	 * @return A byte array with the serialized content of the message.
+	 * 对MessageBody对象进行序列化
 	 */
 	public abstract byte[] serialize();
 }

@@ -30,18 +30,19 @@ import org.apache.flink.util.Visitor;
 
 /**
  * Abstract superclass for for all operators that have one input like "map" or "reduce".
+ * 用于输入只有一个的情况
  *
- * @param <IN> Input type of the user function
- * @param <OUT> Output type of the user function
- * @param <FT> Type of the user function
+ * @param <IN> Input type of the user function 输入类型
+ * @param <OUT> Output type of the user function 输出类型
+ * @param <FT> Type of the user function 输入转输出的函数
  */
 @Internal
 public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends AbstractUdfOperator<OUT, FT> {
 	
-	/** The input which produces the data consumed by this operator. */
+	/** The input which produces the data consumed by this operator.输入也是一个操作对象 */
 	protected Operator<IN> input;
 	
-	/** The positions of the keys in the tuple. */
+	/** The positions of the keys in the tuple. key在原始记录中的位置集合,用于shuffler阶段的操作,比如reduce操作*/
 	private final int[] keyFields;
 	
 	/** Semantic properties of the associated function. */
@@ -70,13 +71,14 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	 */
 	protected SingleInputOperator(UserCodeWrapper<FT> stub, UnaryOperatorInformation<IN, OUT> operatorInfo, String name) {
 		super(stub, operatorInfo, name);
-		this.keyFields = new int[0];
+		this.keyFields = new int[0];//默认key就是原始数据的第0位置
 	}
 
 	// --------------------------------------------------------------------------------------------
 
 	/**
 	 * Gets the information about the operators input/output types.
+	 * 获取输入和输出的类型
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
@@ -88,6 +90,7 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	 * Returns the input operator or data source, or null, if none is set.
 	 * 
 	 * @return This operator's input.
+	 * 获取输入的操作对象
 	 */
 	public Operator<IN> getInput() {
 		return this.input;
@@ -95,6 +98,7 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	
 	/**
 	 * Removes all inputs.
+	 * 移除输入源
 	 */
 	public void clearInputs() {
 		this.input = null;
@@ -104,6 +108,7 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	 * Sets the given operator as the input to this operator.
 	 * 
 	 * @param input The operator to use as the input.
+	 * 设置输入源
 	 */
 	public void setInput(Operator<IN> input) {
 		this.input = input;
@@ -114,6 +119,7 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	 * 
 	 * @param input The operator(s) that form the input.
 	 * @deprecated This method will be removed in future versions. Use the {@link Union} operator instead.
+	 * 设置多个数据源,要求每一个数据源的格式是一样的,即数据源可以是union的结果
 	 */
 	@Deprecated
 	public void setInput(Operator<IN>... input) {
@@ -167,15 +173,16 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	
 	// --------------------------------------------------------------------------------------------
 
-	
+	//获取输入的数量
 	@Override
 	public final int getNumberOfInputs() {
 		return 1;
 	}
 
+	//返回key在原始数据中的位置
 	@Override
 	public int[] getKeyColumns(int inputNum) {
-		if (inputNum == 0) {
+		if (inputNum == 0) {//要求传入参数必须是0,因为已经设置了keyFields
 			return this.keyFields;
 		} else {
 			throw new IndexOutOfBoundsException();

@@ -40,6 +40,7 @@ public interface ConfigurableStateBackend {
 	 * @return A reconfigured state backend.
 	 *
 	 * @throws IllegalConfigurationException Thrown if the configuration contained invalid entries.
+	 * 通过配置信息,生产StateBackend实例对象
 	 */
 	StateBackend configure(Configuration config) throws IllegalConfigurationException;
 }

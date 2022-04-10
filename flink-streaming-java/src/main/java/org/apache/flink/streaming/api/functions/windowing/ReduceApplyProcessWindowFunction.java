@@ -32,6 +32,10 @@ import java.util.Collections;
  * Internal {@link ProcessWindowFunction} that is used for implementing a fold on a window
  * configuration that only allows {@link AllWindowFunction} and cannot directly execute a
  * {@link ReduceFunction}.
+ * 针对key分组的窗口,计算Reduce方法
+ *
+ * 参见 ReduceApplyAllWindowFunction
+ *
  */
 @Internal
 public class ReduceApplyProcessWindowFunction<K, W extends Window, T, R>

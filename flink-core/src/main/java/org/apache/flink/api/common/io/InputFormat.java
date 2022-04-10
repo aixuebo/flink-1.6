@@ -60,6 +60,7 @@ import org.apache.flink.core.io.InputSplitSource;
  * 
  * @param <OT> The type of the produced records.
  * @param <T> The type of input split.
+ * InputFormat<OT, T extends InputSplit> 定义输出类型OT, 如何读取数据块,解析数据内容,返回OT对象输出
  */
 @Public
 public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<T>, Serializable {
@@ -84,6 +85,7 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * 
 	 * @param cachedStatistics The statistics that were cached. May be null.
 	 * @return The base statistics for the input, or null, if not available.
+	 * 统计整体文件大小、文件行数、平均每行文件大小
 	 */
 	BaseStatistics getStatistics(BaseStatistics cachedStatistics) throws IOException;
 	
@@ -97,6 +99,7 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * @return The splits of this input that can be processed in parallel. 
 	 * 
 	 * @throws IOException Thrown, when the creation of the splits was erroneous.
+	 * 返回数据块集合 --- 如何拆分文件
 	 */
 	@Override
 	T[] createInputSplits(int minNumSplits) throws IOException;
@@ -105,11 +108,13 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * Gets the type of the input splits that are processed by this input format.
 	 * 
 	 * @return The type of the input splits.
+	 * 如何分配文件给节点
+	 * 获取分配InputSplit的分配器---需要传入全部的InputSplit供分配器分配
 	 */
 	@Override
 	InputSplitAssigner getInputSplitAssigner(T[] inputSplits);
 	
-	// --------------------------------------------------------------------------------------------
+	// 如何操作一个文件--------------------------------------------------------------------------------------------
 	
 	/**
 	 * Opens a parallel instance of the input format to work on a split.
@@ -118,6 +123,7 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * 
 	 * @param split The split to be opened.
 	 * @throws IOException Thrown, if the spit could not be opened due to an I/O problem.
+	 * 打开一个文件
 	 */
 	void open(T split) throws IOException;
 	
@@ -128,6 +134,7 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * 
 	 * @return True if the end is reached, otherwise false.
 	 * @throws IOException Thrown, if an I/O error occurred.
+	 * 是否读取完成文件
 	 */
 	boolean reachedEnd() throws IOException;
 	
@@ -140,6 +147,7 @@ public interface InputFormat<OT, T extends InputSplit> extends InputSplitSource<
 	 * @return Read record.
 	 *         
 	 * @throws IOException Thrown, if an I/O error occurred.
+	 * 传入空的对象,返回填充后的对象
 	 */
 	OT nextRecord(OT reuse) throws IOException;
 	

@@ -57,7 +57,7 @@ public final class FileUtils {
 	private static final int RANDOM_FILE_NAME_LENGTH = 12;
 
 	// ------------------------------------------------------------------------
-
+    //将src的内容,输出到WritableByteChannel流中
 	public static void writeCompletely(WritableByteChannel channel, ByteBuffer src) throws IOException {
 		while (src.hasRemaining()) {
 			channel.write(src);
@@ -73,6 +73,7 @@ public final class FileUtils {
 	 * @param prefix
 	 *        the prefix to the filename to be constructed
 	 * @return the generated random filename with the given prefix
+	 * 随机产生一个名称 --- 前缀保持一致
 	 */
 	public static String getRandomFilename(final String prefix) {
 		final Random rnd = new Random();

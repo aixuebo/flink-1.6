@@ -23,6 +23,7 @@ import org.apache.flink.runtime.rest.messages.MessagePathParameter;
 
 /**
  * Path parameter identifying subtask attempt.
+ * 参数值是Integer
  */
 public class SubtaskAttemptPathParameter extends MessagePathParameter<Integer> {
 	/**

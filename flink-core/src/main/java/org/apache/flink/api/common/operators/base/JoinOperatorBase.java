@@ -28,11 +28,13 @@ import org.apache.flink.api.common.operators.util.UserCodeClassWrapper;
 import org.apache.flink.api.common.operators.util.UserCodeObjectWrapper;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 
+//设置如何join,key如何分区到不同节点、数据join的分发优化
 @Internal
 public abstract class JoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {
 
 	/**
 	 * An enumeration of hints, optionally usable to tell the system how exactly execute the join.
+	 * 提示,仅仅是一个提示,不能决定作用,具体看代码实现是否参考该提示
 	 */
 	@Public
 	public static enum JoinHint {
@@ -40,6 +42,7 @@ public abstract class JoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunctio
 		/**
 		 * Leave the choice how to do the join to the optimizer. If in doubt, the
 		 * optimizer will choose a repartitioning join.
+		 * flink优化器自己决定如何join
 		 */
 		OPTIMIZER_CHOOSES,
 
@@ -47,6 +50,7 @@ public abstract class JoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunctio
 		 * Hint that the first join input is much smaller than the second. This results in
 		 * broadcasting and hashing the first input, unless the optimizer infers that
 		 * prior existing partitioning is available that is even cheaper to exploit.
+		 * 第一个数据源很小,因此广播第一个数据源
 		 */
 		BROADCAST_HASH_FIRST,
 
@@ -61,6 +65,7 @@ public abstract class JoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunctio
 		 * Hint that the first join input is a bit smaller than the second. This results in
 		 * repartitioning both inputs and hashing the first input, unless the optimizer infers that
 		 * prior existing partitioning and orders are available that are even cheaper to exploit.
+		 * 第一个数据集稍微小一些
 		 */
 		REPARTITION_HASH_FIRST,
 
@@ -74,6 +79,7 @@ public abstract class JoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunctio
 		/**
 		 * Hint that the join should repartitioning both inputs and use sorting and merging
 		 * as the join strategy.
+		 * 使用排序和合并策略对数据集进行重新分配
 		 */
 		REPARTITION_SORT_MERGE
 	}

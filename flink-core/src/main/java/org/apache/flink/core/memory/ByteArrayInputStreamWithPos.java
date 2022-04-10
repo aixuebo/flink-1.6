@@ -27,6 +27,7 @@ import java.io.InputStream;
 /**
  * Un-synchronized stream similar to Java's ByteArrayInputStream that also exposes the current position.
  * 字节数组作为数据源
+ * 会构建一个字节数组,刚开始是空的，然后不断向该数据设置值,然后不断读取被消费掉
  */
 @Internal
 public class ByteArrayInputStreamWithPos extends InputStream {
@@ -42,6 +43,7 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 		this(EMPTY);
 	}
 
+	//设置数据源内容
 	public ByteArrayInputStreamWithPos(byte[] buffer) {
 		this(buffer, 0, buffer.length);
 	}
@@ -131,6 +133,7 @@ public class ByteArrayInputStreamWithPos extends InputStream {
 		this.position = pos;
 	}
 
+	//设置数据源内容
 	public void setBuffer(byte[] buffer, int offset, int length) {
 		this.count = Math.min(buffer.length, offset + length);
 		setPosition(offset);

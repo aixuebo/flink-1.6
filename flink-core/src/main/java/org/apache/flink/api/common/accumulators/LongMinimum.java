@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that finds the minimum {@code long} value.
+ * 计算最小值 --- Long类型
  */
 @PublicEvolving
 public class LongMinimum implements SimpleAccumulator<Long> {

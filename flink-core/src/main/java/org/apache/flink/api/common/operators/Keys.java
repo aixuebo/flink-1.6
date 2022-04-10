@@ -81,12 +81,19 @@ public abstract class Keys<T> {
 	
 	public static class SelectorFunctionKeys<T, K> extends Keys<T> {
 
-		private final KeySelector<T, K> keyExtractor;
-		private final TypeInformation<T> inputType;
-		private final TypeInformation<K> keyType;
+		private final KeySelector<T, K> keyExtractor;//key提取器
+		private final TypeInformation<T> inputType;//输入类型
+		private final TypeInformation<K> keyType;//输出类型 --- 即key类型
+
 		private final List<FlatFieldDescriptor> keyFields;
 		private final TypeInformation<?>[] originalKeyTypes;
 
+		/**
+		 *
+		 * @param keyExtractor key的提取器,将输入T 提取出 K
+		 * @param inputType 输入类型,比如Tuple、vo
+		 * @param keyType key的输出类型 比如Tuple
+		 */
 		public SelectorFunctionKeys(KeySelector<T, K> keyExtractor, TypeInformation<T> inputType, TypeInformation<K> keyType) {
 
 			if (keyExtractor == null) {
@@ -156,6 +163,7 @@ public abstract class Keys<T> {
 		@Override
 		public <E> void validateCustomPartitioner(Partitioner<E> partitioner, TypeInformation<E> typeInfo) {
 
+			//自定义的partitioner只能接受一个key
 			if (keyFields.size() != 1) {
 				throw new InvalidProgramException("Custom partitioners can only be used with keys that have one key field.");
 			}
@@ -204,6 +212,7 @@ public abstract class Keys<T> {
 
 		/**
 		 * ExpressionKeys that is defined by the full data type.
+		 * 全部字段都是key
 		 */
 		public ExpressionKeys(TypeInformation<T> type) {
 			this(SELECT_ALL_CHAR, type);
@@ -211,6 +220,7 @@ public abstract class Keys<T> {
 
 		/**
 		 * Create int-based (non-nested) field position keys on a tuple type.
+		 * key是1个字段组成的
 		 */
 		public ExpressionKeys(int keyPosition, TypeInformation<T> type) {
 			this(new int[]{keyPosition}, type, false);
@@ -218,6 +228,7 @@ public abstract class Keys<T> {
 
 		/**
 		 * Create int-based (non-nested) field position keys on a tuple type.
+		 * key是由一组字段组成的
 		 */
 		public ExpressionKeys(int[] keyPositions, TypeInformation<T> type) {
 			this(keyPositions, type, false);
@@ -228,24 +239,27 @@ public abstract class Keys<T> {
 		 */
 		public ExpressionKeys(int[] keyPositions, TypeInformation<T> type, boolean allowEmpty) {
 
+			//类型必须是CompositeType 或者 Tuple
 			if (!type.isTupleType() || !(type instanceof CompositeType)) {
 				throw new InvalidProgramException("Specifying keys via field positions is only valid " +
 						"for tuple data types. Type: " + type);
 			}
+			//必须有元素
 			if (type.getArity() == 0) {
 				throw new InvalidProgramException("Tuple size must be greater than 0. Size: " + type.getArity());
 			}
+			//key可以不存在
 			if (!allowEmpty && (keyPositions == null || keyPositions.length == 0)) {
 				throw new IllegalArgumentException("The grouping fields must not be empty.");
 			}
 
 			this.keyFields = new ArrayList<>();
 
-			if (keyPositions == null || keyPositions.length == 0) {
+			if (keyPositions == null || keyPositions.length == 0) {//全部位置都是key
 				// use all tuple fields as key fields
 				keyPositions = createIncrIntArray(type.getArity());
 			} else {
-				rangeCheckFields(keyPositions, type.getArity() - 1);
+				rangeCheckFields(keyPositions, type.getArity() - 1);//校验keyPositions的位置
 			}
 
 			checkArgument(keyPositions.length > 0, "Grouping fields can not be empty at this point");
@@ -462,7 +476,7 @@ public abstract class Keys<T> {
 	//  Utilities
 	// --------------------------------------------------------------------------------------------
 
-
+    //比如numKeys = 5,则输出[0,1,2,3,4]
 	private static int[] createIncrIntArray(int numKeys) {
 		int[] keyFields = new int[numKeys];
 		for (int i = 0; i < numKeys; i++) {
@@ -471,6 +485,7 @@ public abstract class Keys<T> {
 		return keyFields;
 	}
 
+	//校验fields里面的值,一定不允许超过maxAllowedField
 	private static void rangeCheckFields(int[] fields, int maxAllowedField) {
 
 		for (int f : fields) {

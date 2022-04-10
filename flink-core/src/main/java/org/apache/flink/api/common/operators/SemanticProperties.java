@@ -27,6 +27,7 @@ import org.apache.flink.api.common.operators.util.FieldSet;
 
 /**
  * Container for the semantic properties associated to an operator.
+ * 关联该任务的语义属性
  */
 @Internal
 public interface SemanticProperties extends Serializable {

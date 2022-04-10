@@ -47,15 +47,21 @@ public class PartitionOperatorBase<IN> extends SingleInputOperator<IN, IN, NoOpF
 	
 	// --------------------------------------------------------------------------------------------
 	
-	private final PartitionMethod partitionMethod;
+	private final PartitionMethod partitionMethod;//分发方法
 	
 	private Partitioner<?> customPartitioner;
 	
 	private DataDistribution distribution;
 
 	private Ordering ordering;
-	
-	
+
+	/**
+	 *
+	 * @param operatorInfo 输入和输出类型相同，因为他只是做分发而已
+	 * @param pMethod
+	 * @param keys
+	 * @param name
+	 */
 	public PartitionOperatorBase(UnaryOperatorInformation<IN, IN> operatorInfo, PartitionMethod pMethod, int[] keys, String name) {
 		super(new UserCodeObjectWrapper<NoOpFunction>(new NoOpFunction()), operatorInfo, keys, name);
 		this.partitionMethod = pMethod;

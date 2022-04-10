@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that sums up {@code Integer} values.
+ * sum -- Integer类型
  */
 @PublicEvolving
 public class IntCounter implements SimpleAccumulator<Integer> {

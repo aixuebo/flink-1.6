@@ -89,6 +89,7 @@ public class CoBroadcastWithNonKeyedOperatorTest {
 
 		private static final long serialVersionUID = 7496674620398203933L;
 
+		//设置广播信息
 		@Override
 		public void processBroadcastElement(Integer value, Context ctx, Collector<String> out) throws Exception {
 			ctx.getBroadcastState(STATE_DESCRIPTOR).put("key." + value, value);

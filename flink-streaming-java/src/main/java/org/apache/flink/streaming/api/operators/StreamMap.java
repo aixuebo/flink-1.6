@@ -23,6 +23,8 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 /**
  * A {@link StreamOperator} for executing {@link MapFunction MapFunctions}.
+ *
+ * 提供操作函数，以及如何处理每一个元素的再发送问题
  */
 @Internal
 public class StreamMap<IN, OUT>
@@ -33,11 +35,11 @@ public class StreamMap<IN, OUT>
 
 	public StreamMap(MapFunction<IN, OUT> mapper) {
 		super(mapper);
-		chainingStrategy = ChainingStrategy.ALWAYS;
+		chainingStrategy = ChainingStrategy.ALWAYS;//修改串联方式
 	}
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
-		output.collect(element.replace(userFunction.map(element.getValue())));
+		output.collect(element.replace(userFunction.map(element.getValue())));//数据被函数处理,转换成新值,但时间戳不变
 	}
 }

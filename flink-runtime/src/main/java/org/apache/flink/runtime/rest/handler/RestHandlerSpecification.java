@@ -22,6 +22,7 @@ import org.apache.flink.runtime.rest.HttpMethodWrapper;
 
 /**
  * Rest handler interface which all rest handler implementation have to implement.
+ * 描述请求往哪里发,以及什么方式发
  */
 public interface RestHandlerSpecification {
 
@@ -29,6 +30,7 @@ public interface RestHandlerSpecification {
 	 * Returns the {@link HttpMethodWrapper} to be used for the request.
 	 *
 	 * @return http method to be used for the request
+	 * 请求类型,get、post等
 	 */
 	HttpMethodWrapper getHttpMethod();
 
@@ -36,6 +38,7 @@ public interface RestHandlerSpecification {
 	 * Returns the generalized endpoint url that this request should be sent to, for example {@code /job/:jobid}.
 	 *
 	 * @return endpoint url that this request should be sent to
+	 * 请求发送的目标url
 	 */
 	String getTargetRestEndpointURL();
 }

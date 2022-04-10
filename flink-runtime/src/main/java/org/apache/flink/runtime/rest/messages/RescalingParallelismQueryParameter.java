@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * Parallelism for the rescaling of jobs specified as a {@link MessageQueryParameter}.
+ * 参数值是参数值是list<Integer>
  */
 public class RescalingParallelismQueryParameter extends MessageQueryParameter<Integer> {
 

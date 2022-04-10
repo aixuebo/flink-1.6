@@ -92,6 +92,7 @@ public class DefaultSlotPoolFactory implements SlotPoolFactory {
 			slotIdleTimeout);
 	}
 
+	//调度策略
 	private static SchedulingStrategy selectSchedulingStrategy(Configuration configuration) {
 		if (configuration.getBoolean(CheckpointingOptions.LOCAL_RECOVERY)) {
 			return PreviousAllocationSchedulingStrategy.getInstance();

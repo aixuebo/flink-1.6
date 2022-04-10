@@ -53,6 +53,16 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <IN1> Type of the first input data steam.
  * @param <IN2> Type of the second input data stream.
+ *
+ * 两个不同数据结构类型的DataStream做连接,输出相同类型的结果
+ *
+经过graph的计算后,会知道two来自于两个输入的输出结果，因此假设two有10个分区，
+则依赖的两个任务最重也会把内容打到这10个分区内。
+
+
+核心:本身不做join。只是把两个数据源的数据接入，分别处理不同数据源数据，统一按照key分发到下游。只是两个数据源共同同一组下游节点size。
+下游可以随心所欲再近些keyBy等聚合操作，本步骤只是把两个数据源对接成一个输出的过程。
+ *
  */
 @Public
 public class ConnectedStreams<IN1, IN2> {
@@ -120,7 +130,7 @@ public class ConnectedStreams<IN1, IN2> {
 	 * @return The grouped {@link ConnectedStreams}
 	 */
 	public ConnectedStreams<IN1, IN2> keyBy(int keyPosition1, int keyPosition2) {
-		return new ConnectedStreams<>(this.environment, inputStream1.keyBy(keyPosition1),
+		return new ConnectedStreams<>(this.environment, inputStream1.keyBy(keyPosition1),//KeyedStream<T, KEY> extends DataStream<T>
 				inputStream2.keyBy(keyPosition2));
 	}
 
@@ -225,6 +235,7 @@ public class ConnectedStreams<IN1, IN2> {
 	 */
 	public <R> SingleOutputStreamOperator<R> map(CoMapFunction<IN1, IN2, R> coMapper) {
 
+		//计算输出类型
 		TypeInformation<R> outTypeInfo = TypeExtractor.getBinaryOperatorReturnType(
 			coMapper,
 			CoMapFunction.class,
@@ -257,6 +268,7 @@ public class ConnectedStreams<IN1, IN2> {
 	public <R> SingleOutputStreamOperator<R> flatMap(
 			CoFlatMapFunction<IN1, IN2, R> coFlatMapper) {
 
+		//计算输出类型
 		TypeInformation<R> outTypeInfo = TypeExtractor.getBinaryOperatorReturnType(
 			coFlatMapper,
 			CoFlatMapFunction.class,
@@ -269,6 +281,7 @@ public class ConnectedStreams<IN1, IN2> {
 			Utils.getCallLocationName(),
 			true);
 
+		//注意:inputStream1.clean(coFlatMapper) 只是在让coFlatMapper函数序列化,与inputStream1无关。使用inputStream1或者inputStream2都可以
 		return transform("Co-Flat Map", outTypeInfo, new CoStreamFlatMap<>(inputStream1.clean(coFlatMapper)));
 	}
 
@@ -340,8 +353,8 @@ public class ConnectedStreams<IN1, IN2> {
 	}
 
 	@PublicEvolving
-	public <R> SingleOutputStreamOperator<R> transform(String functionName,
-			TypeInformation<R> outTypeInfo,
+	public <R> SingleOutputStreamOperator<R> transform(String functionName,//函数,比如co-map
+			TypeInformation<R> outTypeInfo,//返回值
 			TwoInputStreamOperator<IN1, IN2, R> operator) {
 
 		// read the output type of the input Transforms to coax out errors about MissingTypeInfo
@@ -356,10 +369,11 @@ public class ConnectedStreams<IN1, IN2> {
 				outTypeInfo,
 				environment.getParallelism());
 
-		if (inputStream1 instanceof KeyedStream && inputStream2 instanceof KeyedStream) {
+		if (inputStream1 instanceof KeyedStream && inputStream2 instanceof KeyedStream) {//说明两个输入已经是做了keyby操作
 			KeyedStream<IN1, ?> keyedInput1 = (KeyedStream<IN1, ?>) inputStream1;
 			KeyedStream<IN2, ?> keyedInput2 = (KeyedStream<IN2, ?>) inputStream2;
 
+			//必须确保两个流的key类型是相同的
 			TypeInformation<?> keyType1 = keyedInput1.getKeyType();
 			TypeInformation<?> keyType2 = keyedInput2.getKeyType();
 			if (!(keyType1.canEqual(keyType2) && keyType1.equals(keyType2))) {
@@ -367,6 +381,7 @@ public class ConnectedStreams<IN1, IN2> {
 						"don't match: " + keyType1 + " and " + keyType2 + ".");
 			}
 
+			//设置 用于shuffle,每一个流的元素如何转换成key,以及key的类型
 			transform.setStateKeySelectors(keyedInput1.getKeySelector(), keyedInput2.getKeySelector());
 			transform.setStateKeyType(keyType1);
 		}

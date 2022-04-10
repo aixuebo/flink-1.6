@@ -35,28 +35,33 @@ import static org.apache.flink.api.java.summarize.aggregation.CompensatedSum.ZER
  * for all numeric types so subclasses must implement these.
  *
  * @param <T> numeric type to aggregrate and create a summary, e.g. Integer, DoubleValue
+ *
+ * 要求参数T必须是Number类型
+ * 统计最大值、最小值、sum、均值、方差数据
  */
 @Internal
 public abstract class NumericSummaryAggregator<T extends Number> implements Aggregator<T, NumericColumnSummary<T>> {
 
 	private static final long serialVersionUID = 1L;
 
-	private long nonMissingCount = 0L; // count of elements that are NOT null, NaN, or Infinite
-	private long nullCount = 0L;
-	private long nanCount = 0L;
-	private long infinityCount = 0L;
+	private long nonMissingCount = 0L; // count of elements that are NOT null, NaN, or Infinite,非空,正常元素的数量
+	private long nullCount = 0L;//null的数量
+	private long nanCount = 0L;//NaN的数量
+	private long infinityCount = 0L;//infinity的数量
 
 	// these fields are initialized by type specific subclasses
 	private Aggregator<T, T> min = initMin();
 	private Aggregator<T, T> max = initMax();
 	private Aggregator<T, T> sum = initSum();
 
+	//均值
 	private CompensatedSum mean = ZERO;
 	/**
 	 * Sum of squares of differences from the current mean (used to calculate variance).
 	 *
 	 * <p>The algorithm is described in: "Scalable and Numerically Stable Descriptive Statistics in SystemML",
 	 * Tian et al, International Conference on Data Engineering 2012
+	 * 方差
 	 */
 	private CompensatedSum m2 = ZERO;
 
@@ -152,14 +157,14 @@ public abstract class NumericSummaryAggregator<T extends Number> implements Aggr
 	// there isn't a generic way to calculate min, max, sum, isNan, isInfinite for all numeric types
 	// so subclasses must implement these
 
-	protected abstract Aggregator<T, T> initMin();
+	protected abstract Aggregator<T, T> initMin();//最小值集合器
 
-	protected abstract Aggregator<T, T> initMax();
+	protected abstract Aggregator<T, T> initMax();//最大值集合器
 
-	protected abstract Aggregator<T, T> initSum();
+	protected abstract Aggregator<T, T> initSum();//求sum集合器
 
-	protected abstract boolean isNan(T number);
+	protected abstract boolean isNan(T number);//是否是NaN,只有Float和Double类型才有NaN
 
-	protected abstract boolean isInfinite(T number);
+	protected abstract boolean isInfinite(T number);//是否是Infinite,只有Float和Double类型才有Infinite
 
 }

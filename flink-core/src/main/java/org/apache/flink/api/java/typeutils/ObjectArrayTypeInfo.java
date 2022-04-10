@@ -35,8 +35,8 @@ public class ObjectArrayTypeInfo<T, C> extends TypeInformation<T> {
 
 	private static final long serialVersionUID = 1L;
 	
-	private final Class<T> arrayType;
-	private final TypeInformation<C> componentInfo;
+	private final Class<T> arrayType;//数组类型
+	private final TypeInformation<C> componentInfo;//数组的元素类型
 
 	private ObjectArrayTypeInfo(Class<T> arrayType, TypeInformation<C> componentInfo) {
 		this.arrayType = checkNotNull(arrayType);

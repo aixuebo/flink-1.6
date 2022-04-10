@@ -41,6 +41,7 @@ public abstract class AbstractStateBackend implements StateBackend, java.io.Seri
 	//  State Backend - State-Holding Backends
 	// ------------------------------------------------------------------------
 
+	//创建存储key的对象
 	@Override
 	public abstract <K> AbstractKeyedStateBackend<K> createKeyedStateBackend(
 		Environment env,
@@ -52,6 +53,7 @@ public abstract class AbstractStateBackend implements StateBackend, java.io.Seri
 		TaskKvStateRegistry kvStateRegistry,
 		TtlTimeProvider ttlTimeProvider) throws IOException;
 
+	//创建正常的存储对象
 	@Override
 	public abstract OperatorStateBackend createOperatorStateBackend(
 			Environment env,

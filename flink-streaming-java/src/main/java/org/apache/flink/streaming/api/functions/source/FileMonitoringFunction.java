@@ -38,6 +38,8 @@ import java.util.Map;
  * new files. Used together with {@link FileReadFunction}.
  *
  * @deprecated Internal class deprecated in favour of {@link ContinuousFileMonitoringFunction}.
+ *
+ * 每隔一定周期,监听目录下文件哪些新增了,去周期性的处理这些文件
  */
 @Internal
 @Deprecated
@@ -50,19 +52,19 @@ public class FileMonitoringFunction implements SourceFunction<Tuple3<String, Lon
 	 * The watch type of the {@code FileMonitoringFunction}.
 	 */
 	public enum WatchType {
-		ONLY_NEW_FILES, // Only new files will be processed.
+		ONLY_NEW_FILES, // Only new files will be processed.只处理新文件
 		REPROCESS_WITH_APPENDED, // When some files are appended, all contents
-									// of the files will be processed.
+									// of the files will be processed.如果文件发生修改,则修改后的所有内容都要重新加载
 		PROCESS_ONLY_APPENDED // When some files are appended, only appended
-								// contents will be processed.
+								// contents will be processed. 只加载增量内容
 	}
 
 	private String path;
-	private long interval;
+	private long interval;//监听的时间间隔
 	private WatchType watchType;
 
-	private Map<String, Long> offsetOfFiles;
-	private Map<String, Long> modificationTimes;
+	private Map<String, Long> offsetOfFiles;//key文件名,value文件已经处理的offset位置
+	private Map<String, Long> modificationTimes;//key是文件名,value文件已知的最后保留时间
 
 	private volatile boolean isRunning = true;
 
@@ -79,13 +81,13 @@ public class FileMonitoringFunction implements SourceFunction<Tuple3<String, Lon
 		FileSystem fileSystem = FileSystem.get(new URI(path));
 
 		while (isRunning) {
-			List<String> files = listNewFiles(fileSystem);
+			List<String> files = listNewFiles(fileSystem);//返回待处理的文件
 			for (String filePath : files) {
-				if (watchType == WatchType.ONLY_NEW_FILES
-						|| watchType == WatchType.REPROCESS_WITH_APPENDED) {
-					ctx.collect(new Tuple3<String, Long, Long>(filePath, 0L, -1L));
+				if (watchType == WatchType.ONLY_NEW_FILES //文件是新文件
+						|| watchType == WatchType.REPROCESS_WITH_APPENDED) {//加载文件全部内容
+					ctx.collect(new Tuple3<String, Long, Long>(filePath, 0L, -1L));//文件名、开始位置是0,结束位置是-1
 					offsetOfFiles.put(filePath, -1L);
-				} else if (watchType == WatchType.PROCESS_ONLY_APPENDED) {
+				} else if (watchType == WatchType.PROCESS_ONLY_APPENDED) {//只加载增量内容
 					long offset = 0;
 					long fileSize = fileSystem.getFileStatus(new Path(filePath)).getLen();
 					if (offsetOfFiles.containsKey(filePath)) {
@@ -103,21 +105,22 @@ public class FileMonitoringFunction implements SourceFunction<Tuple3<String, Lon
 		}
 	}
 
+	//获取path下满足条件的文件路径
 	private List<String> listNewFiles(FileSystem fileSystem) throws IOException {
 		List<String> files = new ArrayList<String>();
 
-		FileStatus[] statuses = fileSystem.listStatus(new Path(path));
+		FileStatus[] statuses = fileSystem.listStatus(new Path(path));//子目录集合
 
 		if (statuses == null) {
 			LOG.warn("Path does not exist: {}", path);
 		} else {
 			for (FileStatus status : statuses) {
-				Path filePath = status.getPath();
-				String fileName = filePath.getName();
-				long modificationTime = status.getModificationTime();
+				Path filePath = status.getPath();//文件
+				String fileName = filePath.getName();//文件名
+				long modificationTime = status.getModificationTime();//最后修改时间
 
 				if (!isFiltered(fileName, modificationTime)) {
-					files.add(filePath.toString());
+					files.add(filePath.toString());//要处理该文件
 					modificationTimes.put(fileName, modificationTime);
 				}
 			}
@@ -126,12 +129,18 @@ public class FileMonitoringFunction implements SourceFunction<Tuple3<String, Lon
 		return files;
 	}
 
+	/**
+	 * 根据文件名 + 最后修改时间,觉得是否保留该文件
+	 * @param fileName 文件名
+	 * @param modificationTime 最后修改时间
+	 * @return  false表示保留,true表示丢弃
+	 */
 	private boolean isFiltered(String fileName, long modificationTime) {
 
-		if ((watchType == WatchType.ONLY_NEW_FILES && modificationTimes.containsKey(fileName))
-				|| fileName.startsWith(".") || fileName.contains("_COPYING_")) {
+		if ((watchType == WatchType.ONLY_NEW_FILES && modificationTimes.containsKey(fileName)) //只保留新文件 -- 但文件已经存在过
+				|| fileName.startsWith(".") || fileName.contains("_COPYING_")) { //隐藏文件、_COPYING_文件丢弃、
 			return true;
-		} else {
+		} else { //保留后期又修改的文件
 			Long lastModification = modificationTimes.get(fileName);
 			return lastModification != null && lastModification >= modificationTime;
 		}

@@ -66,11 +66,12 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 	private final PermanentBlobService blobService;
 
 	/** The resolve order to use when creating a {@link ClassLoader}. */
-	private final FlinkUserCodeClassLoaders.ResolveOrder classLoaderResolveOrder;
+	private final FlinkUserCodeClassLoaders.ResolveOrder classLoaderResolveOrder;//加载器方式
 
 	/**
 	 * List of patterns for classes that should always be resolved from the parent ClassLoader,
 	 * if possible.
+	 * class的前缀,满足这些前缀的class，都要root类加载器去加载。避免加载器篡改flink或者scala等源码
 	 */
 	private final String[] alwaysParentFirstPatterns;
 
@@ -268,11 +269,12 @@ public class BlobLibraryCacheManager implements LibraryCacheManager {
 		LibraryCacheEntry(
 				Collection<PermanentBlobKey> requiredLibraries,
 				Collection<URL> requiredClasspaths,
-				URL[] libraryURLs,
-				ExecutionAttemptID initialReference,
+				URL[] libraryURLs,//requiredLibraries+requiredClasspaths
+				ExecutionAttemptID initialReference,//任务ID
 				FlinkUserCodeClassLoaders.ResolveOrder classLoaderResolveOrder,
 				String[] alwaysParentFirstPatterns) {
 
+			//获取类加载器
 			this.classLoader =
 				FlinkUserCodeClassLoaders.create(
 					classLoaderResolveOrder,

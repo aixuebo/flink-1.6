@@ -24,6 +24,7 @@ import java.util.concurrent.FutureTask;
 
 /**
  * @param <V> return type of the callable function
+ * 传入call异步调用实例，参与异步调用框架处理
  */
 public class AsyncStoppableTaskWithCallback<V> extends FutureTask<V> {
 

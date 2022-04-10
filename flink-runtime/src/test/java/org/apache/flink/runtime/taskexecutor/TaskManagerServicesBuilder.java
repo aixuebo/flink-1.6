@@ -48,6 +48,7 @@ public class TaskManagerServicesBuilder {
 
 	public TaskManagerServicesBuilder() {
 		taskManagerLocation = new LocalTaskManagerLocation();
+		//申请一个4k的segment容器
 		memoryManager = new MemoryManager(
 			MemoryManager.MIN_PAGE_SIZE,
 			1,

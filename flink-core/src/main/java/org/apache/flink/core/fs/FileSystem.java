@@ -472,6 +472,7 @@ public abstract class FileSystem {
 	 * This call is most helpful with DFS, where it returns
 	 * hostnames of machines that contain the given file.
 	 * The FileSystem will simply return an elt containing 'localhost'.
+	 * 返回文件范围对应的数据块集合
 	 */
 	public abstract BlockLocation[] getFileBlockLocations(FileStatus file, long start, long len) throws IOException;
 
@@ -806,15 +807,15 @@ public abstract class FileSystem {
 				}
 			}
 
-			if (createDirectory) {
+			if (createDirectory) {//创建目录
 				// Output directory needs to be created
-				if (!exists(outPath)) {
+				if (!exists(outPath)) {//必须路径存在
 					mkdirs(outPath);
 				}
 
 				// double check that the output directory exists
 				try {
-					return getFileStatus(outPath).isDir();
+					return getFileStatus(outPath).isDir();//路径是否是目录
 				}
 				catch (FileNotFoundException e) {
 					return false;

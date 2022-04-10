@@ -140,13 +140,14 @@ class SpillableSubpartitionView implements ResultSubpartitionView {
 		}
 	}
 
+	//获取下一个返回的信息
 	@Nullable
 	@Override
 	public BufferAndBacklog getNextBuffer() throws IOException, InterruptedException {
-		Buffer current = null;
-		boolean nextBufferIsEvent = false;
-		int newBacklog = 0; // this is always correct if current is non-null!
-		boolean isMoreAvailable = false;
+		Buffer current = null;//当前的buffer
+		boolean nextBufferIsEvent = false;//下一个buffer是否是事件buffer --- 需要获取nextbuffer后才能确定
+		int newBacklog = 0; // this is always correct if current is non-null! 目前非事件buffer的数量
+		boolean isMoreAvailable = false;//说明接下来还是有buffer数据可以读 --- 需要获取nextbuffer后才能确定
 
 		synchronized (buffers) {
 			if (isReleased.get()) {
@@ -154,7 +155,7 @@ class SpillableSubpartitionView implements ResultSubpartitionView {
 			} else if (nextBuffer != null) {
 				current = nextBuffer.build();
 				checkState(nextBuffer.isFinished(),
-					"We can only read from SpillableSubpartition after it was finished");
+					"We can only read from SpillableSubpartition after it was finished");//必须已经完成才能被读取
 
 				newBacklog = parent.decreaseBuffersInBacklogUnsafe(nextBuffer.isBuffer());
 				nextBuffer.close();
@@ -228,6 +229,7 @@ class SpillableSubpartitionView implements ResultSubpartitionView {
 		}
 	}
 
+	//下一个buffer是否是事件buffer,true表示是
 	@Override
 	public boolean nextBufferIsEvent() {
 		synchronized (buffers) {

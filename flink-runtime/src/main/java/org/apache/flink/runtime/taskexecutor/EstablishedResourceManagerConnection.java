@@ -27,14 +27,15 @@ import javax.annotation.Nonnull;
 /**
  * Container for the resource manager connection instances used by the
  * {@link TaskExecutor}.
+ * task与resource manager建立连接
  */
 class EstablishedResourceManagerConnection {
 
 	@Nonnull
-	private final ResourceManagerGateway resourceManagerGateway;
+	private final ResourceManagerGateway resourceManagerGateway;//resource manager 的服务网关代理
 
 	@Nonnull
-	private final ResourceID resourceManagerResourceId;
+	private final ResourceID resourceManagerResourceId;//resource manager 的唯一ID
 
 	@Nonnull
 	private final InstanceID taskExecutorRegistrationId;

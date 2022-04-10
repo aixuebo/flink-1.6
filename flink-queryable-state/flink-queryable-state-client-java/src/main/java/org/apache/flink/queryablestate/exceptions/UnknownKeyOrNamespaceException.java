@@ -23,6 +23,7 @@ import org.apache.flink.queryablestate.network.BadRequestException;
 
 /**
  * Thrown if the KvState does not hold any state for the given key or namespace.
+ * 有stageid,但没有命名空间+key对应的value
  */
 @Internal
 public class UnknownKeyOrNamespaceException extends BadRequestException {

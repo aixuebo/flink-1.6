@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 
 /**
  * Path parameter to identify uploaded jar files.
+ * 参数值是String
  */
 public class JarIdPathParameter extends MessagePathParameter<String> {
 

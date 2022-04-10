@@ -30,6 +30,7 @@ public class JobAccumulatorsHeaders implements MessageHeaders<EmptyRequestBody, 
 
 	private static final JobAccumulatorsHeaders INSTANCE = new JobAccumulatorsHeaders();
 
+	// /jobs/{jobid}/accumulators
 	public static final String URL = "/jobs" +
 		"/:" + JobIDPathParameter.KEY +
 		"/accumulators";

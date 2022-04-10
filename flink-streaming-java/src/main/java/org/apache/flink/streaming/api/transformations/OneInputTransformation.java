@@ -36,17 +36,20 @@ import java.util.List;
  *
  * @param <IN> The type of the elements in the input {@code StreamTransformation}
  * @param <OUT> The type of the elements that result from this {@code OneInputTransformation}
+ * IN-->OUT操作
+ *
+ * 输入StreamTransformation + 操作OneInputStreamOperator = 输出
  */
 @Internal
 public class OneInputTransformation<IN, OUT> extends StreamTransformation<OUT> {
 
-	private final StreamTransformation<IN> input;
+	private final StreamTransformation<IN> input;//数据源
 
-	private final OneInputStreamOperator<IN, OUT> operator;
+	private final OneInputStreamOperator<IN, OUT> operator;//操作
 
-	private KeySelector<IN, ?> stateKeySelector;
+	private KeySelector<IN, ?> stateKeySelector;//IN --> ? 类型,用于分组时使用  ---> 有时候OneInputTransformation的结果是需要shuffle的,此时就需要将输入转换成key
 
-	private TypeInformation<?> stateKeyType;
+	private TypeInformation<?> stateKeyType;//描述stateKeySelector中?的类型
 
 	/**
 	 * Creates a new {@code OneInputTransformation} from the given input and operator.
@@ -58,12 +61,12 @@ public class OneInputTransformation<IN, OUT> extends StreamTransformation<OUT> {
 	 * @param parallelism The parallelism of this {@code OneInputTransformation}
 	 */
 	public OneInputTransformation(
-			StreamTransformation<IN> input,
+			StreamTransformation<IN> input,//输入流
 			String name,
-			OneInputStreamOperator<IN, OUT> operator,
+			OneInputStreamOperator<IN, OUT> operator,//如何操作输入流
 			TypeInformation<OUT> outputType,
 			int parallelism) {
-		super(name, outputType, parallelism);
+		super(name, outputType, parallelism);//经过转换后,流类型从IN转换成OUT
 		this.input = input;
 		this.operator = operator;
 	}

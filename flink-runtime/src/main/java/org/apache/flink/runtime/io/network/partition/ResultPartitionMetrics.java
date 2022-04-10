@@ -25,6 +25,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Collects metrics of a result partition.
+ * 针对一个分区结果的统计
  */
 public class ResultPartitionMetrics {
 
@@ -61,6 +62,7 @@ public class ResultPartitionMetrics {
 	 * sub-partition in a best-effort way.
 	 *
 	 * @return minimum number of queued buffers per sub-partition (<tt>0</tt> if sub-partitions exist)
+	 * 返回最小的子分区index序号
 	 */
 	int refreshAndGetMin() {
 		int min = Integer.MAX_VALUE;
@@ -84,6 +86,7 @@ public class ResultPartitionMetrics {
 	 * sub-partition in a best-effort way.
 	 *
 	 * @return maximum number of queued buffers per sub-partition
+	 * 返回最大的子分区index序号
 	 */
 	int refreshAndGetMax() {
 		int max = 0;
@@ -101,6 +104,7 @@ public class ResultPartitionMetrics {
 	 * sub-partition in a best-effort way.
 	 *
 	 * @return average number of queued buffers per sub-partition
+	 *
 	 */
 	float refreshAndGetAvg() {
 		long total = 0;

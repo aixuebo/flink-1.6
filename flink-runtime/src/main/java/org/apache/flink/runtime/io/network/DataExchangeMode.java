@@ -23,6 +23,13 @@ import org.apache.flink.runtime.operators.shipping.ShipStrategyType;
 
 /**
  * Defines how the data exchange between two specific operators happens.
+ *
+ 注意上面最后的notifyPipelinedConsumers这个方法的调用。
+ 在Flink中，数据交换的机制有两种，一种pipeline，另外一种是blocking的。
+ a.pipeline是指在ResultPartition中只要被写入了一条record，那么它会立即通知jobmananger我这个ResultPartition可以被消费了，要从我这取数据的赶紧来取了。
+ 我们说spark，flink比hadoop快很多，一个原因是因为前者做了很多operator chain的工作，减少了很多shuffle环节，
+ 另外一个原因就是这个，这种机制不用等到一个节点的所有计算结果全部计算完成才通知另一个计算节点来消费数据。
+ b.blocking机制其实就是跟hadoop一样了，就是等计算节点上的所有计算结果全部生成才让消费者来取数据。
  */
 public enum DataExchangeMode {
 

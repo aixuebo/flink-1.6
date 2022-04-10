@@ -51,11 +51,12 @@ import java.util.List;
 
 /**
  * @see org.apache.flink.api.common.functions.CoGroupFunction
+ * 有shuffle操作
  */
 @Internal
 public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {
 
-	/** The ordering for the order inside a group from input one. */
+	/** The ordering for the order inside a group from input one. 每一个集合的排序方式*/
 	private Ordering groupOrder1;
 
 	/** The ordering for the order inside a group from input two. */
@@ -63,6 +64,7 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 	
 	private Partitioner<?> customPartitioner;
 
+	//是否进行map端的merge操作,减少reduce的shuffle数据量
 	private boolean combinableFirst;
 
 	private boolean combinableSecond;
@@ -90,6 +92,7 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 	 *
 	 * @param inputNum The number of the input (here either <i>0</i> or <i>1</i>).
 	 * @param order    The order for the elements in a group.
+	 * 设置每一个集合的排序方式
 	 */
 	public void setGroupOrder(int inputNum, Ordering order) {
 		if (inputNum == 0) {
@@ -127,6 +130,7 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 	 *
 	 * @param inputNum The number of the input (here either <i>0</i> or <i>1</i>).
 	 * @return The group order.
+	 * 获取每一个集合的排序方式
 	 */
 	public Ordering getGroupOrder(int inputNum) {
 		if (inputNum == 0) {
@@ -191,12 +195,12 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 	@Override
 	protected List<OUT> executeOnCollections(List<IN1> input1, List<IN2> input2, RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		// --------------------------------------------------------------------
-		// Setup
+		// Setup 两个数据源的类型
 		// --------------------------------------------------------------------
 		TypeInformation<IN1> inputType1 = getOperatorInfo().getFirstInputType();
 		TypeInformation<IN2> inputType2 = getOperatorInfo().getSecondInputType();
 		
-		// for the grouping / merging comparator
+		// for the grouping / merging comparator 按照什么字段进行关联 或者 排序
 		int[] inputKeys1 = getKeyColumns(0);
 		int[] inputKeys2 = getKeyColumns(1);
 
@@ -214,11 +218,11 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 		final TypeComparator<IN1> inputSortComparator1;
 		final TypeComparator<IN2> inputSortComparator2;
 		
-		if (groupOrder1 == null || groupOrder1.getNumberOfFields() == 0) {
+		if (groupOrder1 == null || groupOrder1.getNumberOfFields() == 0) {//没有排序字段
 			// no group sorting
 			inputSortComparator1 = inputComparator1;
 		}
-		else {
+		else {//有排序字段,则需要合并排序字段
 			// group sorting
 			int[] groupSortKeys = groupOrder1.getFieldPositions();
 			int[] allSortKeys = new int[inputKeys1.length + groupOrder1.getNumberOfFields()];
@@ -267,7 +271,7 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 		List<OUT> result = new ArrayList<OUT>();
 		Collector<OUT> resultCollector = new CopyingListCollector<OUT>(result, getOperatorInfo().getOutputType().createSerializer(executionConfig));
 
-		while (coGroupIterator.next()) {
+		while (coGroupIterator.next()) {//关联到相同的key的两个集合进行merge
 			function.coGroup(coGroupIterator.getValues1(), coGroupIterator.getValues2(), resultCollector);
 		}
 
@@ -290,18 +294,22 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 	private static class CoGroupSortListIterator<IN1, IN2> {
 
 		private static enum MatchStatus {
-			NONE_REMAINED, FIRST_REMAINED, SECOND_REMAINED, FIRST_EMPTY, SECOND_EMPTY
+			NONE_REMAINED, //两个数据源相同的key 都没有数据了,因为已经都匹配上了
+			FIRST_REMAINED,
+			SECOND_REMAINED,//匹配当两个数据源key不相同的时候,第一个数据源的key小,即输出第一个数据源,此时第二个数据源输出的内容就是空
+			FIRST_EMPTY, //匹配有一个数据源已经无数据的情况
+			SECOND_EMPTY
 		}
 
-		private final ListKeyGroupedIterator<IN1> iterator1;
+		private final ListKeyGroupedIterator<IN1> iterator1;//key  valueList迭代器
 
 		private final ListKeyGroupedIterator<IN2> iterator2;
 
-		private final TypePairComparator<IN1, IN2> pairComparator;
+		private final TypePairComparator<IN1, IN2> pairComparator;//判断两个key是否相同的迭代器
 
-		private MatchStatus matchStatus;
+		private MatchStatus matchStatus;//默认值是null
 
-		private Iterable<IN1> firstReturn;
+		private Iterable<IN1> firstReturn;//返回匹配的两个集合
 
 		private Iterable<IN2> secondReturn;
 
@@ -315,7 +323,7 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 			this.iterator2 = new ListKeyGroupedIterator<IN2>(input2, serializer2, inputComparator2);
 
 			// ----------------------------------------------------------------
-			// Sort
+			// Sort两个数据集合先排序
 			// ----------------------------------------------------------------
 			Collections.sort(input1, new Comparator<IN1>() {
 				@Override
@@ -336,14 +344,14 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 			boolean firstEmpty = true;
 			boolean secondEmpty = true;
 
-			if (this.matchStatus != MatchStatus.FIRST_EMPTY) {
+			if (this.matchStatus != MatchStatus.FIRST_EMPTY) { //null也能参与比较,不会抛异常
 				if (this.matchStatus == MatchStatus.FIRST_REMAINED) {
 					// comparator is still set correctly
 					firstEmpty = false;
 				}
 				else {
 					if (this.iterator1.nextKey()) {
-						this.pairComparator.setReference(iterator1.getValues().getCurrent());
+						this.pairComparator.setReference(iterator1.getValues().getCurrent());//设置第一个key
 						firstEmpty = false;
 					}
 				}
@@ -360,11 +368,11 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 				}
 			}
 
-			if (firstEmpty && secondEmpty) {
+			if (firstEmpty && secondEmpty) { //说明两个数据源都空了
 				// both inputs are empty
 				return false;
 			}
-			else if (firstEmpty && !secondEmpty) {
+			else if (firstEmpty && !secondEmpty) { //说明数据源1无数据,数据源2有数据
 				// input1 is empty, input2 not
 				this.firstReturn = Collections.emptySet();
 				this.secondReturn = this.iterator2.getValues();
@@ -378,9 +386,9 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
 				this.matchStatus = MatchStatus.SECOND_EMPTY;
 				return true;
 			}
-			else {
+			else { //正常情况是两个数据源都有数据
 				// both inputs are not empty
-				final int comp = this.pairComparator.compareToReference(iterator2.getValues().getCurrent());
+				final int comp = this.pairComparator.compareToReference(iterator2.getValues().getCurrent()); //判断key是否相同
 
 				if (0 == comp) {
 					// keys match

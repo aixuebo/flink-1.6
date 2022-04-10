@@ -37,14 +37,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 	private static final long serialVersionUID = 1L;
 	
-	private final T userCodeObject;
+	private final T userCodeObject;//T是要支持序列化能力的类
 	
 	public UserCodeObjectWrapper(T userCodeObject) {
 		checkNotNull(userCodeObject, "The user code object may not be null.");
 		checkArgument(userCodeObject instanceof Serializable, "User code object is not serializable: " + userCodeObject.getClass().getName());
 		
 		this.userCodeObject = userCodeObject;
-		
+
+		//主要用于校验，是否所有的属性都能被序列化
 		// Remove non serializable objects from the user code object as well as from outer objects
 		Object current = userCodeObject;
 		try {
@@ -55,9 +56,10 @@ public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 				 * Check if the usercode class has custom serialization methods.
 				 * (See http://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html for details).
 				 * We can not guarantee that the user handles serialization correctly in this case.
+				 * 是否自定义了序列化与反序列化方式
 				 */
-				boolean hasCustomSerialization = false;
-				Method customSerializer = null;
+				boolean hasCustomSerialization = false;//true自定义了
+				Method customSerializer = null;//如何序列化与反序列化的方法
 				Method customDeserializer = null;
 				try {
 					customSerializer = current.getClass().getDeclaredMethod("writeObject", java.io.ObjectOutputStream.class);
@@ -70,6 +72,7 @@ public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 					hasCustomSerialization = true;
 				}
 
+				//序列化属性
 				for (Field f : current.getClass().getDeclaredFields()) {
 					f.setAccessible(true);
 
@@ -77,13 +80,14 @@ public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 						newCurrent = f.get(current);
 					}
 
+					//自定义的不需要序列化属性、静态的不需要序列化属性、Transient不需要序列化属性
 					if (hasCustomSerialization || Modifier.isTransient(f.getModifiers()) || Modifier.isStatic(f.getModifiers())) {
 						// field not relevant for serialization
 						continue;
 					}
 					
-					Object fieldContents = f.get(current);
-					if (fieldContents != null &&  !(fieldContents instanceof Serializable)) {
+					Object fieldContents = f.get(current);//获取要序列化的属性值
+					if (fieldContents != null &&  !(fieldContents instanceof Serializable)) {//确保该值一定是可以被序列化的类型,否则肯定会序列化失败呀
 						throw new NonSerializableUserCodeException("User-defined object " + userCodeObject + " (" + 
 							userCodeObject.getClass().getName() + ") contains non-serializable field " +
 							f.getName() + " = " + f.get(current));
@@ -102,7 +106,8 @@ public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 			throw new RuntimeException("Could not access the fields of the user defined class while checking for serializability.", e);
 		}
 	}
-	
+
+	//返回需要被序列化的实例
 	@Override
 	public T getUserCodeObject(Class<? super T> superClass, ClassLoader cl) {
 		return userCodeObject;
@@ -114,11 +119,13 @@ public class UserCodeObjectWrapper<T> implements UserCodeWrapper<T> {
 		
 	}
 
+	//获取T的某一个Annotation
 	@Override
 	public <A extends Annotation> A getUserCodeAnnotation(Class<A> annotationClass) {
 		return userCodeObject.getClass().getAnnotation(annotationClass);
 	}
-	
+
+	//获取T实例对应的class
 	@SuppressWarnings("unchecked")
 	@Override
 	public Class<? extends T> getUserCodeClass() {

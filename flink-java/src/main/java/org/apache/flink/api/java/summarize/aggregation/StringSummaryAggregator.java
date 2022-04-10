@@ -27,12 +27,12 @@ import org.apache.flink.api.java.summarize.StringColumnSummary;
 @Internal
 public class StringSummaryAggregator implements Aggregator<String, StringColumnSummary> {
 
-	private long nonNullCount = 0L;
-	private long nullCount = 0L;
-	private long emptyCount = 0L;
-	private int minStringLength = Integer.MAX_VALUE;
-	private int maxStringLength = -1;
-	private CompensatedSum meanLength = CompensatedSum.ZERO;
+	private long nonNullCount = 0L;//非null的数量
+	private long nullCount = 0L;//null的数量
+	private long emptyCount = 0L;//空字符串数量
+	private int minStringLength = Integer.MAX_VALUE;//字符串最大的长度
+	private int maxStringLength = -1;//字符串最小的长度
+	private CompensatedSum meanLength = CompensatedSum.ZERO;//字符串平均长度
 
 	@Override
 	public void aggregate(String value) {

@@ -28,9 +28,9 @@ public interface JobStatusListener {
 
 	/**
 	 * This method is called whenever the status of the job changes.
-	 * 
+	 * 当job的状态发生变化时，触发该回调函数
 	 * @param jobId         The ID of the job.
-	 * @param newJobStatus  The status the job switched to.
+	 * @param newJobStatus  The status the job switched to.job的新状态
 	 * @param timestamp     The timestamp when the status transition occurred.
 	 * @param error         In case the job status switches to a failure state, this is the
 	 *                      exception that caused the failure.

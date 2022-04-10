@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobID;
 
 /**
  * Path parameter identifying jobs.
+ * jobid参数 --- 必须有该参数
  */
 public class JobIDPathParameter extends MessagePathParameter<JobID> {
 

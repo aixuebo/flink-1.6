@@ -28,9 +28,11 @@ import java.io.Serializable;
 /**
  * Base interface for functions that are evaluated over non-keyed windows.
  *
- * @param <IN> The type of the input value.
- * @param <OUT> The type of the output value.
- * @param <W> The type of {@code Window} that this window function can be applied on.
+ * @param <IN> The type of the input value. 输入类型
+ * @param <OUT> The type of the output value. 输出类型
+ * @param <W> The type of {@code Window} that this window function can be applied on. 窗口类型
+ *
+ * 非key类型的窗口
  */
 @Public
 public interface AllWindowFunction<IN, OUT, W extends Window> extends Function, Serializable {
@@ -43,6 +45,8 @@ public interface AllWindowFunction<IN, OUT, W extends Window> extends Function, 
 	 * @param out A collector for emitting elements.
 	 *
 	 * @throws Exception The function may throw exceptions to fail the program and trigger recovery.
+	 *
+	 * 输入窗口内所有数据,对数据进行加工,最终输出
 	 */
 	void apply(W window, Iterable<IN> values, Collector<OUT> out) throws Exception;
 }

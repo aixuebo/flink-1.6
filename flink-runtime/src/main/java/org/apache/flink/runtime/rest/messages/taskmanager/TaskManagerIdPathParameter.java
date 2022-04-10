@@ -23,6 +23,7 @@ import org.apache.flink.runtime.rest.messages.MessagePathParameter;
 
 /**
  * TaskManager id path parameter used by TaskManager related handlers.
+ * 参数值是ResourceID
  */
 public class TaskManagerIdPathParameter extends MessagePathParameter<ResourceID> {
 

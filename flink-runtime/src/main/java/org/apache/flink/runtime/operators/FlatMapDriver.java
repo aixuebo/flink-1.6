@@ -86,11 +86,14 @@ public class FlatMapDriver<IT, OT> implements Driver<FlatMapFunction<IT, OT>, OT
 
 	@Override
 	public void run() throws Exception {
+		//记录输入、输出行数
 		final Counter numRecordsIn = this.taskContext.getMetricGroup().getIOMetricGroup().getNumRecordsInCounter();
 		final Counter numRecordsOut = this.taskContext.getMetricGroup().getIOMetricGroup().getNumRecordsOutCounter();
+
 		// cache references on the stack
 		final MutableObjectIterator<IT> input = this.taskContext.getInput(0);
 		final FlatMapFunction<IT, OT> function = this.taskContext.getStub();
+
 		final Collector<OT> output = new CountingCollector<>(this.taskContext.getOutputCollector(), numRecordsOut);
 
 		if (objectReuseEnabled) {

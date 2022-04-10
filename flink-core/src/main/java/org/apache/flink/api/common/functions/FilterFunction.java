@@ -38,6 +38,7 @@ import java.io.Serializable;
  * can lead to incorrect results.
  *
  * @param <T> The type of the filtered elements.
+ * 判断数据是否要保留下来
  */
 @Public
 @FunctionalInterface
@@ -52,7 +53,7 @@ public interface FilterFunction<T> extends Function, Serializable {
 	 *
 	 * @param value The value to be filtered.
 	 * @return True for values that should be retained, false for values to be filtered out.
-	 *
+	 * true表示数据依然被保留,false表示数据会被丢弃
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
 	 */

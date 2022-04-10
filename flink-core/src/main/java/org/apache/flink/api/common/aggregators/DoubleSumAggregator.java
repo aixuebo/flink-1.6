@@ -24,6 +24,7 @@ import org.apache.flink.types.DoubleValue;
 
 /**
  * An {@link Aggregator} that sums up {@link DoubleValue} values.
+ * 聚合double结果
  */
 @SuppressWarnings("serial")
 @PublicEvolving

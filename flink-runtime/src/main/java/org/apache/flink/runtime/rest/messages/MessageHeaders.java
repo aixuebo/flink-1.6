@@ -31,13 +31,20 @@ import java.util.Collections;
  * @param <R> request message type
  * @param <P> response message type
  * @param <M> message parameters type
+ *
+ *  因为泛型会被擦除,因此要定义好request、response类型
  */
-public interface MessageHeaders<R extends RequestBody, P extends ResponseBody, M extends MessageParameters> extends UntypedResponseMessageHeaders<R, M> {
+public interface MessageHeaders<R extends RequestBody,
+								P extends ResponseBody,
+								M extends MessageParameters> //参数对象,用于生产url的动态key替换
+				extends UntypedResponseMessageHeaders<R, M> {
 
 	/**
 	 * Returns the class of the response message.
 	 *
 	 * @return class of the response message
+	 * response类型
+	 *
 	 */
 	Class<P> getResponseClass();
 
@@ -45,6 +52,7 @@ public interface MessageHeaders<R extends RequestBody, P extends ResponseBody, M
 	 * Returns the http status code for the response.
 	 *
 	 * @return http status code of the response
+	 * 回复状态吗 比如200
 	 */
 	HttpResponseStatus getResponseStatusCode();
 
@@ -61,6 +69,7 @@ public interface MessageHeaders<R extends RequestBody, P extends ResponseBody, M
 	 * Returns the description for this header.
 	 *
 	 * @return description for the header
+	 * 描述
 	 */
 	String getDescription();
 }

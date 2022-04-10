@@ -132,11 +132,13 @@ public class RpcTaskManagerGateway implements TaskManagerGateway {
 			checkpointOptions);
 	}
 
+	//请求task网关,让task把相关日志上传到blob服务
 	@Override
 	public CompletableFuture<TransientBlobKey> requestTaskManagerLog(Time timeout) {
 		return taskExecutorGateway.requestFileUpload(FileType.LOG, timeout);
 	}
 
+	//请求task网关,让task把相关日志上传到blob服务
 	@Override
 	public CompletableFuture<TransientBlobKey> requestTaskManagerStdout(Time timeout) {
 		return taskExecutorGateway.requestFileUpload(FileType.STDOUT, timeout);

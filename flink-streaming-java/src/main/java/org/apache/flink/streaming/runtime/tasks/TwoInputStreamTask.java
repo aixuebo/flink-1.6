@@ -63,18 +63,21 @@ public class TwoInputStreamTask<IN1, IN2, OUT> extends StreamTask<OUT, TwoInputS
 		StreamConfig configuration = getConfiguration();
 		ClassLoader userClassLoader = getUserCodeClassLoader();
 
+		//解析输入源的类型
 		TypeSerializer<IN1> inputDeserializer1 = configuration.getTypeSerializerIn1(userClassLoader);
 		TypeSerializer<IN2> inputDeserializer2 = configuration.getTypeSerializerIn2(userClassLoader);
 
-		int numberOfInputs = configuration.getNumberOfInputs();
+		int numberOfInputs = configuration.getNumberOfInputs();//多少个输入
 
+		//每一个流对应的数据源
 		ArrayList<InputGate> inputList1 = new ArrayList<InputGate>();
 		ArrayList<InputGate> inputList2 = new ArrayList<InputGate>();
 
+		//解析数据源上游操作集合  入边集合
 		List<StreamEdge> inEdges = configuration.getInPhysicalEdges(userClassLoader);
 
 		for (int i = 0; i < numberOfInputs; i++) {
-			int inputType = inEdges.get(i).getTypeNumber();
+			int inputType = inEdges.get(i).getTypeNumber();//匹配当前入边操作是第几个输入
 			InputGate reader = getEnvironment().getInputGate(i);
 			switch (inputType) {
 				case 1:

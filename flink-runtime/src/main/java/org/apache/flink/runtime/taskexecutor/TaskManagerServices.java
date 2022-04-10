@@ -70,6 +70,9 @@ import static org.apache.flink.util.MathUtils.checkedDownCast;
  * Container for {@link TaskExecutor} services such as the {@link MemoryManager}, {@link IOManager},
  * {@link NetworkEnvironment}. All services are exclusive to a single {@link TaskExecutor}.
  * Consequently, the respective {@link TaskExecutor} is responsible for closing them.
+ *
+ * 通过静态方法 TaskManagerServicesConfiguration,创建该对象
+ * 属于task节点的一些特殊专有服务
  */
 public class TaskManagerServices {
 	private static final Logger LOG = LoggerFactory.getLogger(TaskManagerServices.class);
@@ -86,7 +89,7 @@ public class TaskManagerServices {
 	private final TaskSlotTable taskSlotTable;
 	private final JobManagerTable jobManagerTable;
 	private final JobLeaderService jobLeaderService;
-	private final TaskExecutorLocalStateStoresManager taskManagerStateStore;
+	private final TaskExecutorLocalStateStoresManager taskManagerStateStore;//节点本地如何管理状态stage的存储
 
 	TaskManagerServices(
 		TaskManagerLocation taskManagerLocation,
@@ -230,6 +233,7 @@ public class TaskManagerServices {
 		final NetworkEnvironment network = createNetworkEnvironment(taskManagerServicesConfiguration, maxJvmHeapMemory);
 		network.start();
 
+		//描述Task节点的服务地址，该地址对外提供数据交换的功能。即对外提供的ip+端口+节点唯一ID
 		final TaskManagerLocation taskManagerLocation = new TaskManagerLocation(
 			resourceID,
 			taskManagerServicesConfiguration.getTaskManagerAddress(),
@@ -260,14 +264,14 @@ public class TaskManagerServices {
 		final JobLeaderService jobLeaderService = new JobLeaderService(taskManagerLocation);
 
 
+		//节点本地如何存储stage状态,创建存储状态的目录
 		final String[] stateRootDirectoryStrings = taskManagerServicesConfiguration.getLocalRecoveryStateRootDirectories();
-
 		final File[] stateRootDirectoryFiles = new File[stateRootDirectoryStrings.length];
-
 		for (int i = 0; i < stateRootDirectoryStrings.length; ++i) {
 			stateRootDirectoryFiles[i] = new File(stateRootDirectoryStrings[i], LOCAL_STATE_SUB_DIRECTORY_ROOT);
 		}
 
+		//节点本地如何管理状态stage的存储
 		final TaskExecutorLocalStateStoresManager taskStateManager = new TaskExecutorLocalStateStoresManager(
 			taskManagerServicesConfiguration.isLocalRecoveryEnabled(),
 			stateRootDirectoryFiles,
@@ -477,33 +481,36 @@ public class TaskManagerServices {
 	 * </ul>.
 	 *
 	 * @param totalJavaMemorySize
-	 * 		overall available memory to use (heap and off-heap, in bytes)
+	 * 		overall available memory to use (heap and off-heap, in bytes) 总堆内内存
 	 * @param config
 	 * 		configuration object
 	 *
 	 * @return memory to use for network buffers (in bytes); at least one memory segment
+	 * 计算用于网络缓冲的内存 --- 从堆内内存中提取一部分内存
 	 */
 	@SuppressWarnings("deprecation")
 	public static long calculateNetworkBufferMemory(long totalJavaMemorySize, Configuration config) {
 		Preconditions.checkArgument(totalJavaMemorySize > 0);
 
+		//内存缓冲区 -- 默认4K
 		int segmentSize =
 			checkedDownCast(MemorySize.parse(config.getString(TaskManagerOptions.MEMORY_SEGMENT_SIZE)).getBytes());
 
 		final long networkBufBytes;
-		if (TaskManagerServicesConfiguration.hasNewNetworkBufConf(config)) {
+		if (TaskManagerServicesConfiguration.hasNewNetworkBufConf(config)) {//需要缓存
 			// new configuration based on fractions of available memory with selectable min and max
 			float networkBufFraction = config.getFloat(TaskManagerOptions.NETWORK_BUFFERS_MEMORY_FRACTION);
 			long networkBufMin = MemorySize.parse(config.getString(TaskManagerOptions.NETWORK_BUFFERS_MEMORY_MIN)).getBytes();
 			long networkBufMax = MemorySize.parse(config.getString(TaskManagerOptions.NETWORK_BUFFERS_MEMORY_MAX)).getBytes();
 
-
+			//校验数据有效性
 			TaskManagerServicesConfiguration
 				.checkNetworkBufferConfig(segmentSize, networkBufFraction, networkBufMin, networkBufMax);
 
 			networkBufBytes = Math.min(networkBufMax, Math.max(networkBufMin,
 				(long) (networkBufFraction * totalJavaMemorySize)));
 
+			//校验数据有效性
 			TaskManagerServicesConfiguration
 				.checkConfigParameter(networkBufBytes < totalJavaMemorySize,
 					"(" + networkBufFraction + ", " + networkBufMin + ", " + networkBufMax + ")",
@@ -525,6 +532,7 @@ public class TaskManagerServices {
 			int numNetworkBuffers = config.getInteger(TaskManagerOptions.NETWORK_NUM_BUFFERS);
 			networkBufBytes = (long) numNetworkBuffers * (long) segmentSize;
 
+			//校验数据有效性
 			TaskManagerServicesConfiguration.checkNetworkConfigOld(numNetworkBuffers);
 
 			TaskManagerServicesConfiguration
@@ -631,25 +639,25 @@ public class TaskManagerServices {
 	 * based on the total memory to use and the given configuration parameters.
 	 *
 	 * @param totalJavaMemorySizeMB
-	 * 		overall available memory to use (heap and off-heap)
+	 * 		overall available memory to use (heap and off-heap) 堆内内存大小
 	 * @param config
 	 * 		configuration object
 	 *
-	 * @return heap memory to use (in megabytes)
+	 * @return heap memory to use (in megabytes) 设置堆内内存 -- 单位M
 	 */
 	public static long calculateHeapSizeMB(long totalJavaMemorySizeMB, Configuration config) {
 		Preconditions.checkArgument(totalJavaMemorySizeMB > 0);
 
-		// subtract the Java memory used for network buffers (always off-heap)
+		// subtract the Java memory used for network buffers (always off-heap) 减少一部分内存用于网络缓冲
 		final long networkBufMB =
 			calculateNetworkBufferMemory(
-				totalJavaMemorySizeMB << 20, // megabytes to bytes
-				config) >> 20; // bytes to megabytes
+				totalJavaMemorySizeMB << 20, // megabytes to bytes M转字节
+				config) >> 20; // bytes to megabytes 再转成M
 		final long remainingJavaMemorySizeMB = totalJavaMemorySizeMB - networkBufMB;
 
 		// split the available Java memory between heap and off-heap
 
-		final boolean useOffHeap = config.getBoolean(TaskManagerOptions.MEMORY_OFF_HEAP);
+		final boolean useOffHeap = config.getBoolean(TaskManagerOptions.MEMORY_OFF_HEAP);//是否使用堆外内存
 
 		final long heapSizeMB;
 		if (useOffHeap) {
@@ -695,6 +703,7 @@ public class TaskManagerServices {
 	 * @param tmpDirs The array of directory paths to check.
 	 * @throws IOException Thrown if any of the directories does not exist and cannot be created or is not writable
 	 *                     or is a file, rather than a directory.
+	 * 创建临时目录集合
 	 */
 	private static void checkTempDirs(String[] tmpDirs) throws IOException {
 		for (String dir : tmpDirs) {
@@ -712,6 +721,7 @@ public class TaskManagerServices {
 					throw new IOException("Temporary file directory " + file.getAbsolutePath() + " is not writable.");
 				}
 
+				//输入目录的空间、已用空间、已用空间占比
 				if (LOG.isInfoEnabled()) {
 					long totalSpaceGb = file.getTotalSpace() >> 30;
 					long usableSpaceGb = file.getUsableSpace() >> 30;

@@ -51,38 +51,68 @@ import java.nio.ByteOrder;
  * memory (&gt; 200 bytes in a 64 bit JVM) due to several pointers and arrays.
  * <p>
  * This class is NOT thread-safe!
+ *
+ * 存储多个value的集合
+ * Record 也是一个二进制对象
+
+
+ 相当于java中的vo类,我们知道定义vo的时候，是由若干个属性定义的，而若干个属性都是由基础类型+list+map等组成的,而这些属性类型我们都定义成value了。
+ 因此我们可以使用Record代替vo。
+
+ 假设Record中存储10个元素，其中8个元素是有值的,2个元素是null。则以下变量分别为:
+ 1.private int numFields = 10.
+ 2.private int[] offsets; ## length = 10,记录了每一个属性的开始偏移量。注意:如果元素没有设置值,则为null,该位置填充的是NULL_INDICATOR_OFFSET。如果该位置被修改了,还尚未序列化起来,则填充MODIFIED_INDICATOR_OFFSET
+ 3.private int[] lengths;## length = 10,记录了每一个属性的字节长度。
+ 4.private byte[] binaryData;存储序列化成功的字节数组,注意,按照顺序存储8个有值元素的数据。
+ 5.private int binaryLen; 记录binaryData的偏移量.即binaryData到哪个offset前都是有效的。
+
+ 因为元素会被修改或者新增加。因此不会每次都同步修改binaryData，因为成本较大，主要因为binaryData是按照非空的数据按顺序填充的，所以插入或修改的属性的时候，会涉及到字节数组的移动。因此会统一做定期同步。
+ 因此会临时存储修改或新增的数据
+ 6.private Value[] writeFields;## length = 10,记录了每一个属性的字节长度。记录了第几个元素是被修改的。
+ 7.private Value[] readFields;;## length = 10,记录了已经序列化成value的值,因此如果没有修改,则不需要每次都反序列化。提高性能。
+ 8.private int firstModifiedPos;记录最先被修改的元素位置。
+
+ 使用流程:
+ 定期同步时,因为firstModifiedPos之前的元素都没有被修改过，因此不需要序列化，直接复制字节数组即可。将非null的元素，复制到新的缓冲区。
+ firstModifiedPos之后的数据，从writeFields或者原始的字节数组中提取出来，反序列化到字节数组中。
+
+ 使用方式:
+ <T extends Value> T getField(final int fieldNum, final Class<T> type)  直接返回第几个元素对应的value.相当于vo的get方法。
+ setField(int fieldNum, Value value) 相当于vo的set方法
+ boolean isNull(int fieldNum) 该属性是否为null,即未设置值
+ setNull(int field) 设置该属性为null
  */
 @Public
 public final class Record implements Value, CopyableValue<Record> {
 	private static final long serialVersionUID = 1L;
 	
-	private static final int NULL_INDICATOR_OFFSET = Integer.MIN_VALUE;			// value marking a field as null
+	private static final int NULL_INDICATOR_OFFSET = Integer.MIN_VALUE;			// value marking a field as null 表示空值
+
+	private static final int MODIFIED_INDICATOR_OFFSET = Integer.MIN_VALUE + 1;	// value marking field as modified 表示修改
 	
-	private static final int MODIFIED_INDICATOR_OFFSET = Integer.MIN_VALUE + 1;	// value marking field as modified
-	
-	private static final int DEFAULT_FIELD_LEN_ESTIMATE = 8;					// length estimate for bin array
+	private static final int DEFAULT_FIELD_LEN_ESTIMATE = 8;					// length estimate for bin array 默认每一个属性占用字节数 --- 因为属性基本上都是基础类型属性,除非是String、list、map等
 	
 	// --------------------------------------------------------------------------------------------
 	
 	private final InternalDeSerializer serializer = new InternalDeSerializer();	// DataInput and DataOutput abstraction
 	
-	private byte[] binaryData;			// the buffer containing the binary representation
+	private byte[] binaryData;			// the buffer containing the binary representation 存储数据的容器
 	
 	private byte[] switchBuffer;		// the buffer containing the binary representation
 	
-	private int[] offsets;				// the offsets to the binary representations of the fields
+	private int[] offsets;				// the offsets to the binary representations of the fields 该属性的开始位置
 	
-	private int[] lengths;				// the lengths of the fields
+	private int[] lengths;				// the lengths of the fields 该属性的长度
 	
-	private Value[] readFields;			// the cache for objects into which the binary representations are read
+	private Value[] readFields;			// the cache for objects into which the binary representations are read 每一个属性对应的对象
 	
-	private Value[] writeFields;		// the cache for objects into which the binary representations are read
+	private Value[] writeFields;		// the cache for objects into which the binary representations are read 存储修改的值
 	
-	private int binaryLen;				// the length of the contents in the binary buffer that is valid
+	private int binaryLen;				// the length of the contents in the binary buffer that is valid,serializer.position即序列化的字节数组binaryData的偏移量
 	
-	private int numFields;				// the number of fields in the record
+	private int numFields;				// the number of fields in the record 有多少个属性
 	
-	private int firstModifiedPos;		// position of the first modification (since (de)serialization)
+	private int firstModifiedPos;		// position of the first modification (since (de)serialization) 反序列化后,被修改的属性index中最小的index
 	
 	// --------------------------------------------------------------------------------------------
 	
@@ -140,12 +170,13 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * fields, then the last fields are truncated.
 	 * 
 	 * @param numFields The new number of fields.
+	 * 扩容，设置record中有多少个属性对象
 	 */
 	public void setNumFields(final int numFields) {
 		final int oldNumFields = this.numFields;
 		// check whether we increase or decrease the fields 
 		if (numFields > oldNumFields) {
-			makeSpace(numFields);
+			makeSpace(numFields);//扩容
 			for (int i = oldNumFields; i < numFields; i++) {
 				this.offsets[i] = NULL_INDICATOR_OFFSET;
 			}
@@ -164,6 +195,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * Reserves space for at least the given number of fields in the internal arrays.
 	 * 
 	 * @param numFields The number of fields to reserve space for.
+	 * 扩容
 	 */
 	public void makeSpace(int numFields) {
 		final int oldNumFields = this.numFields;
@@ -218,6 +250,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * @return The field at the given position, or null, if the field was null.
 	 * @throws IndexOutOfBoundsException Thrown, if the field number is negative or larger or equal to the number of
 	 *                                   fields in this record.
+	 *  获取第index个属性的值,属性类型是type
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends Value> T getField(final int fieldNum, final Class<T> type) {
@@ -228,29 +261,29 @@ public final class Record implements Value, CopyableValue<Record> {
 		
 		// get offset and check for null
 		final int offset = this.offsets[fieldNum];
-		if (offset == NULL_INDICATOR_OFFSET) {
+		if (offset == NULL_INDICATOR_OFFSET) {//说明该属性值是null
 			return null;
 		}		
-		else if (offset == MODIFIED_INDICATOR_OFFSET) {
+		else if (offset == MODIFIED_INDICATOR_OFFSET) {//修改了,还尚未序列化,则从缓存中获取
 			// value that has been set is new or modified
 			return (T) this.writeFields[fieldNum];
 		}
 		
-		final int limit = offset + this.lengths[fieldNum];
+		final int limit = offset + this.lengths[fieldNum]; //start+length 即读取[offset,limit]范围的字节去反序列化
 		
 		// get an instance, either from the instance cache or create a new one
 		final Value oldField = this.readFields[fieldNum]; 
 		final T field;
-		if (oldField != null && oldField.getClass() == type) {
+		if (oldField != null && oldField.getClass() == type) {//重复使用创建好的value对象
 			field = (T) oldField;
 		}
 		else {
-			field = InstantiationUtil.instantiate(type, Value.class);
+			field = InstantiationUtil.instantiate(type, Value.class);//反射创建value对象
 			this.readFields[fieldNum] = field;
 		}
 		
 		// deserialize
-		deserialize(field, offset, limit, fieldNum);
+		deserialize(field, offset, limit, fieldNum);//反序列化
 		return field;
 	}
 	
@@ -265,6 +298,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * @param target The value to deserialize the field into.
 	 * 
 	 * @return The value with the contents of the requested field, or null, if the field is null.
+	 * 获取第index个属性的值,属性类型是type
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends Value> T getField(int fieldNum, T target) {
@@ -296,9 +330,10 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * Gets the field at the given position. If the field at that position is null, then this method leaves
 	 * the target field unchanged and returns false.
 	 * 
-	 * @param fieldNum The position of the field.
+	 * @param fieldNum The position of the field.反序列化哪个属性
 	 * @param target The value to deserialize the field into.
 	 * @return True, if the field was deserialized properly, false, if the field was null.
+	 * true 表示Value已经反序列化成功,false说明没有反序列化成功,value不可用
 	 */
 	public boolean getFieldInto(int fieldNum, Value target) {
 		// range check
@@ -312,10 +347,10 @@ public final class Record implements Value, CopyableValue<Record> {
 			return false;
 		}
 		else if (offset == MODIFIED_INDICATOR_OFFSET) {
-			// value that has been set is new or modified
+			// value that has been set is new or modified,value已经新添加或者更新了,因此要同步到data中
 			// bring the binary in sync so that the deserialization gives the correct result
-			updateBinaryRepresenation();
-			offset = this.offsets[fieldNum];
+			updateBinaryRepresenation();//序列化数据同步
+			offset = this.offsets[fieldNum];//同步后数据的偏移量
 		}
 		
 		final int limit = offset + this.lengths[fieldNum];
@@ -333,6 +368,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * @param targets The values into which the content of the fields is put.
 	 * 
 	 * @return True if all fields were successfully read, false if some read failed.
+	 * 反序列化一组value,如果任意一个value未序列化成功,则返回false,都成功才返回true
 	 */
 	public boolean getFieldsInto(int[] positions, Value[] targets) {
 		for (int i = 0; i < positions.length; i++) {
@@ -353,6 +389,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * @param targets The values into which the content of the fields is put.
 	 * 
 	 * @throws NullKeyFieldException in case of a failing field read.
+	 * 反序列化一组value,如果任意一个value未序列化成功,则抛异常
 	 */
 	public void getFieldsIntoCheckingNull(int[] positions, Value[] targets) {
 		for (int i = 0; i < positions.length; i++) {
@@ -371,6 +408,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * @param target The object to deserialize the data into.
 	 * @param offset The offset in the binary string.
 	 * @param limit The limit in the binary string.
+	 * 反序列化,读取data字节数组数据,反序列化成对象
 	 */
 	private <T extends Value> void deserialize(T target, int offset, int limit, int fieldNumber) {
 		final InternalDeSerializer serializer = this.serializer;
@@ -407,7 +445,7 @@ public final class Record implements Value, CopyableValue<Record> {
 		
 		// if the field number is beyond the size, the tuple is expanded
 		if (fieldNum >= this.numFields) {
-			setNumFields(fieldNum + 1);
+			setNumFields(fieldNum + 1);//扩容
 		}
 		internallySetField(fieldNum, value);
 	}
@@ -433,7 +471,8 @@ public final class Record implements Value, CopyableValue<Record> {
 			this.firstModifiedPos = field;
 		}
 	}
-	
+
+	//说明被修改了
 	private boolean isModified() {
 		return this.firstModifiedPos != Integer.MAX_VALUE;
 	}
@@ -909,8 +948,8 @@ public final class Record implements Value, CopyableValue<Record> {
 	 */
 	public final boolean equalsFields(int[] positions, Value[] searchValues, Value[] deserializationHolders) {
 		for (int i = 0; i < positions.length; i++) {
-			final Value v = getField(positions[i], deserializationHolders[i]);
-			if (v == null || (!v.equals(searchValues[i]))) {
+			final Value v = getField(positions[i], deserializationHolders[i]);//反序列化数据
+			if (v == null || (!v.equals(searchValues[i]))) {//反序列化后的数据要与searchValues数据相同
 				return false;
 			}
 		}
@@ -924,11 +963,14 @@ public final class Record implements Value, CopyableValue<Record> {
 	 * stored fields. If the binary representation is already up to date, nothing happens. Otherwise,
 	 * this function triggers the modified fields to serialize themselves into the records buffer and
 	 * afterwards updates the offset table.
+	 * 已经新添加或者更新了,因此要同步到data中
+	 *
+	 * 即重新更新序列化的数组
 	 */
 	public void updateBinaryRepresenation() {
 		// check whether the binary state is in sync
 		final int firstModified = this.firstModifiedPos;
-		if (firstModified == Integer.MAX_VALUE) {
+		if (firstModified == Integer.MAX_VALUE) {//说明没有更新过
 			return;
 		}
 		
@@ -943,11 +985,11 @@ public final class Record implements Value, CopyableValue<Record> {
 		if (numFields > 0) {
 			int offset = 0;
 			
-			// search backwards to find the latest preceding non-null field
+			// search backwards to find the latest preceding non-null field 找到最后一个非null的属性
 			if (firstModified > 0) {
 				for (int i = firstModified - 1; i >= 0; i--) {
-					if (this.offsets[i] != NULL_INDICATOR_OFFSET) {
-						offset = this.offsets[i] + this.lengths[i];
+					if (this.offsets[i] != NULL_INDICATOR_OFFSET) {//非空
+						offset = this.offsets[i] + this.lengths[i];//最后一个值的开始位置+长度,等于非空值后，从什么位置开始写入数据
 						break;
 					}
 				}
@@ -957,35 +999,35 @@ public final class Record implements Value, CopyableValue<Record> {
 			try {
 				if (offset > 0) {
 					// copy the first unchanged portion as one
-					serializer.write(this.binaryData, 0, offset);
+					serializer.write(this.binaryData, 0, offset); //赋值非空值的数据
 				}
 				// copy field by field
 				for (int i = firstModified; i < numFields; i++) {
 					final int co = offsets[i];
 					/// skip null fields
-					if (co == NULL_INDICATOR_OFFSET) {
+					if (co == NULL_INDICATOR_OFFSET) {//null
 						continue;
 					}
 					
 					offsets[i] = offset;
-					if (co == MODIFIED_INDICATOR_OFFSET) {
+					if (co == MODIFIED_INDICATOR_OFFSET) {//表示修改过了
 						
 						final Value writeField = this.writeFields[i];
 						
 						if (writeField == RESERVE_SPACE) {
-							// RESERVE_SPACE is a placeholder indicating lengths[i] bytes should be reserved
+							// RESERVE_SPACE is a placeholder indicating lengths[i] bytes should be reserved 特殊value对象，表示长度会被占位符占用保留
 							final int length = this.lengths[i];
 							
-							if (serializer.position >= serializer.memory.length - length - 1) {
+							if (serializer.position >= serializer.memory.length - length - 1) {//扩容,即serializer.position+length >=serializer.memory.length -1,即容量不足
 								serializer.resize(length);
 							}
 							serializer.position += length;
 							
 						} else {
 							// serialize modified fields
-							this.writeFields[i].write(serializer);
+							this.writeFields[i].write(serializer);//修改的数据写入serializer数组中
 						}
-					} else {
+					} else {//直接复制数据即可,因为没有修改过,因此不需要序列化,直接从字节数组中获取数据
 						// bin-copy unmodified fields
 						serializer.write(this.binaryData, co, this.lengths[i]);
 					}
@@ -1007,7 +1049,8 @@ public final class Record implements Value, CopyableValue<Record> {
 		this.binaryLen = serializer.position;
 		this.firstModifiedPos = Integer.MAX_VALUE;
 	}
-	
+
+	//序列化numFields、offsets、length
 	private void serializeHeader(final InternalDeSerializer serializer, final int[] offsets, final int numFields) {
 		try {
 			if (numFields > 0) {
@@ -1088,13 +1131,13 @@ public final class Record implements Value, CopyableValue<Record> {
 		updateBinaryRepresenation();
 		
 		// write the length first, variably encoded, then the contents of the binary array
-		writeVarLengthInt(out, this.binaryLen);
-		out.write(this.binaryData, 0, this.binaryLen);
+		writeVarLengthInt(out, this.binaryLen);//序列化字节数组的总长度
+		out.write(this.binaryData, 0, this.binaryLen);//输出字节数组
 	}
 
 	@Override
 	public void read(DataInputView in) throws IOException {
-		final int len = readVarLengthInt(in);
+		final int len = readVarLengthInt(in);//字节数组总长度
 		this.binaryLen = len;
 			
 		// ensure out byte array is large enough
@@ -1105,15 +1148,15 @@ public final class Record implements Value, CopyableValue<Record> {
 		}
 		
 		// read the binary data
-		in.readFully(data, 0, len);
-		initFields(data, 0, len);
+		in.readFully(data, 0, len);//填满字节数组
+		initFields(data, 0, len);//解析字节数组
 	}
 	
 	private void initFields(final byte[] data, final int begin, final int len) {
 		try {
 			// read number of fields, variable length encoded reverse at the back
 			int pos = begin + len - 2;
-			int numFields = data[begin + len - 1] & 0xFF;
+			int numFields = data[begin + len - 1] & 0xFF;//读取最后一个字节
 			if (numFields >= MAX_BIT) {
 				int shift = 7;
 				int curr;
@@ -1124,7 +1167,7 @@ public final class Record implements Value, CopyableValue<Record> {
 				}
 				numFields |= curr << shift;
 			}
-			this.numFields = numFields;
+			this.numFields = numFields;//多少个属性
 			
 			// ensure that all arrays are there and of sufficient size
 			if (this.offsets == null || this.offsets.length < numFields) {
@@ -1270,6 +1313,7 @@ public final class Record implements Value, CopyableValue<Record> {
 	/**
 	 * A special Value instance that doesn't actually (de)serialize anything,
 	 * but instead indicates that space should be reserved in the buffer.
+	 * 特殊value对象，表示长度会被占位符占用保留
 	 */
 	private static final Value RESERVE_SPACE = new Value() {
 		private static final long serialVersionUID = 1L;
@@ -1287,14 +1331,15 @@ public final class Record implements Value, CopyableValue<Record> {
 	
 	/**
 	 * Internal interface class to provide serialization for the data types.
+	 * 内部用于输入输出字节数组,序列化的对象
 	 */
 	private static final class InternalDeSerializer implements DataInputView, DataOutputView, Serializable {
 		
 		private static final long serialVersionUID = 1L;
 		
-		private byte[] memory;
-		private int position;
-		private int end;
+		private byte[] memory;//存储字节数字
+		private int position;//偏移量
+		private int end;//结束位置
 		
 		// ----------------------------------------------------------------------------------------
 		//                               Data Input
@@ -1320,7 +1365,7 @@ public final class Record implements Value, CopyableValue<Record> {
 
 		@Override
 		public char readChar() throws IOException {
-			if (this.position < this.end - 1) {
+			if (this.position < this.end - 1) {//-1表示确保有2个字节
 				return (char) (((this.memory[this.position++] & 0xff) << 8) | ((this.memory[this.position++] & 0xff) << 0));
 			} else {
 				throw new EOFException();
@@ -1337,11 +1382,13 @@ public final class Record implements Value, CopyableValue<Record> {
 			return Float.intBitsToFloat(readInt());
 		}
 
+		//必须能填充满整个b字节数组
 		@Override
 		public void readFully(byte[] b) throws IOException {
 			readFully(b, 0, b.length);
 		}
 
+		//必须能读取len个字节
 		@Override
 		public void readFully(byte[] b, int off, int len) throws IOException {
 			if (len >= 0) {
@@ -1376,6 +1423,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			}
 		}
 
+		//按照\r\n拆分一行
 		@Override
 		public String readLine() throws IOException {
 			if (this.position < this.end) {
@@ -1512,6 +1560,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			}
 		}
 
+		//最多跳过n个字节,返回真实跳过多少个字节
 		@Override
 		public int skipBytes(int n) throws IOException {
 			if (this.position <= this.end - n) {
@@ -1524,6 +1573,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			}
 		}
 
+		//必须跳过numBytes个字节,如果跳不过,则抛异常
 		@Override
 		public void skipBytesToRead(int numBytes) throws IOException {
 			if (this.end - this.position < numBytes) {
@@ -1532,6 +1582,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			skipBytes(numBytes);
 		}
 
+		//读取字节到b中,返回真实读取的字节数,不要求一定读取len个
 		@Override
 		public int read(byte[] b, int off, int len) throws IOException {
 			if (b == null) {
@@ -1562,6 +1613,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			}
 		}
 
+		//读取字节到b中,返回真实读取的字节数,不要求一定读满整个b
 		@Override
 		public int read(byte[] b) throws IOException {
 			return read(b, 0, b.length);
@@ -1570,7 +1622,8 @@ public final class Record implements Value, CopyableValue<Record> {
 		// ----------------------------------------------------------------------------------------
 		//                               Data Output
 		// ----------------------------------------------------------------------------------------
-		
+
+		//写入一个字节
 		@Override
 		public void write(int b) throws IOException {
 			if (this.position >= this.memory.length) {
@@ -1589,7 +1642,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			if (len < 0 || off > b.length - len) {
 				throw new ArrayIndexOutOfBoundsException();
 			}
-			if (this.position > this.memory.length - len) {
+			if (this.position > this.memory.length - len) {//扩容
 				resize(len);
 			}
 			System.arraycopy(b, off, this.memory, this.position, len);
@@ -1740,9 +1793,10 @@ public final class Record implements Value, CopyableValue<Record> {
 
 			this.position = count;
 		}
-		
+
+		//用可变字节 存储 int值
 		private void writeValLenIntBackwards(int value) throws IOException {
-			if (this.position > this.memory.length - 4) {
+			if (this.position > this.memory.length - 4) {//空间不足4个,扩容
 				resize(4);
 			}
 			
@@ -1772,7 +1826,8 @@ public final class Record implements Value, CopyableValue<Record> {
 				this.memory[this.position++] = (byte) (value | MAX_BIT);
 			}
 		}
-		
+
+		//扩容
 		private void resize(int minCapacityAdd) throws IOException {
 			try {
 				final int newLen = Math.max(this.memory.length * 2, this.memory.length + minCapacityAdd);
@@ -1793,6 +1848,7 @@ public final class Record implements Value, CopyableValue<Record> {
 		
 		private static final boolean LITTLE_ENDIAN = (MemoryUtils.NATIVE_BYTE_ORDER == ByteOrder.LITTLE_ENDIAN);
 
+		//跳过这些字节后再写
 		@Override
 		public void skipBytesToWrite(int numBytes) throws IOException {
 			int skippedBytes = skipBytes(numBytes);
@@ -1802,6 +1858,7 @@ public final class Record implements Value, CopyableValue<Record> {
 			}
 		}
 
+		//从source中读取numBytes个数据,写入到memory中
 		@Override
 		public void write(DataInputView source, int numBytes) throws IOException {
 			if (numBytes > this.end - this.position) {

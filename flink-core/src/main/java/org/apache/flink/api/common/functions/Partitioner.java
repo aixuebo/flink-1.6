@@ -24,6 +24,7 @@ import org.apache.flink.annotation.Public;
  * Function to implement a custom partition assignment for keys.
  *
  * @param <K> The type of the key to be partitioned.
+ * 给定key返回对应第几个分区
  */
 @Public
 @FunctionalInterface
@@ -35,6 +36,7 @@ public interface Partitioner<K> extends java.io.Serializable, Function {
 	 * @param key The key.
 	 * @param numPartitions The number of partitions to partition into.
 	 * @return The partition index.
+	 * key应该分配到哪个分区
 	 */
 	int partition(K key, int numPartitions);
 }

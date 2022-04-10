@@ -31,17 +31,18 @@ import org.apache.flink.util.Preconditions;
 
 /**
  * Container class for JobManager specific communication utils used by the {@link TaskExecutor}.
+ * 代表一个jobManager连接的对象
  */
 public class JobManagerConnection {
 
 	// Job id related with the job manager
 	private final JobID jobID;
 
-	// The unique id used for identifying the job manager
-	private final ResourceID resourceID;
+	// The unique id used for identifying the job manager,
+	private final ResourceID resourceID;//jobManager的唯一uuid
 
 	// Gateway to the job master
-	private final JobMasterGateway jobMasterGateway;
+	private final JobMasterGateway jobMasterGateway;//job的网关代理对象,可以与jobManager做RPC交互
 
 	// Task manager actions with respect to the connected job manager
 	private final TaskManagerActions taskManagerActions;

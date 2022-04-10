@@ -45,19 +45,21 @@ public class LocationPreferenceSchedulingStrategy implements SchedulingStrategy 
 
 	/**
 	 * Calculates the candidate's locality score.
+	 * 二元操作,计算权重
 	 */
 	private static final BiFunction<Integer, Integer, Integer> LOCALITY_EVALUATION_FUNCTION = (localWeigh, hostLocalWeigh) -> localWeigh * 10 + hostLocalWeigh;
 
 	LocationPreferenceSchedulingStrategy() {}
 
+	//选择出一个IN去执行slot
 	@Nullable
 	@Override
 	public <IN, OUT> OUT findMatchWithLocality(
 			@Nonnull SlotProfile slotProfile,
-			@Nonnull Stream<IN> candidates,
-			@Nonnull Function<IN, SlotContext> contextExtractor,
-			@Nonnull Predicate<IN> additionalRequirementsFilter,
-			@Nonnull BiFunction<IN, Locality, OUT> resultProducer) {
+			@Nonnull Stream<IN> candidates,//数据源
+			@Nonnull Function<IN, SlotContext> contextExtractor,//in转换成slot上下文
+			@Nonnull Predicate<IN> additionalRequirementsFilter,//筛选器,输入IN,输出true/fasle
+			@Nonnull BiFunction<IN, Locality, OUT> resultProducer) { //二元操作
 
 		Collection<TaskManagerLocation> locationPreferences = slotProfile.getPreferredLocations();
 
@@ -90,13 +92,13 @@ public class LocationPreferenceSchedulingStrategy implements SchedulingStrategy 
 			if (additionalRequirementsFilter.test(candidate)) {
 				SlotContext slotContext = contextExtractor.apply(candidate);
 
-				// this gets candidate is local-weigh
+				// this gets candidate is local-weigh 该slot的权重
 				Integer localWeigh = preferredResourceIDs.getOrDefault(slotContext.getTaskManagerLocation().getResourceID(), 0);
 
 				// this gets candidate is host-local-weigh
 				Integer hostLocalWeigh = preferredFQHostNames.getOrDefault(slotContext.getTaskManagerLocation().getFQDNHostname(), 0);
 
-				int candidateScore = LOCALITY_EVALUATION_FUNCTION.apply(localWeigh, hostLocalWeigh);
+				int candidateScore = LOCALITY_EVALUATION_FUNCTION.apply(localWeigh, hostLocalWeigh);//计算权重
 				if (candidateScore > bestCandidateScore) {
 					bestCandidateScore = candidateScore;
 					bestCandidate = candidate;

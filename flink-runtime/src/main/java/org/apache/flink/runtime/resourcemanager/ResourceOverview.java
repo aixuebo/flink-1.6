@@ -22,6 +22,7 @@ import java.io.Serializable;
 
 /**
  * Class containing information about the available cluster resources.
+ * 报告有多少个taskManager、有多少个solt、有多少个空闲的slot
  */
 public class ResourceOverview implements Serializable {
 

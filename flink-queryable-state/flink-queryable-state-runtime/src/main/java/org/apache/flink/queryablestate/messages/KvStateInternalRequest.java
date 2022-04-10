@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
  * The request to be forwarded by the {@link org.apache.flink.runtime.query.KvStateClientProxy
  * Queryable State Client Proxy} to the {@link org.apache.flink.runtime.query.KvStateServer State Server}
  * of the Task Manager responsible for the requested state.
+ * 代表一个stage对象,包含stageId、key、命名空间
  */
 @Internal
 public class KvStateInternalRequest extends MessageBody {
@@ -59,13 +60,14 @@ public class KvStateInternalRequest extends MessageBody {
 	public byte[] serialize() {
 
 		// KvStateId + sizeOf(serializedKeyAndNamespace) + serializedKeyAndNamespace
+		//序列化stageid 和 key+命名空间的value值
 		final int size = KvStateID.SIZE + Integer.BYTES + serializedKeyAndNamespace.length;
 
 		return ByteBuffer.allocate(size)
 				.putLong(kvStateId.getLowerPart())
 				.putLong(kvStateId.getUpperPart())
-				.putInt(serializedKeyAndNamespace.length)
-				.put(serializedKeyAndNamespace)
+				.putInt(serializedKeyAndNamespace.length)//存储serializedKeyAndNamespace的长度
+				.put(serializedKeyAndNamespace)//存储serializedKeyAndNamespace的内容
 				.array();
 	}
 

@@ -91,10 +91,14 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * the given {@link InternalWindowFunction} is invoked to produce the results that are emitted for
  * the pane to which the {@code Trigger} belongs.
  *
- * @param <K> The type of key returned by the {@code KeySelector}.
- * @param <IN> The type of the incoming elements.
- * @param <OUT> The type of elements emitted by the {@code InternalWindowFunction}.
- * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns.
+ * @param <K> The type of key returned by the {@code KeySelector}.key的类型
+ * @param <IN> The type of the incoming elements. 输入元素类型
+ * @param <OUT> The type of elements emitted by the {@code InternalWindowFunction}.输出类型
+ * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns. 所依赖的window窗口类型
+ *
+ * 窗口内，进行计算，有输入，有输出，
+ * 同时窗口内是要产生聚合函数计算的，而且是依赖某一个key进行聚合。
+ * 因此有五大元素:输入类型、输出类型、key类型、聚合函数、什么窗口。
  */
 @Internal
 public class WindowOperator<K, IN, ACC, OUT, W extends Window>
@@ -128,6 +132,8 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 *     <li>Clearing the state of a window if the system time passes the
 	 *         {@code window.maxTimestamp + allowedLateness} landmark.
 	 * </ul>
+	 * 最大的延迟时间，
+	 * 返回窗口最大的过期时间,即窗口的过期时间+最大的延迟时间,因此此时需要使用"最大的延迟时间"
 	 */
 	protected final long allowedLateness;
 
@@ -135,12 +141,14 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 * {@link OutputTag} to use for late arriving events. Elements for which
 	 * {@code window.maxTimestamp + allowedLateness} is smaller than the current watermark will
 	 * be emitted to this.
+	 * 当数据元素到达的时候，已经超出了窗口规定的时间，因此需要输出到额外的输出流中。
+	 * lateDataOutputTag 表示额外的输出流名字
 	 */
 	protected final OutputTag<IN> lateDataOutputTag;
 
 	private static final  String LATE_ELEMENTS_DROPPED_METRIC_NAME = "numLateRecordsDropped";
 
-	protected transient Counter numLateRecordsDropped;
+	protected transient Counter numLateRecordsDropped;//如果元素已经过期，没有找到合适的窗口，此时输出到额外的过期流中。或者计数过期元素数量。。此变量用于记录过期丢弃的元素数量
 
 	// ------------------------------------------------------------------------
 	// State that is not checkpointed
@@ -187,7 +195,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			StateDescriptor<? extends AppendingState<IN, ACC>, ?> windowStateDescriptor,
 			InternalWindowFunction<ACC, OUT, K, W> windowFunction,
 			Trigger<? super IN, ? super W> trigger,
-			long allowedLateness,
+			long allowedLateness,//窗口的最大延期时间
 			OutputTag<IN> lateDataOutputTag) {
 
 		super(windowFunction);
@@ -293,14 +301,14 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		final Collection<W> elementWindows = windowAssigner.assignWindows(
-			element.getValue(), element.getTimestamp(), windowAssignerContext);
+			element.getValue(), element.getTimestamp(), windowAssignerContext);//返回元素应该分配到哪个window集合
 
 		//if element is handled by none of assigned elementWindows
 		boolean isSkippedElement = true;
 
 		final K key = this.<K>getKeyedStateBackend().getCurrentKey();
 
-		if (windowAssigner instanceof MergingWindowAssigner) {
+		if (windowAssigner instanceof MergingWindowAssigner) { //session这种存在gap,需要merge window合并的窗口对象
 			MergingWindowSet<W> mergingWindows = getMergingWindowSet();
 
 			for (W window: elementWindows) {
@@ -381,6 +389,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		} else {
 			for (W window: elementWindows) {
 
+				//如果窗口已经过期了,则继续循环下一个窗口
 				// drop if the window is already late
 				if (isWindowLate(window)) {
 					continue;
@@ -388,7 +397,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				isSkippedElement = false;
 
 				windowState.setCurrentNamespace(window);
-				windowState.add(element.getValue());
+				windowState.add(element.getValue()); //将该结果添加到中间缓冲区,等待最终计算,此时由于windowState是reduce等聚合函数,因此不会太占用内存
 
 				triggerContext.key = key;
 				triggerContext.window = window;
@@ -414,6 +423,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		// element not handled by any window
 		// late arriving tag has been set
 		// windowAssigner is event time and current timestamp + allowed lateness no less than element timestamp
+		// 如果元素已经过期，没有找到合适的窗口，此时输出到额外的过期流中。或者计数过期元素数量
 		if (isSkippedElement && isElementLate(element)) {
 			if (lateDataOutputTag != null){
 				sideOutput(element);
@@ -505,7 +515,8 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			windowState.clear();
 		}
 
-		if (!windowAssigner.isEventTime() && isCleanupTime(triggerContext.window, timer.getTimestamp())) {
+		if (!windowAssigner.isEventTime() &&
+			isCleanupTime(triggerContext.window, timer.getTimestamp())) {//判断窗口window的最大过期时间，是否是参数time。true表示是
 			clearAllState(triggerContext.window, windowState, mergingWindows);
 		}
 
@@ -550,6 +561,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 * Write skipped late arriving element to SideOutput.
 	 *
 	 * @param element skipped late arriving element to side output
+	 * 当数据元素到达的时候，已经超出了窗口规定的时间，因此需要输出到额外的输出流中
 	 */
 	protected void sideOutput(StreamRecord<IN> element){
 		output.collect(lateDataOutputTag, element);
@@ -571,9 +583,11 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	/**
 	 * Returns {@code true} if the watermark is after the end timestamp plus the allowed lateness
 	 * of the given window.
+	 * true表示该窗口已经过期，即watermark在窗口的时间戳+允许的最大延迟期之后出现，说明一定过期了
 	 */
 	protected boolean isWindowLate(W window) {
-		return (windowAssigner.isEventTime() && (cleanupTime(window) <= internalTimerService.currentWatermark()));
+		return (windowAssigner.isEventTime() //元素基于事件时间来决定的窗口归属
+			&& (cleanupTime(window) <= internalTimerService.currentWatermark()));
 	}
 
 	/**
@@ -581,6 +595,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 *
 	 * @param element The element to check
 	 * @return The element for which should be considered when sideoutputs
+	 * true表示该元素已经超出了窗口的时间范围，已经去sideoutputs通道,等候后期处理
 	 */
 	protected boolean isElementLate(StreamRecord<IN> element){
 		return (windowAssigner.isEventTime()) &&
@@ -591,6 +606,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 * Registers a timer to cleanup the content of the window.
 	 * @param window
 	 * 					the window whose state to discard
+	 * 为该窗口注册一个定时任务,当窗口的最大时间达到时触发,进行triiger操作
 	 */
 	protected void registerCleanupTimer(W window) {
 		long cleanupTime = cleanupTime(window);
@@ -610,15 +626,16 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 * Deletes the cleanup timer set for the contents of the provided window.
 	 * @param window
 	 * 					the window whose state to discard
+	 * 删除该窗口的定时任务
 	 */
 	protected void deleteCleanupTimer(W window) {
-		long cleanupTime = cleanupTime(window);
-		if (cleanupTime == Long.MAX_VALUE) {
+		long cleanupTime = cleanupTime(window);//获取定时任务的时间
+		if (cleanupTime == Long.MAX_VALUE) {//说明没有定时任务
 			// no need to clean up because we didn't set one
 			return;
 		}
 		if (windowAssigner.isEventTime()) {
-			triggerContext.deleteEventTimeTimer(cleanupTime);
+			triggerContext.deleteEventTimeTimer(cleanupTime);//删除该时间的定时任务
 		} else {
 			triggerContext.deleteProcessingTimeTimer(cleanupTime);
 		}
@@ -632,6 +649,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	 * returned.
 	 *
 	 * @param window the window whose cleanup time we are computing.
+	 * 返回窗口最大的过期时间,即窗口的过期时间+最大的延迟时间
 	 */
 	private long cleanupTime(W window) {
 		if (windowAssigner.isEventTime()) {
@@ -644,6 +662,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 
 	/**
 	 * Returns {@code true} if the given time is the cleanup time for the given window.
+	 * 判断窗口window的最大过期时间，是否是参数time。true表示是
 	 */
 	protected final boolean isCleanupTime(W window, long time) {
 		return time == cleanupTime(window);
@@ -923,6 +942,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 
 	/**
 	 * Internal class for keeping track of in-flight timers.
+	 * 代表一个独立的窗口，支持窗口的排序
 	 */
 	protected static class Timer<K, W extends Window> implements Comparable<Timer<K, W>> {
 		protected long timestamp;

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 
 /**
  * Client uploading a file.
+ * 定义要上传的文件路径、文件类型
  */
 public final class FileUpload {
 	private final Path file;

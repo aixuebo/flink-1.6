@@ -23,6 +23,7 @@ import java.io.File;
 /**
  * Query parameter specifying the arguments for the program.
  * @see org.apache.flink.client.program.PackagedProgram#PackagedProgram(File, String, String...)
+ * 参数值是参数值是list<String>
  */
 public class ProgramArgsQueryParameter extends StringQueryParameter {
 

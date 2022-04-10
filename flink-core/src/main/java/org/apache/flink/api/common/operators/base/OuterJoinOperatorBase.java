@@ -46,6 +46,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * 属于left/RIGHT/full join类型
+ * @param <IN1>
+ * @param <IN2>
+ * @param <OUT>
+ * @param <FT>
+ */
 @Internal
 public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN1, IN2, OUT>> extends JoinOperatorBase<IN1, IN2, OUT, FT> {
 
@@ -81,6 +88,8 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
 	@Override
 	protected List<OUT> executeOnCollections(List<IN1> leftInput, List<IN2> rightInput, RuntimeContext runtimeContext, ExecutionConfig executionConfig) throws Exception {
+
+		//输入和输出类型
 		TypeInformation<IN1> leftInformation = getOperatorInfo().getFirstInputType();
 		TypeInformation<IN2> rightInformation = getOperatorInfo().getSecondInputType();
 		TypeInformation<OUT> outInformation = getOperatorInfo().getOutputType();
@@ -142,7 +151,7 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 			NONE_REMAINED, FIRST_REMAINED, SECOND_REMAINED, FIRST_EMPTY, SECOND_EMPTY
 		}
 
-		private OuterJoinType outerJoinType;
+		private OuterJoinType outerJoinType;//join类型
 
 		private ListKeyGroupedIterator<IN1> leftGroupedIterator;
 		private ListKeyGroupedIterator<IN2> rightGroupedIterator;
@@ -165,7 +174,7 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 			leftGroupedIterator = new ListKeyGroupedIterator<>(leftInput, leftSerializer, leftComparator);
 			rightGroupedIterator = new ListKeyGroupedIterator<>(rightInput, rightSerializer, rightComparator);
 			// ----------------------------------------------------------------
-			// Sort
+			// Sort 内存中排序
 			// ----------------------------------------------------------------
 			Collections.sort(leftInput, new Comparator<IN1>() {
 				@Override
@@ -186,8 +195,8 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 		@SuppressWarnings("unchecked")
 		private boolean next() throws IOException {
 			boolean hasMoreElements;
-			if ((currLeftIterator == null || !currLeftIterator.hasNext()) && (currRightIterator == null || !currRightIterator.hasNext())) {
-				hasMoreElements = nextGroups(outerJoinType);
+			if ((currLeftIterator == null || !currLeftIterator.hasNext()) && (currRightIterator == null || !currRightIterator.hasNext())) {//无数据的时候,去读取下一个key对应的所有value
+				hasMoreElements = nextGroups(outerJoinType);//是否有数据
 				if (hasMoreElements) {
 					if (outerJoinType != OuterJoinType.LEFT) {
 						currLeftIterator = new ListIteratorWrapper(currLeftSubset.iterator());
@@ -215,9 +224,9 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
 		private boolean nextGroups(OuterJoinType outerJoinType) throws IOException {
 			if (outerJoinType == OuterJoinType.FULL) {
-				return nextGroups();
+				return nextGroups();//只有任意一个集合有数据,都翻红true
 			} else if (outerJoinType == OuterJoinType.LEFT) {
-				boolean leftContainsElements = false;
+				boolean leftContainsElements = false;//true表示left中有数据
 				while (!leftContainsElements && nextGroups()) {
 					currLeftIterator = new ListIteratorWrapper(currLeftSubset.iterator());
 					if (currLeftIterator.next() != null) {

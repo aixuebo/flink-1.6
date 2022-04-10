@@ -26,6 +26,8 @@ import java.io.IOException;
 
 /**
  * A state handle that contains stream state in a byte array.
+ *
+ * 内存存储数据，说明数据量小,不需要存储到文件中
  */
 public class ByteStreamStateHandle implements StreamStateHandle {
 
@@ -33,12 +35,14 @@ public class ByteStreamStateHandle implements StreamStateHandle {
 
 	/**
 	 * The state data.
+	 * 数据内容 -- 最终存储checkpoint的结果用字节数组存储
 	 */
 	private final byte[] data;
 
 	/**
 	 * A unique name of by which this state handle is identified and compared. Like a filename, all
 	 * {@link ByteStreamStateHandle} with the exact same name must also have the exact same content in data.
+	 * 自定义一个uuid
 	 */
 	private final String handleName;
 
@@ -50,6 +54,7 @@ public class ByteStreamStateHandle implements StreamStateHandle {
 		this.data = Preconditions.checkNotNull(data);
 	}
 
+	//打开输入流
 	@Override
 	public FSDataInputStream openInputStream() throws IOException {
 		return new ByteStateHandleInputStream(data);
@@ -67,6 +72,7 @@ public class ByteStreamStateHandle implements StreamStateHandle {
 	public void discardState() {
 	}
 
+	//数据大小
 	@Override
 	public long getStateSize() {
 		return data.length;
@@ -100,16 +106,18 @@ public class ByteStreamStateHandle implements StreamStateHandle {
 
 	/**
 	 * An input stream view on a byte array.
+	 * 代表一个输入流,数据源是字节数组
 	 */
 	private static final class ByteStateHandleInputStream extends FSDataInputStream {
 
-		private final byte[] data;
-		private int index;
+		private final byte[] data;//数据源
+		private int index;//读取数据源的第几个位置
 
 		public ByteStateHandleInputStream(byte[] data) {
 			this.data = data;
 		}
 
+		//直接跳到第desired个字节位置
 		@Override
 		public void seek(long desired) throws IOException {
 			if (desired >= 0 && desired <= data.length) {
@@ -124,17 +132,19 @@ public class ByteStreamStateHandle implements StreamStateHandle {
 			return index;
 		}
 
+		//读取一个字节
 		@Override
 		public int read() throws IOException {
 			return index < data.length ? data[index++] & 0xFF : -1;
 		}
 
+		//读取数据到b中,最多读取len个长度
 		@Override
 		public int read(byte[] b, int off, int len) throws IOException {
 			// note that any bounds checking on "byte[] b" happend anyways by the
 			// System.arraycopy() call below, so we don't add extra checks here
 
-			final int bytesLeft = data.length - index;
+			final int bytesLeft = data.length - index;//剩余字节数
 			if (bytesLeft > 0) {
 				final int bytesToCopy = Math.min(len, bytesLeft);
 				System.arraycopy(data, index, b, off, bytesToCopy);

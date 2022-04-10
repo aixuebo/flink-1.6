@@ -410,6 +410,9 @@ public class CoBroadcastWithKeyedOperatorTest {
 		}
 	}
 
+	/**
+	 * 参数String, String, Integer, String  表示 key类型String,非广播数据源类型String,广播数据源类型Integer,输出String
+	 */
 	private static class FunctionWithBroadcastState extends KeyedBroadcastProcessFunction<String, String, Integer, String> {
 
 		private static final long serialVersionUID = 7496674620398203933L;
@@ -430,15 +433,18 @@ public class CoBroadcastWithKeyedOperatorTest {
 			this.expectedKey = expectedKey;
 		}
 
+		//广播类型是Int value
 		@Override
 		public void processBroadcastElement(Integer value, Context ctx, Collector<String> out) throws Exception {
 			// put an element in the broadcast state
 			final String key = value + "." + keyPostfix;
-			ctx.getBroadcastState(STATE_DESCRIPTOR).put(key, value);
+			ctx.getBroadcastState(STATE_DESCRIPTOR).put(key, value);//将广播的value值存储起来
 		}
 
+		//非广播类型是String
 		@Override
 		public void processElement(String value, ReadOnlyContext ctx, Collector<String> out) throws Exception {
+			//获取广播的内容
 			Iterable<Map.Entry<String, Integer>> broadcastStateIt = ctx.getBroadcastState(STATE_DESCRIPTOR).immutableEntries();
 			Iterator<Map.Entry<String, Integer>> iter = broadcastStateIt.iterator();
 

@@ -27,6 +27,7 @@ package org.apache.flink.runtime.rest.messages;
  * <p>All fields that should part of the JSON request must be accessible either by being public or having a getter.
  *
  * <p>When adding methods that are prefixed with {@code get/is} make sure to annotate them with {@code @JsonIgnore}.
+ * 定义是一个请求
  */
 public interface RequestBody {
 }

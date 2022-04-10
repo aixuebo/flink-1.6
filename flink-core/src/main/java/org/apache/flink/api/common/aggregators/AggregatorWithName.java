@@ -23,6 +23,7 @@ import org.apache.flink.types.Value;
 
 /**
  * Simple utility class holding an {@link Aggregator} with the name it is registered under.
+ * 定义一个聚合器，由聚合对象Aggregator和名称组成
  */
 @PublicEvolving
 public class AggregatorWithName<T extends Value> {

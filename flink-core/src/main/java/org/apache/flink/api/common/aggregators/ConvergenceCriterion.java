@@ -26,12 +26,17 @@ import org.apache.flink.types.Value;
 
 /**
  * Used to check for convergence.
+ * 校验是否已经收敛
  */
 @PublicEvolving
 public interface ConvergenceCriterion<T extends Value> extends Serializable {
 
 	/**
 	 * Decide whether the iterative algorithm has converged
+	 * 决定是否迭代算法已经完成收敛,即不需要再迭代了
+	 * true表示收敛
+	 * 参数iteration 表示算法迭代了多少轮。
+	 * 参数value ,表示迭代iteration后,损失函数值是多少,是否可以收敛了
 	 */
 	boolean isConverged(int iteration, T value);
 }

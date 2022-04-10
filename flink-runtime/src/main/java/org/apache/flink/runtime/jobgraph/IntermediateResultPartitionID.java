@@ -22,6 +22,8 @@ import org.apache.flink.util.AbstractID;
 
 import org.apache.flink.shaded.netty4.io.netty.buffer.ByteBuf;
 
+//支持将id序列化到buf中,或者从buf中还原
+//中间结果PartitionID
 public class IntermediateResultPartitionID extends AbstractID {
 
 	private static final long serialVersionUID = 1L;

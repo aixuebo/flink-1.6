@@ -45,6 +45,7 @@ import java.util.Map;
 
 /**
  * @see org.apache.flink.api.common.functions.FlatJoinFunction
+ * 左右join后,可以产生多条数据,因此函数是FlatJoinFunction
  */
 @Internal
 public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN1, IN2, OUT>> extends JoinOperatorBase<IN1, IN2, OUT, FT> {
@@ -75,9 +76,9 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 		FunctionUtils.setFunctionRuntimeContext(function, runtimeContext);
 		FunctionUtils.openFunction(function, this.parameters);
 
-		TypeInformation<IN1> leftInformation = getOperatorInfo().getFirstInputType();
-		TypeInformation<IN2> rightInformation = getOperatorInfo().getSecondInputType();
-		TypeInformation<OUT> outInformation = getOperatorInfo().getOutputType();
+		TypeInformation<IN1> leftInformation = getOperatorInfo().getFirstInputType();//输入类型
+		TypeInformation<IN2> rightInformation = getOperatorInfo().getSecondInputType();//输入类型
+		TypeInformation<OUT> outInformation = getOperatorInfo().getOutputType();//输出类型
 
 		TypeSerializer<IN1> leftSerializer = leftInformation.createSerializer(executionConfig);
 		TypeSerializer<IN2> rightSerializer = rightInformation.createSerializer(executionConfig);
@@ -85,6 +86,7 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 		TypeComparator<IN1> leftComparator;
 		TypeComparator<IN2> rightComparator;
 
+		//计算如何排序分组，即使用分组信息排序即可
 		if (leftInformation instanceof AtomicType) {
 			leftComparator = ((AtomicType<IN1>) leftInformation).createComparator(true, executionConfig);
 		} else if (leftInformation instanceof CompositeType) {
@@ -111,14 +113,16 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 					.getCanonicalName() + " is not supported. Could not generate a comparator.");
 		}
 
+		//确保两个关联的对象完全相同
 		TypePairComparator<IN1, IN2> pairComparator = new GenericPairComparator<IN1, IN2>(leftComparator, rightComparator);
 
 		List<OUT> result = new ArrayList<OUT>();
 		Collector<OUT> collector = new CopyingListCollector<OUT>(result, outInformation.createSerializer(executionConfig));
 
+		//因为是inputData1 join inputData2,因此要拿每一个inputData1元素去关联,因此数据映射关系先计算inputData2的,一旦有数据了,就可以循环每一个inputData1,然后去缓存中的2进行关联
 		Map<Integer, List<IN2>> probeTable = new HashMap<Integer, List<IN2>>();
 
-		//Build hash table
+		//Build hash table 对数据集合2进行hash table映射，即相同key的一定在同一个分区内
 		for (IN2 element : inputData2) {
 			List<IN2> list = probeTable.get(rightComparator.hash(element));
 			if (list == null) {
@@ -130,14 +134,14 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 		}
 
 		//Probing
-		for (IN1 left : inputData1) {
-			List<IN2> matchingHashes = probeTable.get(leftComparator.hash(left));
+		for (IN1 left : inputData1) {//每一个左边元素
+			List<IN2> matchingHashes = probeTable.get(leftComparator.hash(left));//找到匹配的右边元素集合
 
-			if (matchingHashes != null) {
-				pairComparator.setReference(left);
-				for (IN2 right : matchingHashes) {
-					if (pairComparator.equalToReference(right)) {
-						function.join(leftSerializer.copy(left), rightSerializer.copy(right), collector);
+			if (matchingHashes != null) {//key落在相同桶内的集合进行笛卡尔乘积，因为命中同一个桶了，因此会减少一些笛卡尔的量，但还是很大
+				pairComparator.setReference(left);//设置比较器的一个值,这样就可以准确匹配是否相等
+				for (IN2 right : matchingHashes) {//循环每一个右边元素,让左边与右边做join
+					if (pairComparator.equalToReference(right)) {//在同一个桶,但不一定相等,因此还要判断左右是否相同
+						function.join(leftSerializer.copy(left), rightSerializer.copy(right), collector);//能进入该方法时,已经确保first和second的数据已经被on条件选中,即可以直接对两条数据做处理了
 					}
 				}
 			}

@@ -28,9 +28,9 @@ import org.apache.flink.annotation.PublicEvolving;
 @PublicEvolving
 public class StringParser extends FieldParser<String> {
 
-	private boolean quotedStringParsing = false;
-	private byte quoteCharacter;
-	private static final byte BACKSLASH = 92;
+	private boolean quotedStringParsing = false;//是否有引用字符
+	private byte quoteCharacter;//设置引用字符
+	private static final byte BACKSLASH = 92;// \字符
 
 	private String result;
 
@@ -57,7 +57,7 @@ public class StringParser extends FieldParser<String> {
 			i++;
 
 			// search for ending quote character, continue when it is escaped
-			while (i < limit && (bytes[i] != quoteCharacter || bytes[i - 1] == BACKSLASH)) {
+			while (i < limit && (bytes[i] != quoteCharacter || bytes[i - 1] == BACKSLASH)) {// \字符或者引用非引用字符,都继续通过
 				i++;
 			}
 

@@ -36,7 +36,8 @@ import static org.apache.flink.util.Preconditions.checkState;
 @Internal
 public class KeyedProcessOperator<K, IN, OUT>
 		extends AbstractUdfStreamOperator<OUT, KeyedProcessFunction<K, IN, OUT>>
-		implements OneInputStreamOperator<IN, OUT>, Triggerable<K, VoidNamespace> {
+		implements OneInputStreamOperator<IN, OUT>,
+	Triggerable<K, VoidNamespace> { //时间监听触发器
 
 	private static final long serialVersionUID = 1L;
 
@@ -58,7 +59,7 @@ public class KeyedProcessOperator<K, IN, OUT>
 		collector = new TimestampedCollector<>(output);
 
 		InternalTimerService<VoidNamespace> internalTimerService =
-				getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);
+				getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);//时间监听触发器
 
 		TimerService timerService = new SimpleTimerService(internalTimerService);
 
@@ -66,32 +67,36 @@ public class KeyedProcessOperator<K, IN, OUT>
 		onTimerContext = new OnTimerContextImpl(userFunction, timerService);
 	}
 
+	//回调
 	@Override
 	public void onEventTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
 		collector.setAbsoluteTimestamp(timer.getTimestamp());
 		invokeUserFunction(TimeDomain.EVENT_TIME, timer);
 	}
 
+	//回调
 	@Override
 	public void onProcessingTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
-		collector.eraseTimestamp();
+		collector.eraseTimestamp();//消除时间戳
 		invokeUserFunction(TimeDomain.PROCESSING_TIME, timer);
 	}
 
+	//处理数据量中每一个元素
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		collector.setTimestamp(element);
-		context.element = element;
-		userFunction.processElement(element.getValue(), context, collector);
+		context.element = element;//时间戳添加到上下文中
+		userFunction.processElement(element.getValue(), context, collector);//只有value值,没有时间戳
 		context.element = null;
 	}
 
+	//触发回调
 	private void invokeUserFunction(
 			TimeDomain timeDomain,
 			InternalTimer<K, VoidNamespace> timer) throws Exception {
 		onTimerContext.timeDomain = timeDomain;
 		onTimerContext.timer = timer;
-		userFunction.onTimer(timer.getTimestamp(), onTimerContext, collector);
+		userFunction.onTimer(timer.getTimestamp(), onTimerContext, collector);//回调函数执行
 		onTimerContext.timeDomain = null;
 		onTimerContext.timer = null;
 	}
@@ -107,6 +112,7 @@ public class KeyedProcessOperator<K, IN, OUT>
 			this.timerService = checkNotNull(timerService);
 		}
 
+		//返回元素绑定的事件时间戳
 		@Override
 		public Long timestamp() {
 			checkState(element != null);
@@ -178,6 +184,7 @@ public class KeyedProcessOperator<K, IN, OUT>
 			return timeDomain;
 		}
 
+		//返回的是回调函数绑定时候的key,而不是当前上下文环境的key
 		@Override
 		public K getCurrentKey() {
 			return timer.getKey();

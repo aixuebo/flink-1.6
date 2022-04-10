@@ -62,6 +62,7 @@ public class YarnConfigOptions {
 
 	/**
 	 * The vcores exposed by YARN.
+	 * 申请yarn的container时候，申请多少个核
 	 */
 	public static final ConfigOption<Integer> VCORES =
 		key("yarn.containers.vcores")
@@ -154,7 +155,9 @@ public class YarnConfigOptions {
 	/** This class is not meant to be instantiated. */
 	private YarnConfigOptions() {}
 
-	/** @see YarnConfigOptions#CLASSPATH_INCLUDE_USER_JAR */
+	/** @see YarnConfigOptions#CLASSPATH_INCLUDE_USER_JAR
+	 * 用户自定义的jar,在环境变量前，还是在后，
+	 **/
 	public enum UserJarInclusion {
 		DISABLED,
 		FIRST,

@@ -76,6 +76,7 @@ public interface BroadcastState<K, V> extends ReadOnlyBroadcastState<K, V> {
 	 * @return An iterator over all the mappings in the state
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 返回Map的迭代器,相当于get
 	 */
 	Iterator<Map.Entry<K, V>> iterator() throws Exception;
 
@@ -85,6 +86,7 @@ public interface BroadcastState<K, V> extends ReadOnlyBroadcastState<K, V> {
 	 * @return An iterable view of all the key-value pairs in the state.
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 返回Map的迭代器,相当于get
 	 */
 	Iterable<Map.Entry<K, V>> entries() throws Exception;
 }

@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
  * The response containing the (serialized) state sent by the {@code State Server} to the {@code Client Proxy},
  * and then forwarded by the proxy to the original
  * {@link org.apache.flink.queryablestate.client.QueryableStateClient Queryable State Client}.
+ * 表示response结果表
  */
 @Internal
 public class KvStateResponse extends MessageBody {

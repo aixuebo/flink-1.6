@@ -28,12 +28,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * A {@link TypeInformation} for the Multiset types of the Java API.
  *
  * @param <T> The type of the elements in the Multiset.
+ *
+ * set对象,使用map来实现set
  */
 @PublicEvolving
-public final class MultisetTypeInfo<T> extends MapTypeInfo<T, Integer> {
+public final class MultisetTypeInfo<T> extends MapTypeInfo<T, Integer> { //value是Integer,不重要
 
 	private static final long serialVersionUID = 1L;
 
+	//设置set的元素类型
 	public MultisetTypeInfo(Class<T> elementTypeClass) {
 		super(elementTypeClass, Integer.class);
 	}

@@ -31,6 +31,13 @@ import org.apache.flink.util.AbstractID;
  * <p>In contrast to this AllocationID, the {@link org.apache.flink.runtime.jobmaster.SlotRequestId}
  * is used when a task requests a logical slot from the SlotPool. Multiple logical slot requests
  * can map to one physical slot request (due to slot sharing).
+ * AllocationID标识一个slot唯一ID --- 参见SlotNotFoundException
+ *
+ * AllocationID是JobManager通过ResourceManager分配的物理Slot对应的唯一标识。在JobManager第一次请求的时候指定，重试的时候保持不变。这个ID用于TaskManager和ResourceManager追踪和同步slot的分配状态
+ *
+ * resouceManager会生产一个allocationId,通过allocationId可以确定resouceManager把这个slot分配给了哪个job
+ *
+ * 即AllocationID代表了一个slot的唯一ID
  */
 public class AllocationID extends AbstractID {
 

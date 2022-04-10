@@ -29,7 +29,7 @@ import org.apache.flink.util.Preconditions;
 public class JMTMRegistrationSuccess extends RegistrationResponse.Success {
 	private static final long serialVersionUID = -3528383155961318929L;
 
-	private final ResourceID resourceID;
+	private final ResourceID resourceID;//连接好的jobManager唯一ID
 
 	public JMTMRegistrationSuccess(ResourceID resourceID) {
 		this.resourceID = Preconditions.checkNotNull(resourceID);

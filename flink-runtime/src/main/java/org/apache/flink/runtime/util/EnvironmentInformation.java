@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Utility class that gives access to the execution environment of the JVM, like
  * the executing user, startup options, or the JVM version.
+ * 环境信息对象
  */
 public class EnvironmentInformation {
 
@@ -119,6 +120,7 @@ public class EnvironmentInformation {
 	 * a heuristic) 1/4th of the physical memory size.
 	 * 
 	 * @return The maximum JVM heap size, in bytes.
+	 * 最大使用的堆内存
 	 */
 	public static long getMaxJvmHeapMemory() {
 		final long maxMemory = Runtime.getRuntime().maxMemory();
@@ -146,6 +148,7 @@ public class EnvironmentInformation {
 	 * {@link #getSizeOfFreeHeapMemory()}.
 	 * 
 	 * @return An estimate of the size of the free heap memory, in bytes.
+	 * 剩余内存
 	 */
 	public static long getSizeOfFreeHeapMemoryWithDefrag() {
 		// trigger a garbage collection, to reduce fragmentation
@@ -160,6 +163,7 @@ public class EnvironmentInformation {
 	 * estimate, use {@link #getSizeOfFreeHeapMemoryWithDefrag()}.
 	 * 
 	 * @return An estimate of the size of the free heap memory, in bytes.
+	 * 剩余内存
 	 */
 	public static long getSizeOfFreeHeapMemory() {
 		Runtime r = Runtime.getRuntime();
@@ -265,6 +269,7 @@ public class EnvironmentInformation {
 	 * @param log The logger to log the information to.
 	 * @param componentName The component name to mention in the log.
 	 * @param commandLineArgs The arguments accompanying the starting the component.
+	 * 打印环境信息
 	 */
 	public static void logEnvironmentInfo(Logger log, String componentName, String[] commandLineArgs) {
 		if (log.isInfoEnabled()) {

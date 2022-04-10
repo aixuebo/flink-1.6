@@ -27,15 +27,27 @@ import java.util.ArrayList;
 /**
  * This class represents an ordering on a set of fields. It specifies the fields and order direction
  * (ascending, descending).
+ *
+ 比如sql:
+ select id,name,age
+ from xxx
+ order by name,age
+
+ 则indexes内容是2，3
+ types内容是string，int
+ orders内容是 desc desc
+
+ 标识好整体如何排序的
  */
 @Internal
 public class Ordering implements Cloneable {
-	
+
+	//存储要排序的id序号集合,是有顺序的
 	protected FieldList indexes = new FieldList();
 	
-	protected final ArrayList<Class<? extends Comparable<?>>> types = new ArrayList<Class<? extends Comparable<?>>>();
+	protected final ArrayList<Class<? extends Comparable<?>>> types = new ArrayList<Class<? extends Comparable<?>>>();//每一个index的值如何比较
 	
-	protected final ArrayList<Order> orders = new ArrayList<Order>();
+	protected final ArrayList<Order> orders = new ArrayList<Order>(); //每一个index是倒序还是正序,即排序方式
 
 	// --------------------------------------------------------------------------------------------
 	
@@ -45,6 +57,7 @@ public class Ordering implements Cloneable {
 	public Ordering() {}
 	
 	/**
+	 * 按照一个字段排序
 	 * @param index
 	 * @param type
 	 * @param order
@@ -58,11 +71,12 @@ public class Ordering implements Cloneable {
 	 * If the index has been previously appended then the unmodified Ordering
 	 * is returned.
 	 * 
-	 * @param index Field index of the appended order requirement.
-	 * @param type Type of the appended order requirement.
-	 * @param order Order of the appended order requirement.
+	 * @param index Field index of the appended order requirement.第几个序号
+	 * @param type Type of the appended order requirement. 如何比较
+	 * @param order Order of the appended order requirement. 倒序还是正序,即排序方式
 	 * 
 	 * @return This ordering with an additional appended order requirement.
+	 * 追加一个排序字段
 	 */
 	public Ordering appendOrdering(Integer index, Class<? extends Comparable<?>> type, Order order) {
 		if (index < 0) {
@@ -85,29 +99,33 @@ public class Ordering implements Cloneable {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//多少个排序的字段
 	public int getNumberOfFields() {
 		return this.indexes.size();
 	}
-	
+
+	//哪几个序号是用来order by的字段
 	public FieldList getInvolvedIndexes() {
 		return this.indexes;
 	}
-	
+
+	//获取第几个排序的字段具体对应的排序索引序号
 	public Integer getFieldNumber(int index) {
 		if (index < 0 || index >= this.indexes.size()) {
 			throw new IndexOutOfBoundsException(String.valueOf(index));
 		}
 		return this.indexes.get(index);
 	}
-	
+
+	//获取该字段如何排序
 	public Class<? extends Comparable<?>> getType(int index) {
 		if (index < 0 || index >= this.types.size()) {
 			throw new IndexOutOfBoundsException(String.valueOf(index));
 		}
 		return this.types.get(index);
 	}
-	
+
+	//获取该字段要正序还是倒序
 	public Order getOrder(int index) {
 		if (index < 0 || index >= this.types.size()) {
 			throw new IndexOutOfBoundsException(String.valueOf(index));
@@ -116,12 +134,13 @@ public class Ordering implements Cloneable {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//返回每一个元素的比较器
 	@SuppressWarnings("unchecked")
 	public Class<? extends Comparable<?>>[] getTypes() {
 		return this.types.toArray(new Class[this.types.size()]);
 	}
-	
+
+	//返回哪些字段需要被排序
 	public int[] getFieldPositions() {
 		final int[] ia = new int[this.indexes.size()];
 		for (int i = 0; i < ia.length; i++) {
@@ -129,11 +148,13 @@ public class Ordering implements Cloneable {
 		}
 		return ia;
 	}
-	
+
+	//返回每一个字段排序的方式--正序/倒序
 	public Order[] getFieldOrders() {
 		return this.orders.toArray(new Order[this.orders.size()]);
 	}	
-	
+
+	//每一个字段是否倒序 -- true表示倒序
 	public boolean[] getFieldSortDirections() {
 		final boolean[] directions = new boolean[this.orders.size()];
 		for (int i = 0; i < directions.length; i++) {

@@ -28,6 +28,7 @@ import org.apache.flink.streaming.util.typeutils.FieldAccessorFactory;
 
 /**
  * An {@link AggregationFunction} that sums up fields.
+ * 求和
  */
 @Internal
 public class SumAggregator<T> extends AggregationFunction<T> {

@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
  * writes them to the output bucket file separated by newline.
  *
  * @param <IN> The type of the elements that are being written by the sink.
+ * 每一个元素占用一行,该元素调用toString的结果,输出到流中
  */
 @PublicEvolving
 public class SimpleStringEncoder<IN> implements Encoder<IN> {
@@ -57,6 +58,12 @@ public class SimpleStringEncoder<IN> implements Encoder<IN> {
 		this.charsetName = charsetName;
 	}
 
+	/**
+	 * 将element调用tostring方法,字节输出,然后产生一个新行
+	 * @param element the element to be written.
+	 * @param stream the stream to write the element to.
+	 * @throws IOException
+	 */
 	@Override
 	public void encode(IN element, OutputStream stream) throws IOException {
 		if (charset == null) {

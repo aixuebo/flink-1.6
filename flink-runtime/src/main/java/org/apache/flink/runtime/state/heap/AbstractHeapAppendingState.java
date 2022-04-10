@@ -52,11 +52,13 @@ abstract class AbstractHeapAppendingState<K, N, IN, SV, OUT>
 		super(stateTable, keySerializer, valueSerializer, namespaceSerializer, defaultValue);
 	}
 
+	//get方法,返回value值对象
 	@Override
 	public SV getInternal() {
 		return stateTable.get(currentNamespace);
 	}
 
+	//更新value值对象
 	@Override
 	public void updateInternal(SV valueToStore) {
 		stateTable.put(currentNamespace, valueToStore);

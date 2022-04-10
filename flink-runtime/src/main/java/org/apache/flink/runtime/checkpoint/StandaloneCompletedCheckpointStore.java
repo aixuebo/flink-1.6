@@ -32,6 +32,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * {@link CompletedCheckpointStore} for JobManagers running in {@link HighAvailabilityMode#NONE}.
+ * 仅用内存保存已经完成的checkpoint文件,没有安全性，属于测试产品,生产环境还是要用ZooKeeperCompletedCheckpointStore
  */
 public class StandaloneCompletedCheckpointStore implements CompletedCheckpointStore {
 

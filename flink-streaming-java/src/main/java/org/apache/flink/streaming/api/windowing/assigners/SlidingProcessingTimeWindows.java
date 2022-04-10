@@ -41,15 +41,17 @@ import java.util.List;
  * WindowedStream<Tuple2<String, Integer>, String, TimeWindows> windowed =
  *   keyed.window(SlidingProcessingTimeWindows.of(Time.of(1, MINUTES), Time.of(10, SECONDS));
  * } </pre>
+ *
+ * 处理时间
  */
 public class SlidingProcessingTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 
-	private final long size;
+	private final long size;//窗口大小
 
 	private final long offset;
 
-	private final long slide;
+	private final long slide;//滑动窗口大小
 
 	private SlidingProcessingTimeWindows(long size, long slide, long offset) {
 		if (offset < 0 || offset >= slide || size <= 0) {

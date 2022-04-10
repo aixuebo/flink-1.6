@@ -31,11 +31,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link CheckpointStreamFactory} that produces streams that write to in-memory byte arrays.
+ * 向内存中输出字节内容
  */
 public class MemCheckpointStreamFactory implements CheckpointStreamFactory {
 
 	/** The maximal size that the snapshotted memory state may have */
-	private final int maxStateSize;
+	private final int maxStateSize;//最大允许存放字节数
 
 	/**
 	 * Creates a new in-memory stream factory that accepts states whose serialized forms are
@@ -59,6 +60,7 @@ public class MemCheckpointStreamFactory implements CheckpointStreamFactory {
 		return "In-Memory Stream Factory";
 	}
 
+	//最终判断字节数组的大小,是否超过了maxSize
 	static void checkSize(int size, int maxSize) throws IOException {
 		if (size > maxSize) {
 			throw new IOException(
@@ -72,6 +74,7 @@ public class MemCheckpointStreamFactory implements CheckpointStreamFactory {
 
 	/**
 	 * A {@code CheckpointStateOutputStream} that writes into a byte array.
+	 * 数据存储在字节数组里被返回
 	 */
 	public static class MemoryCheckpointOutputStream extends CheckpointStateOutputStream {
 
@@ -142,7 +145,7 @@ public class MemCheckpointStreamFactory implements CheckpointStreamFactory {
 		 */
 		public byte[] closeAndGetBytes() throws IOException {
 			if (closed.compareAndSet(false, true)) {
-				checkSize(os.size(), maxSize);
+				checkSize(os.size(), maxSize);//最后判断是否超出范围,超出范围就抛异常
 				byte[] bytes = os.toByteArray();
 				closeInternal();
 				return bytes;

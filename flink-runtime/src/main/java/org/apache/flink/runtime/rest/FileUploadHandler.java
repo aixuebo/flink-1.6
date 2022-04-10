@@ -74,7 +74,7 @@ public class FileUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
 
 	private static final HttpDataFactory DATA_FACTORY = new DefaultHttpDataFactory(true);
 
-	private final Path uploadDir;
+	private final Path uploadDir;//目录
 
 	private HttpPostRequestDecoder currentHttpPostRequestDecoder;
 
@@ -178,6 +178,7 @@ public class FileUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
 		ReferenceCountUtil.release(tmpRequest);
 	}
 
+	//删除上传的文件
 	private void deleteUploadedFiles() {
 		if (currentUploadDir != null) {
 			try {

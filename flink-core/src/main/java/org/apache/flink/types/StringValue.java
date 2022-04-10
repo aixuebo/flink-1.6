@@ -41,6 +41,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @see org.apache.flink.types.NormalizableKey
  * @see java.lang.String
  * @see java.lang.CharSequence
+ *
+ * 存储char数组
  */
 @Public
 public class StringValue implements NormalizableKey<StringValue>, CharSequence, ResettableValue<StringValue>, 
@@ -48,7 +50,7 @@ public class StringValue implements NormalizableKey<StringValue>, CharSequence, 
 {
 	private static final long serialVersionUID = 1L;
 	
-	private static final char[] EMPTY_STRING = new char[0];
+	private static final char[] EMPTY_STRING = new char[0];//空的char数组
 	
 	private static final int HIGH_BIT = 0x1 << 7;
 	

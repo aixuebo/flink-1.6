@@ -31,11 +31,13 @@ import java.util.Collections;
  * Upon invocation, this first applies {@code AggregateFunction} to the input, and then
  * finally the {@code AllWindowFunction} to the single result element.
  *
- * @param <W> The window type
- * @param <T> The type of the input to the AggregateFunction
- * @param <ACC> The type of the AggregateFunction's accumulator
+ * @param <W> The window type 窗口类型
+ * @param <T> The type of the input to the AggregateFunction 输入类型
+ * @param <ACC> The type of the AggregateFunction's accumulator 聚合函数的初始化值,相当于fold
  * @param <V> The type of the AggregateFunction's result, and the input to the WindowFunction
  * @param <R> The result type of the WindowFunction
+ *
+ * 相当于flod与reduce函数
  */
 @Internal
 public class AggregateApplyAllWindowFunction<W extends Window, T, ACC, V, R>
@@ -56,7 +58,7 @@ public class AggregateApplyAllWindowFunction<W extends Window, T, ACC, V, R>
 
 	@Override
 	public void apply(W window, Iterable<T> values, Collector<R> out) throws Exception {
-		ACC acc = aggFunction.createAccumulator();
+		ACC acc = aggFunction.createAccumulator();//创建中间结果值
 
 		for (T value : values) {
 			acc = aggFunction.add(value, acc);

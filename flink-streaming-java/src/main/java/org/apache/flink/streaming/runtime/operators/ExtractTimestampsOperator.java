@@ -33,6 +33,9 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeCallback;
  *
  * @deprecated Subsumed by {@link TimestampsAndPeriodicWatermarksOperator} and
  *             {@link TimestampsAndPunctuatedWatermarksOperator}.
+ *
+//1.设置定时任务，从函数中提取水印时间戳,发送给下游。
+//2.每次从数据元素中提取事件时间戳，更新元素时间戳信息；每次从数据元素中提取水印时间戳，如果水印时间戳发生变化,则随时发送给下游
  */
 @Deprecated
 public class ExtractTimestampsOperator<T>
@@ -53,6 +56,7 @@ public class ExtractTimestampsOperator<T>
 	@Override
 	public void open() throws Exception {
 		super.open();
+		//水印时间间隔,设置定时任务,打印水印
 		watermarkInterval = getExecutionConfig().getAutoWatermarkInterval();
 		if (watermarkInterval > 0) {
 			long now = getProcessingTimeService().getCurrentProcessingTime();
@@ -63,8 +67,11 @@ public class ExtractTimestampsOperator<T>
 
 	@Override
 	public void processElement(StreamRecord<T> element) throws Exception {
+		//提起新的时间戳,覆盖原始数据,发送给下游
 		long newTimestamp = userFunction.extractTimestamp(element.getValue(), element.getTimestamp());
 		output.collect(element.replace(element.getValue(), newTimestamp));
+
+		//提取水印时间戳,如果水印时间戳比历史大,则发送水印时间戳
 		long watermark = userFunction.extractWatermark(element.getValue(), newTimestamp);
 		if (watermark > currentWatermark) {
 			currentWatermark = watermark;
@@ -72,6 +79,7 @@ public class ExtractTimestampsOperator<T>
 		}
 	}
 
+	//定期发送水印时间戳
 	@Override
 	public void onProcessingTime(long timestamp) throws Exception {
 		// register next timer
@@ -86,6 +94,7 @@ public class ExtractTimestampsOperator<T>
 		getProcessingTimeService().registerTimer(now + watermarkInterval, this);
 	}
 
+	//忽略,感觉不会发生这种情况
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		// if we receive a Long.MAX_VALUE watermark we forward it since it is used

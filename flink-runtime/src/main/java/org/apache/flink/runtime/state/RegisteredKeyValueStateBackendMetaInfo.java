@@ -45,12 +45,15 @@ import java.util.Objects;
  */
 public class RegisteredKeyValueStateBackendMetaInfo<N, S> extends RegisteredStateMetaInfoBase {
 
+	//key对应的value值类型(list、map还是value对象等)
 	@Nonnull
 	private final StateDescriptor.Type stateType;
+	//key与window对应的序列化方式
 	@Nonnull
 	private final TypeSerializer<N> namespaceSerializer;
 	@Nonnull
 	private final TypeSerializer<S> stateSerializer;
+
 	@Nullable
 	private final StateSnapshotTransformer<S> snapshotTransformer;
 

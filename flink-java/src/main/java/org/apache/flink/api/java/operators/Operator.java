@@ -29,19 +29,20 @@ import org.apache.flink.util.Preconditions;
 /**
  * Base class of all operators in the Java API.
  *
- * @param <OUT> The type of the data set produced by this operator.
- * @param <O> The type of the operator, so that we can return it.
+ * @param <OUT> The type of the data set produced by this operator.数据源的类型
+ * @param <O> The type of the operator, so that we can return it.他是一个函数,作用是 经过操作后,转换成什么类型
+ * 操作的基础类,将数据源的数据Out  转换成 O的过程
  */
 @Public
 public abstract class Operator<OUT, O extends Operator<OUT, O>> extends DataSet<OUT> {
 
-	protected String name;
+	protected String name;//操作的名字 比如map
 
-	protected int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;
+	protected int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;//操作的并行度
 
-	protected ResourceSpec minResources = ResourceSpec.DEFAULT;
+	protected ResourceSpec minResources = ResourceSpec.DEFAULT;//最小资源
 
-	protected ResourceSpec preferredResources = ResourceSpec.DEFAULT;
+	protected ResourceSpec preferredResources = ResourceSpec.DEFAULT;//希望的资源
 
 	protected Operator(ExecutionEnvironment context, TypeInformation<OUT> resultType) {
 		super(context, resultType);
@@ -51,6 +52,7 @@ public abstract class Operator<OUT, O extends Operator<OUT, O>> extends DataSet<
 	 * Returns the type of the result of this operator.
 	 *
 	 * @return The result type of the operator.
+	 * 输出返回类型
 	 */
 	public TypeInformation<OUT> getResultType() {
 		return getType();
@@ -61,6 +63,7 @@ public abstract class Operator<OUT, O extends Operator<OUT, O>> extends DataSet<
 	 * operation, or the name of the class implementing the function of this operator.
 	 *
 	 * @return The name of the operator.
+	 * 操作的名字
 	 */
 	public String getName() {
 		return name;

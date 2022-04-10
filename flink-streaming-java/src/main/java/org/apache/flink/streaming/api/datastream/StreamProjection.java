@@ -52,13 +52,16 @@ import org.apache.flink.util.Preconditions;
 /**
  * The result of {@link DataStream#project(int...)}. This can be used to add more fields to the
  * projection.
+ * 当元素是tuple的时候,可以投影成新的tuple
+ *
  */
 @PublicEvolving
 public class StreamProjection<IN> {
 
 	private DataStream<IN> dataStream;
-	private int[] fieldIndexes;
+	private int[] fieldIndexes;//获取第几个tuple下标,组成新的Tuple对象
 
+	//必须输入源是合法的tuple
 	protected StreamProjection(DataStream<IN> dataStream, int[] fieldIndexes) {
 		if (!dataStream.getType().isTupleType()) {
 			throw new RuntimeException("Only Tuple DataStreams can be projected");

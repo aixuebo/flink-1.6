@@ -59,15 +59,15 @@ public class CoBroadcastWithNonKeyedOperator<IN1, IN2, OUT>
 	/** We listen to this ourselves because we don't have an {@link InternalTimerService}. */
 	private long currentWatermark = Long.MIN_VALUE;
 
-	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;
+	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;//要广播的集合,即一个流可以向N个Map结构存储数据
 
 	private transient TimestampedCollector<OUT> collector;
 
 	private transient Map<MapStateDescriptor<?, ?>, BroadcastState<?, ?>> broadcastStates;
 
-	private transient ReadWriteContextImpl rwContext;
-
-	private transient ReadOnlyContextImpl rContext;
+	//只读上下文 以及  读写上下文
+	private transient ReadWriteContextImpl rwContext;//用于广播流
+	private transient ReadOnlyContextImpl rContext;//用于非广播流
 
 	public CoBroadcastWithNonKeyedOperator(
 			final BroadcastProcessFunction<IN1, IN2, OUT> function,
@@ -145,6 +145,7 @@ public class CoBroadcastWithNonKeyedOperator<IN1, IN2, OUT>
 			return element.getTimestamp();
 		}
 
+		//返回stage对象
 		@Override
 		public <K, V> BroadcastState<K, V> getBroadcastState(MapStateDescriptor<K, V> stateDescriptor) {
 			Preconditions.checkNotNull(stateDescriptor);
@@ -224,6 +225,7 @@ public class CoBroadcastWithNonKeyedOperator<IN1, IN2, OUT>
 			return currentWatermark;
 		}
 
+		//返回stage对象
 		@Override
 		public <K, V> ReadOnlyBroadcastState<K, V> getBroadcastState(MapStateDescriptor<K, V> stateDescriptor) {
 			Preconditions.checkNotNull(stateDescriptor);

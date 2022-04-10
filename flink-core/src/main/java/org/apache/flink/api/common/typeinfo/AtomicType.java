@@ -41,6 +41,7 @@ public interface AtomicType<T> {
 	 * @param executionConfig The config from which the comparator will be parametrized. Parametrization
 	 *                        includes for example registration of class tags for frameworks like Kryo.
 	 * @return A comparator for this type.
+	 * 支持比较的类型
 	 */
 	TypeComparator<T> createComparator(boolean sortOrderAscending, ExecutionConfig executionConfig);
 }

@@ -24,6 +24,7 @@ import org.apache.flink.streaming.api.operators.InternalTimerService;
 
 /**
  * Implementation of {@link TimerService} that uses a {@link InternalTimerService}.
+ * 使用代理模式
  */
 @Internal
 public class SimpleTimerService implements TimerService {

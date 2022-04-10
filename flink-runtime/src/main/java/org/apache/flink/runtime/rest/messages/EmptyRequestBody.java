@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * Request which do not have a request payload.
+ * 没有请求信息
  */
 public class EmptyRequestBody implements RequestBody {
 

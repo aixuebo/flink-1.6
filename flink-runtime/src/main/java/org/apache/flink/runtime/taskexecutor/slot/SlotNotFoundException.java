@@ -22,6 +22,7 @@ import org.apache.flink.runtime.clusterframework.types.AllocationID;
 
 /**
  * Exception indicating that a {@link TaskSlot} could not be found.
+ * slot不存在 --- AllocationID标识一个slot唯一ID
  */
 public class SlotNotFoundException extends Exception {
 

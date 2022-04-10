@@ -26,6 +26,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
  * {@link MetricStore}.
  *
  * @see org.apache.flink.runtime.rest.handler.job.metrics.AbstractMetricsHandler
+ * 参数值是list<String>,即获取哪些参数名集合
  */
 public class MetricsFilterParameter extends MessageQueryParameter<String> {
 

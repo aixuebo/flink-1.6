@@ -34,6 +34,8 @@ import java.net.URI;
  * monitoring functions discovers.
  *
  * @deprecated Internal class deprecated in favour of {@link ContinuousFileMonitoringFunction}.
+ * 读取文件,每次发送一行数据
+ * 每一个Tuple表示待读取的一个文件路径以及范围
  */
 @Internal
 @Deprecated
@@ -41,16 +43,17 @@ public class FileReadFunction implements FlatMapFunction<Tuple3<String, Long, Lo
 
 	private static final long serialVersionUID = 1L;
 
+	//Tuple<文件系统+文件path,文件offset偏移量,文件待读取的end offset>,end offset为-1表示读取文件到结尾
 	@Override
 	public void flatMap(Tuple3<String, Long, Long> value, Collector<String> out) throws Exception {
-		FSDataInputStream stream = FileSystem.get(new URI(value.f0)).open(new Path(value.f0));
+		FSDataInputStream stream = FileSystem.get(new URI(value.f0)).open(new Path(value.f0));//读取文件
 		stream.seek(value.f1);
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
 		String line;
 
 		try {
-			while ((line = reader.readLine()) != null && (value.f2 == -1L || stream.getPos() <= value.f2)) {
+			while ((line = reader.readLine()) != null && (value.f2 == -1L || stream.getPos() <= value.f2)) {//读取一行数据
 				out.collect(line);
 			}
 		} finally {

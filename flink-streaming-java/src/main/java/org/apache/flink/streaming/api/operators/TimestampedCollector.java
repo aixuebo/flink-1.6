@@ -30,20 +30,22 @@ import org.apache.flink.util.Collector;
  * {@link org.apache.flink.streaming.runtime.streamrecord.StreamRecord} here.
  *
  * @param <T> The type of the elements that can be emitted.
+ *
+ * 比如flatMap、ProcessOperator,一个元素转换成多个元素，但要公用同一个时间戳信息,因此使用该类
  */
 @Internal
 public class TimestampedCollector<T> implements Collector<T> {
 
 	private final Output<StreamRecord<T>> output;
 
-	private final StreamRecord<T> reuse;
+	private final StreamRecord<T> reuse;//重复使用同一个时间戳
 
 	/**
 	 * Creates a new {@link TimestampedCollector} that wraps the given {@link Output}.
 	 */
 	public TimestampedCollector(Output<StreamRecord<T>> output) {
 		this.output = output;
-		this.reuse = new StreamRecord<T>(null);
+		this.reuse = new StreamRecord<T>(null);//重复使用
 	}
 
 	@Override
@@ -51,11 +53,12 @@ public class TimestampedCollector<T> implements Collector<T> {
 		output.collect(reuse.replace(record));
 	}
 
+	//一个元素进来后,设置时间戳
 	public void setTimestamp(StreamRecord<?> timestampBase) {
-		if (timestampBase.hasTimestamp()) {
+		if (timestampBase.hasTimestamp()) {//说明有时间戳
 			reuse.setTimestamp(timestampBase.getTimestamp());
 		} else {
-			reuse.eraseTimestamp();
+			reuse.eraseTimestamp();//无时间戳
 		}
 	}
 

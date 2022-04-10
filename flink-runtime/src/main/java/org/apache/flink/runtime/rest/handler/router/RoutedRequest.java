@@ -29,13 +29,14 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Class for handling {@link HttpRequest} with associated {@link RouteResult}.
+ * 对请求对象封装,增加一个路由结果
  */
 public class RoutedRequest<T> implements ReferenceCounted {
-	private final RouteResult<T> result;
-	private final HttpRequest request;
+	private final RouteResult<T> result;//路由结果
+	private final HttpRequest request;//请求对象
 
 	private final Optional<ReferenceCounted> requestAsReferenceCounted;
-	private final QueryStringDecoder queryStringDecoder;
+	private final QueryStringDecoder queryStringDecoder;//查询url进行解码
 
 	public RoutedRequest(RouteResult<T> result, HttpRequest request) {
 		this.result = checkNotNull(result);

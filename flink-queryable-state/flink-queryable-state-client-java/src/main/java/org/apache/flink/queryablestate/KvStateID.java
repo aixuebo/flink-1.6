@@ -24,6 +24,7 @@ import org.apache.flink.util.AbstractID;
  *  Identifier for state instances.
  *
  * <p>Assigned when registering the state at the state registry.
+ * 表示唯一的一个stage实例对象
  */
 public class KvStateID extends AbstractID {
 

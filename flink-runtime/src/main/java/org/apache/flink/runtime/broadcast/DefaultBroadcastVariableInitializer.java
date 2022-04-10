@@ -25,6 +25,7 @@ import java.util.List;
 
 /**
  * The default {@link BroadcastVariableInitializer} implementation that initializes the broadcast variable into a list.
+ * 广播迭代器转换成list
  */
 public class DefaultBroadcastVariableInitializer<T> implements BroadcastVariableInitializer<T, List<T>> {
 

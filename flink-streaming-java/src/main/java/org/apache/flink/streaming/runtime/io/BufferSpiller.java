@@ -65,7 +65,7 @@ public class BufferSpiller implements BufferBlocker {
 	private static final int READ_BUFFER_SIZE = 1024 * 1024;
 
 	/** The directories to spill to. */
-	private final File tempDir;
+	private final File tempDir;//向该目录写文件内容,因此该对象是目录
 
 	/** The name prefix for spill files. */
 	private final String spillFilePrefix;
@@ -86,7 +86,7 @@ public class BufferSpiller implements BufferBlocker {
 	private final int pageSize;
 
 	/** A counter, to created numbered spill files. */
-	private int fileCounter;
+	private int fileCounter;//创建的第几个文件
 
 	/** The number of bytes written since the last roll over. */
 	private long bytesWritten;
@@ -111,8 +111,8 @@ public class BufferSpiller implements BufferBlocker {
 		this.tempDir = tempDirs[DIRECTORY_INDEX.getAndIncrement() % tempDirs.length];
 
 		byte[] rndBytes = new byte[32];
-		new Random().nextBytes(rndBytes);
-		this.spillFilePrefix = StringUtils.byteToHexString(rndBytes) + '.';
+		new Random().nextBytes(rndBytes);//产生随机数
+		this.spillFilePrefix = StringUtils.byteToHexString(rndBytes) + '.';//转换成字符串前缀
 
 		// prepare for first contents
 		createSpillingChannel();
@@ -197,12 +197,12 @@ public class BufferSpiller implements BufferBlocker {
 		}
 
 		// create a reader for the spilled data
-		currentChannel.position(0L);
+		currentChannel.position(0L);//归0,目标是方便接下来SpilledBufferOrEventSequence对象从投读取数据
 		SpilledBufferOrEventSequence seq =
 				new SpilledBufferOrEventSequence(currentSpillFile, currentChannel, buf, pageSize);
 
 		// create ourselves a new spill file
-		createSpillingChannel();
+		createSpillingChannel();//创建新的文件输出流
 
 		bytesWritten = 0L;
 		return seq;

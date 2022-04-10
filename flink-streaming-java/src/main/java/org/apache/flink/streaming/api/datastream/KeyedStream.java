@@ -91,7 +91,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * elements that have the same key.
  *
  * @param <T> The type of the elements in the Keyed Stream.
- * @param <KEY> The type of the key in the Keyed Stream.
+ * @param <KEY> The type of the key in the Keyed Stream.CoFlatMapFunction
+ *
+ * 该类目标就是重新repartition操作,按照key做repartition操作，即核心new PartitionTransformation<>
+ * 更改流元素的分区，输出类型依然是原始流类型，因此不需要操作，只需要一个分区算法对象即可
+ * 说明需要shuffle处理的流转换操作,相当于在做repartition操作
  */
 @Public
 public class KeyedStream<T, KEY> extends DataStream<T> {
@@ -99,10 +103,10 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	/**
 	 * The key selector that can get the key by which the stream if partitioned from the elements.
 	 */
-	private final KeySelector<T, KEY> keySelector;
+	private final KeySelector<T, KEY> keySelector;//如何提取key,即元素如何转换成key
 
 	/** The type of the key by which the stream is partitioned. */
-	private final TypeInformation<KEY> keyType;
+	private final TypeInformation<KEY> keyType;//定义key的类型
 
 	/**
 	 * Creates a new {@link KeyedStream} using the given {@link KeySelector}
@@ -122,16 +126,18 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * to partition operator state by key.
 	 *
 	 * @param dataStream
-	 *            Base stream of data
-	 * @param keySelector
-	 *            Function for determining state partitions
+	 *            Base stream of data 数据源
+	 * @param keySelector  Function for determining state partitions 如何将数据源转换成key
+	 * @param keyType  key的类型
+	 *
 	 */
 	public KeyedStream(DataStream<T> dataStream, KeySelector<T, KEY> keySelector, TypeInformation<KEY> keyType) {
 		this(
 			dataStream,
 			new PartitionTransformation<>(
 				dataStream.getTransformation(),
-				new KeyGroupStreamPartitioner<>(keySelector, StreamGraphGenerator.DEFAULT_LOWER_BOUND_MAX_PARALLELISM)),
+				//hash(将value转换成key)，根据并发度,将hash结果平均分布
+				new KeyGroupStreamPartitioner<>(keySelector, StreamGraphGenerator.DEFAULT_LOWER_BOUND_MAX_PARALLELISM)),//元素分配给某一个分区
 			keySelector,
 			keyType);
 	}
@@ -143,11 +149,11 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param stream
 	 *            Base stream of data
 	 * @param partitionTransformation
-	 *            Function that determines how the keys are distributed to downstream operator(s)
+	 *            Function that determines how the keys are distributed to downstream operator(s) 元素分配给某一个分区
 	 * @param keySelector
-	 *            Function to extract keys from the base stream
+	 *            Function to extract keys from the base stream 如何将数据源转换成key
 	 * @param keyType
-	 *            Defines the type of the extracted keys
+	 *            Defines the type of the extracted keys key的类型
 	 */
 	@Internal
 	KeyedStream(
@@ -168,18 +174,20 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * (see {@link #validateKeyTypeIsHashable(TypeInformation)}).
 	 *
 	 * @param keyType The {@link TypeInformation} of the key.
+	 * 校验key类型的合法性,不合法则抛异常
 	 */
 	private TypeInformation<KEY> validateKeyType(TypeInformation<KEY> keyType) {
 		Stack<TypeInformation<?>> stack = new Stack<>();
 		stack.push(keyType);
 
+		//不支持的类型
 		List<TypeInformation<?>> unsupportedTypes = new ArrayList<>();
 
 		while (!stack.isEmpty()) {
 			TypeInformation<?> typeInfo = stack.pop();
 
 			if (!validateKeyTypeIsHashable(typeInfo)) {
-				unsupportedTypes.add(typeInfo);
+				unsupportedTypes.add(typeInfo);//添加到不支持的类型中
 			}
 
 			if (typeInfo instanceof TupleTypeInfoBase) {
@@ -212,12 +220,14 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 *     {@link ObjectArrayTypeInfo}).</li>
 	 * </ol>,
 	 * {@code true} otherwise.
+	 * true表示类型合法，false表示类型不适合做key，即不合法
 	 */
 	private boolean validateKeyTypeIsHashable(TypeInformation<?> type) {
 		try {
+			//即 key类型 不能是数组类型的   也不能是没有复写hashCode的Pojo对象
 			return (type instanceof PojoTypeInfo)
-					? !type.getTypeClass().getMethod("hashCode").getDeclaringClass().equals(Object.class)
-					: !(type instanceof PrimitiveArrayTypeInfo || type instanceof BasicArrayTypeInfo || type instanceof ObjectArrayTypeInfo);
+					? !type.getTypeClass().getMethod("hashCode").getDeclaringClass().equals(Object.class)//是PojoTypeInfo,但没有复写hashCode方法,不允许作为key
+					: !(type instanceof PrimitiveArrayTypeInfo || type instanceof BasicArrayTypeInfo || type instanceof ObjectArrayTypeInfo);//数组类型不允许做为key
 		} catch (NoSuchMethodException ignored) {
 			// this should never happen as we are just searching for the hashCode() method.
 		}
@@ -255,6 +265,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	//  basic transformations
 	// ------------------------------------------------------------------------
 
+	//repartition操作后,继续map等操作,此时的操作都是基于key相同的数据在同一节点上
 	@Override
 	@PublicEvolving
 	public <R> SingleOutputStreamOperator<R> transform(String operatorName,
@@ -262,7 +273,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 		SingleOutputStreamOperator<R> returnStream = super.transform(operatorName, outTypeInfo, operator);
 
-		// inject the key selector and key type
+		// inject the key selector and key type 需要额外设置如何生产key
 		OneInputTransformation<T, R> transform = (OneInputTransformation<T, R>) returnStream.getTransformation();
 		transform.setStateKeySelector(keySelector);
 		transform.setStateKeyType(keyType);
@@ -409,6 +420,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param otherStream The other keyed stream to join this keyed stream with
 	 * @param <T1> Type parameter of elements in the other stream
 	 * @return An instance of {@link IntervalJoin} with this keyed stream and the other keyed stream
+	 * 两个KeyedStream做join操作
 	 */
 	@PublicEvolving
 	public <T1> IntervalJoin<T, T1, KEY> intervalJoin(KeyedStream<T1, KEY> otherStream) {
@@ -443,6 +455,9 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 		 *
 		 * @param lowerBound The lower bound. Needs to be smaller than or equal to the upperBound
 		 * @param upperBound The upper bound. Needs to be bigger than or equal to the lowerBound
+		 *
+		 * 流join,以right为base,匹配left范围内的数据,都需要做关联
+		 * leftElement.timestamp + lowerBound <= rightElement.timestamp <= leftElement.timestamp + upperBound
 		 */
 		@PublicEvolving
 		public IntervalJoined<T1, T2, KEY> between(Time lowerBound, Time upperBound) {
@@ -514,6 +529,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 		/**
 		 * Set the upper bound to be exclusive.
+		 * 设置开区间
 		 */
 		@PublicEvolving
 		public IntervalJoined<IN1, IN2, KEY> upperBoundExclusive() {
@@ -523,6 +539,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 		/**
 		 * Set the lower bound to be exclusive.
+		 * 设置开区间
 		 */
 		@PublicEvolving
 		public IntervalJoined<IN1, IN2, KEY> lowerBoundExclusive() {
@@ -589,7 +606,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 
 			return left
 				.connect(right)
-				.keyBy(keySelector1, keySelector2)
+				.keyBy(keySelector1, keySelector2) //汇总两个数据源，统一输出分区数量，确保数据源不同，但相同的key都会打到同一个分区中。
 				.transform("Interval Join", outputType, operator);
 		}
 	}
@@ -640,7 +657,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 * @param size The size of the windows in number of elements.
 	 */
 	public WindowedStream<T, KEY, GlobalWindow> countWindow(long size) {
-		return window(GlobalWindows.create()).trigger(PurgingTrigger.of(CountTrigger.of(size)));
+		return window(GlobalWindows.create()).trigger(PurgingTrigger.of(CountTrigger.of(size))); //超过一定数量后,就可以触发函数进行计算trigger，并且追加可以清除数据的trigger
 	}
 
 	/**
@@ -651,7 +668,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 */
 	public WindowedStream<T, KEY, GlobalWindow> countWindow(long size, long slide) {
 		return window(GlobalWindows.create())
-				.evictor(CountEvictor.of(size))
+				.evictor(CountEvictor.of(size))//以元素计数为标准，决定元素是否会被移除。
 				.trigger(CountTrigger.of(slide));
 	}
 
@@ -759,6 +776,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 *            Tuple types, Scala case classes, and primitive types (which is considered
 	 *            as having one field).
 	 * @return The transformed DataStream.
+	 * 获取最小值,但不是那条记录
 	 */
 	public SingleOutputStreamOperator<T> min(int positionToMin) {
 		return aggregate(new ComparableAggregator<>(positionToMin, getType(), AggregationFunction.AggregationType.MIN,
@@ -844,6 +862,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 	 *            If True then in case of field equality the first object will
 	 *            be returned
 	 * @return The transformed DataStream.
+	 * 获取的最小值，同时也是最小值的那条记录
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public SingleOutputStreamOperator<T> minBy(String field, boolean first) {
@@ -988,6 +1007,7 @@ public class KeyedStream<T, KEY> extends DataStream<T> {
 				getExecutionConfig()));
 	}
 
+	//aggregate实现类是ComparableAggregator
 	protected SingleOutputStreamOperator<T> aggregate(AggregationFunction<T> aggregate) {
 		StreamGroupedReduce<T> operator = new StreamGroupedReduce<T>(
 				clean(aggregate), getType().createSerializer(getExecutionConfig()));

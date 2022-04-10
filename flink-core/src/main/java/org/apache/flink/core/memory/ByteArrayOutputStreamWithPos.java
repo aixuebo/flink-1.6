@@ -28,12 +28,13 @@ import java.util.Arrays;
 
 /**
  * Un-synchronized stream similar to Java's ByteArrayOutputStream that also exposes the current position.
+ * 存储输出的字节数组
  */
 @Internal
 public class ByteArrayOutputStreamWithPos extends OutputStream {
 
-	protected byte[] buffer;
-	protected int count;
+	protected byte[] buffer;//用于存储输出的字节数组
+	protected int count;//当前写入的指针位置
 
 	public ByteArrayOutputStreamWithPos() {
 		this(64);
@@ -44,16 +45,18 @@ public class ByteArrayOutputStreamWithPos extends OutputStream {
 		buffer = new byte[size];
 	}
 
+	//确保buffer有参数长度
 	private void ensureCapacity(int requiredCapacity) {
-		if (requiredCapacity - buffer.length > 0) {
+		if (requiredCapacity - buffer.length > 0) {//说明buffer不足,需要扩容
 			increaseCapacity(requiredCapacity);
 		}
 	}
 
+	//扩容
 	private void increaseCapacity(int requiredCapacity) {
 		int oldCapacity = buffer.length;
-		int newCapacity = oldCapacity << 1;
-		if (newCapacity - requiredCapacity < 0) {
+		int newCapacity = oldCapacity << 1;//先扩容一倍
+		if (newCapacity - requiredCapacity < 0) {//如果扩容一倍还不够,则直接使用参数的容量
 			newCapacity = requiredCapacity;
 		}
 		if (newCapacity < 0) {
@@ -62,16 +65,17 @@ public class ByteArrayOutputStreamWithPos extends OutputStream {
 			}
 			newCapacity = Integer.MAX_VALUE;
 		}
-		buffer = Arrays.copyOf(buffer, newCapacity);
+		buffer = Arrays.copyOf(buffer, newCapacity);//复制数据
 	}
 
 	@Override
 	public void write(int b) {
-		ensureCapacity(count + 1);
+		ensureCapacity(count + 1);//确保有位置
 		buffer[count] = (byte) b;
-		++count;
+		++count;//指针移动
 	}
 
+	//将参数b字节数组输出到buffer中
 	@Override
 	public void write(byte[] b, int off, int len) {
 		if ((off < 0) || (len < 0) || (off > b.length) ||
@@ -93,6 +97,7 @@ public class ByteArrayOutputStreamWithPos extends OutputStream {
 		return Arrays.copyOf(buffer, count);
 	}
 
+	//一共存储了多少个有效字节
 	public int size() {
 		return count;
 	}

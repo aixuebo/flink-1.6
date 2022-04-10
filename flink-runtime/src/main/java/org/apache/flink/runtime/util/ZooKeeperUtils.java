@@ -232,6 +232,7 @@ public class ZooKeeperUtils {
 	 * @param configuration {@link Configuration} object
 	 * @return {@link ZooKeeperSubmittedJobGraphStore} instance
 	 * @throws Exception if the submitted job graph store cannot be created
+	 * 记录每一个job的提交任务对象,即SubmittedJobGraph对象 ---- 可以有回调函数,当job被添加和删除时，给客户端一个回调处理特殊逻辑
 	 */
 	public static ZooKeeperSubmittedJobGraphStore createSubmittedJobGraphs(
 			CuratorFramework client,
@@ -316,6 +317,8 @@ public class ZooKeeperUtils {
 	 * @param <T> Type of the state objects
 	 * @return {@link FileSystemStateStorageHelper} instance
 	 * @throws IOException if file system state storage cannot be created
+	 *
+	 * 如何存储stage信息 --- stage信息使用文件系统进行存储,反序列化也是从文件系统读取文件后反序列化成stage
 	 */
 	public static <T extends Serializable> FileSystemStateStorageHelper<T> createFileSystemStateStorage(
 			Configuration configuration,

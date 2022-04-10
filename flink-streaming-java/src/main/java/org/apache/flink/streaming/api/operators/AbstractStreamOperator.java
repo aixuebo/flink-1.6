@@ -100,7 +100,7 @@ public abstract class AbstractStreamOperator<OUT>
 	// ----------- configuration properties -------------
 
 	// A sane default for most operators
-	protected ChainingStrategy chainingStrategy = ChainingStrategy.HEAD;
+	protected ChainingStrategy chainingStrategy = ChainingStrategy.HEAD;//串联策略,默认只与后面的节点串联
 
 	// ---------------- runtime fields ------------------
 
@@ -121,6 +121,7 @@ public abstract class AbstractStreamOperator<OUT>
 	 * scope keyed state to a key. This is null if the operator is not a keyed operator.
 	 *
 	 * <p>This is for elements from the first input.
+	 * 如何将数据转换成key
 	 */
 	private transient KeySelector<?, ?> stateKeySelector1;
 
@@ -166,6 +167,7 @@ public abstract class AbstractStreamOperator<OUT>
 	//  Life Cycle
 	// ------------------------------------------------------------------------
 
+	//setup 通过整体配置文件、任务的环境配置文件、输出对象,初始化
 	@Override
 	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output) {
 		final Environment environment = containingTask.getEnvironment();
@@ -173,7 +175,7 @@ public abstract class AbstractStreamOperator<OUT>
 		this.config = config;
 		try {
 			OperatorMetricGroup operatorMetricGroup = environment.getMetricGroup().addOperator(config.getOperatorID(), config.getOperatorName());
-			this.output = new CountingOutput(output, operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter());
+			this.output = new CountingOutput(output, operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter());//包装计数器,记录输出多少个结果
 			if (config.isChainStart()) {
 				operatorMetricGroup.getIOMetricGroup().reuseInputMetricsForTask();
 			}
@@ -309,6 +311,7 @@ public abstract class AbstractStreamOperator<OUT>
 	 * because the last data items are not processed properly.
 	 *
 	 * @throws Exception An exception in this method causes the operator to fail.
+	 * 仅仅是关闭，在函数元素都被处理后,在调用该方法
 	 */
 	@Override
 	public void close() throws Exception {}
@@ -319,6 +322,7 @@ public abstract class AbstractStreamOperator<OUT>
 	 *
 	 * <p>This method is expected to make a thorough effort to release all resources
 	 * that the operator has acquired.
+	 * 不仅close,还销毁/清理资源
 	 */
 	@Override
 	public void dispose() throws Exception {
@@ -594,6 +598,7 @@ public abstract class AbstractStreamOperator<OUT>
 		}
 	}
 
+	//将参数数据内容,转换成key && key设置
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void setKeyContextElement1(StreamRecord record) throws Exception {
@@ -686,6 +691,7 @@ public abstract class AbstractStreamOperator<OUT>
 
 	/**
 	 * Wrapping {@link Output} that updates metrics on the number of emitted elements.
+	 * 包装一层计数器
 	 */
 	public static class CountingOutput<OUT> implements Output<StreamRecord<OUT>> {
 		private final Output<StreamRecord<OUT>> output;
@@ -779,6 +785,8 @@ public abstract class AbstractStreamOperator<OUT>
 		}
 	}
 
+	//多流时,Watermark取最小,比如流1 周期是24小时，流2周期是1小时，下游聚合窗口是2小时一聚合。因此结论就是2小时一聚合，但聚合的数据源以流2的Watermark为基准。
+	//其实可以简化成上游两个流要求Watermark周期一致，否则框架自动转换成一致
 	public void processWatermark1(Watermark mark) throws Exception {
 		input1Watermark = mark.getTimestamp();
 		long newMin = Math.min(input1Watermark, input2Watermark);

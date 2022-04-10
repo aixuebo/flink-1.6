@@ -45,6 +45,7 @@ import java.util.Objects;
  *     <li>State Size</li>
  *     <li>Extended resources</li>
  * </ol>
+ * 定义一个资源 --- 用于生成ResourceProfile资源对象
  */
 @Internal
 public class ResourceSpec implements Serializable {
@@ -55,21 +56,24 @@ public class ResourceSpec implements Serializable {
 
 	public static final String GPU_NAME = "GPU";
 
-	/** How many cpu cores are needed, use double so we can specify cpu like 0.1. */
+	/** How many cpu cores are needed, use double so we can specify cpu like 0.1.
+	 * cpu数,可能是小数,比如0.2
+	 **/
 	private final double cpuCores;
 
-	/** How many java heap memory in mb are needed. */
+	/** How many java heap memory in mb are needed. java的堆内存,单位M*/
 	private final int heapMemoryInMB;
 
-	/** How many nio direct memory in mb are needed. */
+	/** How many nio direct memory in mb are needed. java堆外内存,单位M*/
 	private final int directMemoryInMB;
 
-	/** How many native memory in mb are needed. */
+	/** How many native memory in mb are needed. native内存,单位M*/
 	private final int nativeMemoryInMB;
 
-	/** How many state size in mb are used. */
+	/** How many state size in mb are used. 存储状态的存储,单位M*/
 	private final int stateSizeInMB;
 
+	//额外关联的资源
 	private final Map<String, Resource> extendedResources = new HashMap<>(1);
 
 	/**

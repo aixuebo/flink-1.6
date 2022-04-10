@@ -45,6 +45,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * case, a slot is shared ({@link SharedSlot}) and contains a set of tasks. Shared slots may contain
  * other shared slots which in turn can hold simple slots. That way, a shared slot may define a tree
  * of slots that belong to it.
+ *
+ * 抽象类Slot定义了该槽位属于哪个TaskManager（instance）的第几个槽位（slotNumber），属于哪个Job（jobID）等信息
  */
 public abstract class Slot {
 
@@ -80,12 +82,12 @@ public abstract class Slot {
 
 	/** The id of the group that this slot is allocated to. May be null. */
 	@Nullable
-	private final AbstractID groupID;
+	private final AbstractID groupID;//属于哪个 SlotSharingGroup
 
-	private final int slotNumber;
+	private final int slotNumber;//第几个slot
 
 	/** The state of the vertex, only atomically updated */
-	private volatile int status = ALLOCATED_AND_ALIVE;
+	private volatile int status = ALLOCATED_AND_ALIVE; //当前分配状态
 
 	// --------------------------------------------------------------------------------------------
 

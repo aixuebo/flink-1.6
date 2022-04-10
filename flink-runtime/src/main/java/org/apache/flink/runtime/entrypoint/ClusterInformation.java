@@ -24,14 +24,15 @@ import java.io.Serializable;
 
 /**
  * Information about the cluster which is shared with the cluster components.
+ * 集群信息 -- yarn的applicationmaster上开启的服务信息
  */
 public class ClusterInformation implements Serializable {
 
 	private static final long serialVersionUID = 316958921518479205L;
 
-	private final String blobServerHostname;
+	private final String blobServerHostname;//applicationMaster的ip
 
-	private final int blobServerPort;
+	private final int blobServerPort;//applicationMaster上为blob开启服务的端口
 
 	public ClusterInformation(String blobServerHostname, int blobServerPort) {
 		this.blobServerHostname = Preconditions.checkNotNull(blobServerHostname);

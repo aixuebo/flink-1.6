@@ -28,12 +28,15 @@ import java.util.List;
  * <p>Query parameters may both occur multiple times or be of the form "key=value1,value2,value3". If a query parameter
  * is specified multiple times the individual values are concatenated with {@code ,} and passed as a single value to
  * {@link #convertToString(List)}.
+ *
+ * 参数值是List<对象>
  */
 public abstract class MessageQueryParameter<X> extends MessageParameter<List<X>> {
 	protected MessageQueryParameter(String key, MessageParameterRequisiteness requisiteness) {
 		super(key, requisiteness);
 	}
 
+	//字符串拆分后,每一个字符串都可以转换成X对象
 	@Override
 	public List<X> convertFromString(String values) throws ConversionException {
 		String[] splitValues = values.split(",");
@@ -52,6 +55,7 @@ public abstract class MessageQueryParameter<X> extends MessageParameter<List<X>>
 	 */
 	public abstract X convertStringToValue(String value) throws ConversionException;
 
+	//数组元素用逗号拆分开
 	@Override
 	public String convertToString(List<X> values) {
 		StringBuilder sb = new StringBuilder();

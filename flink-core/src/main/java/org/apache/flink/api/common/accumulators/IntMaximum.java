@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that finds the maximum {@code integer} value.
+ * 最大值 -- Integer类型
  */
 @PublicEvolving
 public class IntMaximum implements SimpleAccumulator<Integer> {

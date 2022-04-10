@@ -25,7 +25,7 @@ import org.apache.flink.util.OutputTag;
 
 /**
  * A function that processes two joined elements and produces a single output one.
- *
+ * 针对join的结果,处理left、right两条数据,转换成一个输出 ProcessJoinFunction<IN1, IN2, OUT>
  * <p>This function will get called for every joined pair of elements the joined two streams.
  * The timestamp of the joined pair as well as the timestamp of the left element and the right
  * element can be accessed through the {@link Context}.

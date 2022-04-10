@@ -32,6 +32,10 @@ import org.apache.flink.core.io.InputSplitAssigner;
 /**
  * This is the default implementation of the {@link InputSplitAssigner} interface. The default input split assigner
  * simply returns all input splits of an input vertex in the order they were originally computed.
+ * 默认的数据块分配器
+ * jobManager知道要加载的所有数据源List<InputSplit>,task节点要执行的时候，只需要请求jobManager,
+ * jobManager知道task所在的节点host、以及执行第几个task,
+ * 根据这两个信息，随机或者策略的方式分配一个InputSplit给task去执行。
  */
 @Internal
 public class DefaultInputSplitAssigner implements InputSplitAssigner {
@@ -51,7 +55,7 @@ public class DefaultInputSplitAssigner implements InputSplitAssigner {
 		this.splits.addAll(splits);
 	}
 	
-	
+	//每次从后面获取一个数据块
 	@Override
 	public InputSplit getNextInputSplit(String host, int taskId) {
 		InputSplit next = null;

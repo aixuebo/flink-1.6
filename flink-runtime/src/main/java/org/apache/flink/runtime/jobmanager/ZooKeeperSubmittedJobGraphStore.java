@@ -61,6 +61,9 @@ import static org.apache.flink.util.Preconditions.checkState;
  * <p>The root path is watched to detect concurrent modifications in corner situations where
  * multiple instances operate concurrently. The job manager acts as a {@link SubmittedJobGraphListener}
  * to react to such situations.
+ *
+ * job的实例化--基于zookeeper--完成job信息的增删改查操作
+ * 记录每一个job的提交任务对象,即SubmittedJobGraph对象 ---- 可以有回调函数,当job被添加和删除时，给客户端一个回调处理特殊逻辑
  */
 public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 
@@ -72,15 +75,15 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 	/** Client (not a namespace facade). */
 	private final CuratorFramework client;
 
-	/** The set of IDs of all added job graphs. */
+	/** The set of IDs of all added job graphs. 内存中存在的job集合*/
 	private final Set<JobID> addedJobGraphs = new HashSet<>();
 
-	/** Completed checkpoints in ZooKeeper. */
+	/** Completed checkpoints in ZooKeeper.基于zookeeper，存储SubmittedJobGraph信息内容 */
 	private final ZooKeeperStateHandleStore<SubmittedJobGraph> jobGraphsInZooKeeper;
 
 	/**
 	 * Cache to monitor all children. This is used to detect races with other instances working
-	 * on the same state.
+	 * on the same state.缓存&&监听所有的子节点
 	 */
 	private final PathChildrenCache pathCache;
 
@@ -88,7 +91,8 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 	private final String zooKeeperFullBasePath;
 
 	/** The external listener to be notified on races. */
-	private SubmittedJobGraphListener jobGraphListener;
+	//zookeeper的path下任意节点有增加、删除都会接收到通知,因此会调用该方法,通知子实现类做处理
+	private SubmittedJobGraphListener jobGraphListener;//监听器,用于job的增加和删除时，发出通知,子类用于实现具体逻辑
 
 	/** Flag indicating whether this instance is running. */
 	private boolean isRunning;
@@ -103,8 +107,8 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 	 */
 	public ZooKeeperSubmittedJobGraphStore(
 			CuratorFramework client,
-			String currentJobsPath,
-			RetrievableStateStorageHelper<SubmittedJobGraph> stateStorage) throws Exception {
+			String currentJobsPath,//zookeeper上关于job信息记录的路径  key = high-availability.zookeeper.path.jobgraphs
+			RetrievableStateStorageHelper<SubmittedJobGraph> stateStorage) throws Exception { //如何存储stage信息 --- stage信息使用文件系统进行存储,反序列化也是从文件系统读取文件后反序列化成stage
 
 		checkNotNull(currentJobsPath, "Current jobs path");
 		checkNotNull(stateStorage, "State storage");
@@ -121,10 +125,10 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 		CuratorFramework facade = client.usingNamespace(client.getNamespace() + currentJobsPath);
 
 		this.zooKeeperFullBasePath = client.getNamespace() + currentJobsPath;
-		this.jobGraphsInZooKeeper = new ZooKeeperStateHandleStore<>(facade, stateStorage);
+		this.jobGraphsInZooKeeper = new ZooKeeperStateHandleStore<>(facade, stateStorage);//基于zookeeper，存储SubmittedJobGraph信息内容
 
 		this.pathCache = new PathChildrenCache(facade, "/", false);
-		pathCache.getListenable().addListener(new SubmittedJobGraphsPathCacheListener());
+		pathCache.getListenable().addListener(new SubmittedJobGraphsPathCacheListener());//zookeeper的path下任意节点有增加、删除都会接收到通知
 	}
 
 	@Override
@@ -150,7 +154,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 					Exception exception = null;
 
 					try {
-						jobGraphsInZooKeeper.releaseAll();
+						jobGraphsInZooKeeper.releaseAll();//删除所有zookeeper的锁路径,数据还是存储在zookeeper下的
 					} catch (Exception e) {
 						exception = e;
 					}
@@ -171,11 +175,12 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 		}
 	}
 
+	//恢复还原给定jobId
 	@Override
 	@Nullable
 	public SubmittedJobGraph recoverJobGraph(JobID jobId) throws Exception {
 		checkNotNull(jobId, "Job ID");
-		final String path = getPathForJob(jobId);
+		final String path = getPathForJob(jobId);//获取job的path
 
 		LOG.debug("Recovering job graph {} from {}{}.", jobId, zooKeeperFullBasePath, path);
 
@@ -188,7 +193,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 				RetrievableStateHandle<SubmittedJobGraph> jobGraphRetrievableStateHandle;
 
 				try {
-					jobGraphRetrievableStateHandle = jobGraphsInZooKeeper.getAndLock(path);
+					jobGraphRetrievableStateHandle = jobGraphsInZooKeeper.getAndLock(path);//获取job信息的序列化与反序列化对象
 				} catch (KeeperException.NoNodeException ignored) {
 					success = true;
 					return null;
@@ -199,7 +204,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 				SubmittedJobGraph jobGraph;
 
 				try {
-					jobGraph = jobGraphRetrievableStateHandle.retrieveState();
+					jobGraph = jobGraphRetrievableStateHandle.retrieveState();//反序列化
 				} catch (ClassNotFoundException cnfe) {
 					throw new FlinkException("Could not retrieve submitted JobGraph from state handle under " + path +
 						". This indicates that you are trying to recover from state written by an " +
@@ -224,6 +229,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 		}
 	}
 
+	//新增/更新一个job
 	@Override
 	public void putJobGraph(SubmittedJobGraph jobGraph) throws Exception {
 		checkNotNull(jobGraph, "Job graph");
@@ -239,9 +245,9 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 
 				int currentVersion = jobGraphsInZooKeeper.exists(path);
 
-				if (currentVersion == -1) {
+				if (currentVersion == -1) {//新增
 					try {
-						jobGraphsInZooKeeper.addAndLock(path, jobGraph);
+						jobGraphsInZooKeeper.addAndLock(path, jobGraph);//存储jobGraph的信息到磁盘
 
 						addedJobGraphs.add(jobGraph.getJobId());
 
@@ -250,9 +256,9 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 					catch (KeeperException.NodeExistsException ignored) {
 					}
 				}
-				else if (addedJobGraphs.contains(jobGraph.getJobId())) {
+				else if (addedJobGraphs.contains(jobGraph.getJobId())) {//更新
 					try {
-						jobGraphsInZooKeeper.replace(path, currentVersion, jobGraph);
+						jobGraphsInZooKeeper.replace(path, currentVersion, jobGraph);//更新
 						LOG.info("Updated {} in ZooKeeper.", jobGraph);
 
 						success = true;
@@ -270,6 +276,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 		LOG.info("Added {} to ZooKeeper.", jobGraph);
 	}
 
+	//删除一个job --- 物理删除
 	@Override
 	public void removeJobGraph(JobID jobId) throws Exception {
 		checkNotNull(jobId, "Job ID");
@@ -279,8 +286,8 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 
 		synchronized (cacheLock) {
 			if (addedJobGraphs.contains(jobId)) {
-				if (jobGraphsInZooKeeper.releaseAndTryRemove(path)) {
-					addedJobGraphs.remove(jobId);
+				if (jobGraphsInZooKeeper.releaseAndTryRemove(path)) {//物理删除文件和路径
+					addedJobGraphs.remove(jobId);//内存删除
 				} else {
 					throw new FlinkException(String.format("Could not remove job graph with job id %s from ZooKeeper.", jobId));
 				}
@@ -290,6 +297,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 		LOG.info("Removed job graph {} from ZooKeeper.", jobId);
 	}
 
+	//释放占用的锁
 	@Override
 	public void releaseJobGraph(JobID jobId) throws Exception {
 		checkNotNull(jobId, "Job ID");
@@ -299,15 +307,16 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 
 		synchronized (cacheLock) {
 			if (addedJobGraphs.contains(jobId)) {
-				jobGraphsInZooKeeper.release(path);
+				jobGraphsInZooKeeper.release(path);//释放占用的锁，但job的文件本身是存在的，还可以继续加载
 
-				addedJobGraphs.remove(jobId);
+				addedJobGraphs.remove(jobId);//内存中删除该映射
 			}
 		}
 
 		LOG.info("Released locks of job graph {} from ZooKeeper.", jobId);
 	}
 
+	//返回所有的jobId集合
 	@Override
 	public Collection<JobID> getJobIds() throws Exception {
 		Collection<String> paths;
@@ -338,6 +347,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 	 *
 	 * <p>Detects modifications from other job managers in corner situations. The event
 	 * notifications fire for changes from this job manager as well.
+	 * zookeeper的path下任意节点有增加、删除都会接收到通知
 	 */
 	private final class SubmittedJobGraphsPathCacheListener implements PathChildrenCacheListener {
 
@@ -355,7 +365,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 			}
 
 			switch (event.getType()) {
-				case CHILD_ADDED: {
+				case CHILD_ADDED: {//新增目录
 					JobID jobId = fromEvent(event);
 
 					LOG.debug("Received CHILD_ADDED event notification for job {}", jobId);
@@ -383,7 +393,7 @@ public class ZooKeeperSubmittedJobGraphStore implements SubmittedJobGraphStore {
 				}
 				break;
 
-				case CHILD_REMOVED: {
+				case CHILD_REMOVED: {//删除一个目录
 					JobID jobId = fromEvent(event);
 
 					LOG.debug("Received CHILD_REMOVED event notification for job {}", jobId);

@@ -31,6 +31,7 @@ public interface Disposable {
 	 * object may result in undefined behavior.
 	 *
 	 * @throws Exception if something goes wrong during disposal.
+	 * 不仅close,还销毁/清理资源
 	 */
 	void dispose() throws Exception;
 }

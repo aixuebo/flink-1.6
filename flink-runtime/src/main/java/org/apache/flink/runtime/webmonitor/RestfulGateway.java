@@ -72,6 +72,7 @@ public interface RestfulGateway extends RpcGateway {
 	 *
 	 * @param timeout for this operation
 	 * @return Future REST endpoint address
+	 * 获取提供服务的地址
 	 */
 	CompletableFuture<String> requestRestAddress(@RpcTimeout  Time timeout);
 

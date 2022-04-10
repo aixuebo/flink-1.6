@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api;
 
 /**
  * {@code TimeDomain} specifies whether a firing timer is based on event time or processing time.
+ * 定时器是基于哪个时间方式触发的
  */
 public enum TimeDomain {
 

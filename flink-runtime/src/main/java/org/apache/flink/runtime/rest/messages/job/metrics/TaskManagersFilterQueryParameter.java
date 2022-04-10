@@ -23,6 +23,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 
 /**
  * {@link MessageQueryParameter} for selecting task managers when aggregating metrics.
+ * 参数值是参数值是list<ResourceID>
  */
 public class TaskManagersFilterQueryParameter extends MessageQueryParameter<ResourceID> {
 

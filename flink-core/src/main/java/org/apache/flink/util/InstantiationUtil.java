@@ -489,6 +489,7 @@ public final class InstantiationUtil {
 		return deserializeObject(new ByteArrayInputStream(bytes), cl, isFailureTolerant);
 	}
 
+	//公用同一个对象,不断重复设置属性值,优化内存利用率
 	@SuppressWarnings("unchecked")
 	public static <T> T deserializeObject(InputStream in, ClassLoader cl, boolean isFailureTolerant)
 			throws IOException, ClassNotFoundException {
@@ -506,6 +507,7 @@ public final class InstantiationUtil {
 		}
 	}
 
+	//将对象序列化成字节数组
 	public static byte[] serializeObject(Object o) throws IOException {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				ObjectOutputStream oos = new ObjectOutputStream(baos)) {
@@ -515,11 +517,13 @@ public final class InstantiationUtil {
 		}
 	}
 
+	//将对象o转换成字节数组,输出到out中
 	public static void serializeObject(OutputStream out, Object o) throws IOException {
 		ObjectOutputStream oos = new ObjectOutputStream(out);
 		oos.writeObject(o);
 	}
 
+	//对象o是否可以支持序列化
 	public static boolean isSerializable(Object o) {
 		try {
 			serializeObject(o);

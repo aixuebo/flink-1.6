@@ -25,6 +25,7 @@ import org.apache.flink.configuration.Configuration;
  * An base interface for all rich user-defined functions. This class defines methods for
  * the life cycle of the functions, as well as methods to access the context in which the functions
  * are executed.
+ * 富函数 -- 提供了上下文信息
  */
 @Public
 public interface RichFunction extends Function {

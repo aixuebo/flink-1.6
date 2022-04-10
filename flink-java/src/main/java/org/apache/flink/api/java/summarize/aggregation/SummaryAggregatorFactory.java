@@ -31,6 +31,7 @@ import org.apache.flink.types.StringValue;
 
 /**
  * Factory for creating Summary Aggregators.
+ * 聚合器工厂类
  */
 @Internal
 public class SummaryAggregatorFactory {

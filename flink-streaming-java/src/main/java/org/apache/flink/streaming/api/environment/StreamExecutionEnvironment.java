@@ -130,7 +130,7 @@ public abstract class StreamExecutionEnvironment {
 	/** Settings that control the checkpointing behavior. */
 	private final CheckpointConfig checkpointCfg = new CheckpointConfig();
 
-	protected final List<StreamTransformation<?>> transformations = new ArrayList<>();
+	protected final List<StreamTransformation<?>> transformations = new ArrayList<>();//所有操作的stream集合,可以组成图,知道每一个stream的上下游信息,以及输入/输出对象信息
 
 	private long bufferTimeout = DEFAULT_NETWORK_BUFFER_TIMEOUT;
 
@@ -962,9 +962,9 @@ public abstract class StreamExecutionEnvironment {
 		Preconditions.checkNotNull(filePath, "The file path must not be null.");
 		Preconditions.checkNotNull(filePath.isEmpty(), "The file path must not be empty.");
 
-		TextInputFormat format = new TextInputFormat(new Path(filePath));
-		format.setFilesFilter(FilePathFilter.createDefaultFilter());
-		TypeInformation<String> typeInfo = BasicTypeInfo.STRING_TYPE_INFO;
+		TextInputFormat format = new TextInputFormat(new Path(filePath));//如何拆分数据块,一个数据块的数据如何拆分成多行
+		format.setFilesFilter(FilePathFilter.createDefaultFilter());//读取哪些文件
+		TypeInformation<String> typeInfo = BasicTypeInfo.STRING_TYPE_INFO;//输出string类型
 		format.setCharsetName(charsetName);
 
 		return readFile(format, filePath, FileProcessingMode.PROCESS_ONCE, -1, typeInfo);
@@ -1136,17 +1136,17 @@ public abstract class StreamExecutionEnvironment {
 	 * are going to be forwarded after the source exits, thus having no checkpoints after that point.
 	 *
 	 * @param inputFormat
-	 * 		The input format used to create the data stream
+	 * 		The input format used to create the data stream 如何读取文件--如何拆分数据块 && 同一个数据块如何拆分多条数据
 	 * @param filePath
 	 * 		The path of the file, as a URI (e.g., "file:///some/local/file" or "hdfs://host:port/file/path")
 	 * @param watchType
-	 * 		The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit
+	 * 		The mode in which the source should operate, i.e. monitor path and react to new data, or process once and exit 观察文件的方式
 	 * @param typeInformation
-	 * 		Information on the type of the elements in the output stream
+	 * 		Information on the type of the elements in the output stream 一行元素的输出类型
 	 * @param interval
 	 * 		In the case of periodic path monitoring, this specifies the interval (in millis) between consecutive path scans
 	 * @param <OUT>
-	 * 		The type of the returned data stream
+	 * 		The type of the returned data stream 一行元素的输出类型
 	 * @return The data stream that represents the data read from the given file
 	 */
 	@PublicEvolving
@@ -1351,8 +1351,8 @@ public abstract class StreamExecutionEnvironment {
 		return addSource(function, sourceName, typeInfo);
 	}
 
-	private <OUT> DataStreamSource<OUT> createFileInput(FileInputFormat<OUT> inputFormat,
-														TypeInformation<OUT> typeInfo,
+	private <OUT> DataStreamSource<OUT> createFileInput(FileInputFormat<OUT> inputFormat,//如何读取元素
+														TypeInformation<OUT> typeInfo,//一行元素输出的类型
 														String sourceName,
 														FileProcessingMode monitoringMode,
 														long interval) {
@@ -1367,14 +1367,15 @@ public abstract class StreamExecutionEnvironment {
 			"The path monitoring interval cannot be less than " +
 					ContinuousFileMonitoringFunction.MIN_MONITORING_INTERVAL + " ms.");
 
+		//一个SourceFunction(ContinuousFileMonitoringFunction),不断的返回待读取的文件集合发送给下游--TimestampedFileInputSplit extends FileInputSplit
 		ContinuousFileMonitoringFunction<OUT> monitoringFunction =
 			new ContinuousFileMonitoringFunction<>(inputFormat, monitoringMode, getParallelism(), interval);
 
-		ContinuousFileReaderOperator<OUT> reader =
-			new ContinuousFileReaderOperator<>(inputFormat);
+		//不断的接收数据块,读取数据块内容,发送出去 --- 属于StreamOperator流的操作类
+		ContinuousFileReaderOperator<OUT> reader = new ContinuousFileReaderOperator<>(inputFormat);
 
-		SingleOutputStreamOperator<OUT> source = addSource(monitoringFunction, sourceName)
-				.transform("Split Reader: " + sourceName, typeInfo, reader);
+		SingleOutputStreamOperator<OUT> source = addSource(monitoringFunction, sourceName) //如何生产数据源
+				.transform("Split Reader: " + sourceName, typeInfo, reader);//如何处理生产出来的数据源信息
 
 		return new DataStreamSource<>(source);
 	}
@@ -1411,6 +1412,7 @@ public abstract class StreamExecutionEnvironment {
 	 * @param <OUT>
 	 * 		type of the returned stream
 	 * @return the data stream constructed
+	 * 如何生产数据源
 	 */
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, String sourceName) {
 		return addSource(function, sourceName, null);
@@ -1439,6 +1441,7 @@ public abstract class StreamExecutionEnvironment {
 	 * {@link DataStream}. Only in very special cases does the user need to
 	 * support type information. Otherwise use
 	 * {@link #addSource(org.apache.flink.streaming.api.functions.source.SourceFunction)}
+	 * 由于数据源的泛型中已经描述好了输出类型是什么,因此一般情况下,第三个参数都是null
 	 *
 	 * @param function
 	 * 		the user defined function
@@ -1553,13 +1556,14 @@ public abstract class StreamExecutionEnvironment {
 	/**
 	 * Returns a "closure-cleaned" version of the given function. Cleans only if closure cleaning
 	 * is not disabled in the {@link org.apache.flink.api.common.ExecutionConfig}
+	 * 确保函数必须支持序列化
 	 */
 	@Internal
 	public <F> F clean(F f) {
 		if (getConfig().isClosureCleanerEnabled()) {
 			ClosureCleaner.clean(f, true);
 		}
-		ClosureCleaner.ensureSerializable(f);
+		ClosureCleaner.ensureSerializable(f);//只是确保可以序列化obj对象  --- 如果不能序列化,则抛异常
 		return f;
 	}
 

@@ -50,10 +50,10 @@ public class TypeExtractionUtils {
 	 */
 	public static class LambdaExecutable {
 
-		private Type[] parameterTypes;
-		private Type returnType;
-		private String name;
-		private Object executable;
+		private Type[] parameterTypes;//方法参数
+		private Type returnType;//返回值类型
+		private String name;//方法名称
+		private Object executable;//方法对象
 
 		public LambdaExecutable(Constructor<?> constructor) {
 			this.parameterTypes = constructor.getGenericParameterTypes();
@@ -104,7 +104,7 @@ public class TypeExtractionUtils {
 				try {
 					Method replaceMethod = clazz.getDeclaredMethod("writeReplace");
 					replaceMethod.setAccessible(true);
-					Object serialVersion = replaceMethod.invoke(function);
+					Object serialVersion = replaceMethod.invoke(function);//执行writeReplace方法,获取返回值
 
 					// check if class is a lambda function
 					if (serialVersion != null && serialVersion.getClass() == SerializedLambda.class) {
@@ -190,6 +190,7 @@ public class TypeExtractionUtils {
 	 * @return The extracted type argument
 	 * @throws InvalidTypesException if the given type does not have any type arguments or if the
 	 * index exceeds the number of type arguments.
+	 * 获取t泛型中第index个类型
 	 */
 	public static Type extractTypeArgument(Type t, int index) throws InvalidTypesException {
 		if (t instanceof ParameterizedType) {
@@ -214,6 +215,7 @@ public class TypeExtractionUtils {
 	 * @param baseClass a class that is a FunctionalInterface to retrieve a SAM from
 	 * @throws InvalidTypesException if the given class does not implement FunctionalInterface
 	 * @return single abstract method of the given class
+	 * 返回定义的抽象方法
 	 */
 	public static Method getSingleAbstractMethod(Class<?> baseClass) {
 
@@ -243,6 +245,7 @@ public class TypeExtractionUtils {
 
 	/**
 	 * Returns all declared methods of a class including methods of superclasses.
+	 * 返回定义的所有方法
 	 */
 	public static List<Method> getAllDeclaredMethods(Class<?> clazz) {
 		List<Method> result = new ArrayList<>();
@@ -256,6 +259,7 @@ public class TypeExtractionUtils {
 
 	/**
 	 * Convert ParameterizedType or Class to a Class.
+	 * type映射成对应的class
 	 */
 	public static Class<?> typeToClass(Type t) {
 		if (t instanceof Class) {

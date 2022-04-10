@@ -37,13 +37,13 @@ abstract class AbstractTtlDecorator<T> {
 
 	final TtlTimeProvider timeProvider;
 
-	/** Whether to renew expiration timestamp on state read access. */
-	final boolean updateTsOnRead;
+	/** Whether to renew expiration timestamp on state read access. 读数据是否会更新最近访问时间戳*/
+	final boolean updateTsOnRead;//true表示读操作也会更新时间戳
 
-	/** Whether to renew expiration timestamp on state read access. */
-	final boolean returnExpired;
+	/** Whether to renew expiration timestamp on state read access. 过期数据的可见性*/
+	final boolean returnExpired;//true 表示过期的数据也会被返回,false表示过期数据不会被看到
 
-	/** State value time to live in milliseconds. */
+	/** State value time to live in milliseconds. 过期周期,最后访问日期+ttl说明就是过期时间,超过该值就可以被删除了*/
 	final long ttl;
 
 	AbstractTtlDecorator(
@@ -61,18 +61,23 @@ abstract class AbstractTtlDecorator<T> {
 		this.ttl = config.getTtl().toMilliseconds();
 	}
 
+	//返回value具体的值
+	//其中如果过期了,但没有被彻底删除,也会被返回value值
 	<V> V getUnexpired(TtlValue<V> ttlValue) {
 		return ttlValue == null || (expired(ttlValue) && !returnExpired) ? null : ttlValue.getUserValue();
 	}
 
+	//true表示已经过期
 	<V> boolean expired(TtlValue<V> ttlValue) {
 		return TtlUtils.expired(ttlValue, ttl, timeProvider);
 	}
 
+	//返回一个包装对象,即value+最近访问时间
 	<V> TtlValue<V> wrapWithTs(V value) {
 		return TtlUtils.wrapWithTs(value, timeProvider.currentTimestamp());
 	}
 
+	//返回一个包装对象,即value+最近访问时间
 	<V> TtlValue<V> rewrapWithNewTs(TtlValue<V> ttlValue) {
 		return wrapWithTs(ttlValue.getUserValue());
 	}

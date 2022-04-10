@@ -122,7 +122,7 @@ public class BulkIterationBase<T> extends SingleInputOperator<T, T, AbstractRich
 	 */
 	public <X> void setTerminationCriterion(Operator<X> criterion) {
 		
-		TypeInformation<X> type = criterion.getOperatorInfo().getOutputType();
+		TypeInformation<X> type = criterion.getOperatorInfo().getOutputType();//操作输出类型
 		
 		FlatMapOperatorBase<X, X, TerminationCriterionMapper<X>> mapper =
 				new FlatMapOperatorBase<X, X, TerminationCriterionMapper<X>>(

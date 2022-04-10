@@ -27,11 +27,14 @@ import java.io.Serializable;
 
 /**
  * Base interface for functions that are evaluated over keyed (grouped) windows.
+ * 是基于key分组的窗口函数
  *
  * @param <IN> The type of the input value.
  * @param <OUT> The type of the output value.
  * @param <KEY> The type of the key.
  * @param <W> The type of {@code Window} that this window function can be applied on.
+ *
+ * 窗口聚合后的值,窗口到期后，发送哪些数据到下游
  */
 @Public
 public interface WindowFunction<IN, OUT, KEY, W extends Window> extends Function, Serializable {

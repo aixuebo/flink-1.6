@@ -30,7 +30,7 @@ public class BroadcastVariableKey {
 
 	private final String name;
 
-	private final int superstep;
+	private final int superstep;//迭代的第几步
 
 	public BroadcastVariableKey(JobVertexID vertexId, String name, int superstep) {
 		if (vertexId == null || name == null || superstep <= 0) {

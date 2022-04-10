@@ -61,6 +61,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * for the existence of a directory. S3 sometimes limits the number of HTTP HEAD requests to
  * a few hundred per second only. Those numbers are easily reached by moderately large setups.
  * Surprisingly (and fortunately), the actual state writing (POST) have much higher quotas.
+ *
+ * 现在内存中存储数据，超过一定大小后,才会存储到文件中。
  */
 public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 
@@ -73,7 +75,7 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 	public static final int DEFAULT_WRITE_BUFFER_SIZE = 4096;
 
 	/** State below this size will be stored as part of the metadata, rather than in files */
-	private final int fileStateThreshold;
+	private final int fileStateThreshold;//内存阈值,超过该阈值,则数据需要写入到文件中,少于该内存,可以文件先存于内存中
 
 	/** The directory for checkpoint exclusive state data. */
 	private final Path checkpointDirectory;
@@ -119,11 +121,13 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 
 	// ------------------------------------------------------------------------
 
+	//优先存储在内存，然后刷新到文件中    如果最终存储的文件非常小,则可以返回基于内存的文件输出流
 	@Override
 	public FsCheckpointStateOutputStream createCheckpointStateOutputStream(CheckpointedStateScope scope) throws IOException {
 
-
+		//文件目录
 		Path target = scope == CheckpointedStateScope.EXCLUSIVE ?checkpointDirectory: sharedStateDirectory;
+		//内存阈值,超过该阈值,则数据需要写入到文件中,少于该内存,可以文件先存于内存中
 		int bufferSize = Math.max(DEFAULT_WRITE_BUFFER_SIZE, fileStateThreshold);
 
 		return new FsCheckpointStateOutputStream(target, filesystem, bufferSize, fileStateThreshold);
@@ -149,19 +153,19 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 	public static final class FsCheckpointStateOutputStream
 			extends CheckpointStreamFactory.CheckpointStateOutputStream {
 
-		private final byte[] writeBuffer;
+		private final byte[] writeBuffer;//先在内存存储数据,所以该对象表示存储占用的空间
 
-		private int pos;
+		private int pos;//writeBuffer写入文件的位置
 
-		private FSDataOutputStream outStream;
+		private FSDataOutputStream outStream;//存储数据的文件输出流
 		
-		private final int localStateThreshold;
+		private final int localStateThreshold;//如果最终数据占用字节小于该值,说明放内存就够了,不需要存储到文件中
 
-		private final Path basePath;
+		private final Path basePath;//存储数据的文件夹
 
 		private final FileSystem fs;
 
-		private Path statePath;
+		private Path statePath;//存储数据的文件路径path
 
 		private volatile boolean closed;
 
@@ -189,10 +193,10 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 
 		@Override
 		public void write(byte[] b, int off, int len) throws IOException {
-			if (len < writeBuffer.length / 2) {
+			if (len < writeBuffer.length / 2) {//len小于内存一半空间,说明是小对象,可以优化一下,先放缓存里
 				// copy it into our write buffer first
-				final int remaining = writeBuffer.length - pos;
-				if (len > remaining) {
+				final int remaining = writeBuffer.length - pos;//剩余空间
+				if (len > remaining) {//剩余空间不足,先存储一部分数据,然后刷新磁盘
 					// copy as much as fits
 					System.arraycopy(b, off, writeBuffer, pos, remaining);
 					off += remaining;
@@ -203,11 +207,11 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 					flush();
 				}
 				
-				// copy what is in the buffer
+				// copy what is in the buffer 继续添加到内存
 				System.arraycopy(b, off, writeBuffer, pos, len);
 				pos += len;
 			}
-			else {
+			else {//说明要存储的len很大，所以要先flush,然后直接输出到文件中。即大对象直接输出
 				// flush the current buffer
 				flush();
 				// write the bytes directly
@@ -220,6 +224,7 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 			return pos + (outStream == null ? 0 : outStream.getPos());
 		}
 
+		//内存数据刷新到文件中
 		@Override
 		public void flush() throws IOException {
 			if (!closed) {
@@ -256,6 +261,8 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 		 * If the stream is only closed, we remove the produced file (cleanup through the auto close
 		 * feature, for example). This method throws no exception if the deletion fails, but only
 		 * logs the error.
+		 *
+		 * 输出到文件流中,并且删除文件
 		 */
 		@Override
 		public void close() {
@@ -282,6 +289,7 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 			}
 		}
 
+		//
 		@Nullable
 		@Override
 		public StreamStateHandle closeAndGetHandle() throws IOException {
@@ -296,7 +304,7 @@ public class FsCheckpointStreamFactory implements CheckpointStreamFactory {
 						closed = true;
 						byte[] bytes = Arrays.copyOf(writeBuffer, pos);
 						pos = writeBuffer.length;
-						return new ByteStreamStateHandle(createStatePath().toString(), bytes);
+						return new ByteStreamStateHandle(createStatePath().toString(), bytes);//内存存储数据，说明数据量小,不需要存储到文件中
 					}
 					else {
 						try {

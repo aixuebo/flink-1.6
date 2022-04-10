@@ -55,6 +55,7 @@ public class HighAvailabilityOptions {
 	/**
 	 * The ID of the Flink cluster, used to separate multiple Flink clusters
 	 * Needs to be set for standalone clusters, is automatically inferred in YARN and Mesos.
+	 * zookeeper的命名空间 --- -n命令配置的
 	 */
 	public static final ConfigOption<String> HA_CLUSTER_ID =
 			key("high-availability.cluster-id")
@@ -65,6 +66,7 @@ public class HighAvailabilityOptions {
 
 	/**
 	 * File system path (URI) where Flink persists metadata in high-availability setups.
+	 * 高可用存储路径
 	 */
 	@Documentation.CommonOption(position = Documentation.CommonOption.POSITION_HIGH_AVAILABILITY)
 	public static final ConfigOption<String> HA_STORAGE_PATH =
@@ -124,7 +126,7 @@ public class HighAvailabilityOptions {
 			.withDeprecatedKeys("recovery.zookeeper.path.latch")
 			.withDescription("Defines the znode of the leader latch which is used to elect the leader.");
 
-	/** ZooKeeper root path (ZNode) for job graphs. */
+	/** ZooKeeper root path (ZNode) for job graphs. zookeeper上关于job信息记录的路径*/
 	public static final ConfigOption<String> HA_ZOOKEEPER_JOBGRAPHS_PATH =
 			key("high-availability.zookeeper.path.jobgraphs")
 			.defaultValue("/jobgraphs")
@@ -190,6 +192,7 @@ public class HighAvailabilityOptions {
 			.withDeprecatedKeys("recovery.zookeeper.client.max-retry-attempts")
 			.withDescription("Defines the number of connection retries before the client gives up.");
 
+	//管理job的状态的zookeeper路径
 	public static final ConfigOption<String> ZOOKEEPER_RUNNING_JOB_REGISTRY_PATH =
 			key("high-availability.zookeeper.path.running-registry")
 			.defaultValue("/running_job_registry/");

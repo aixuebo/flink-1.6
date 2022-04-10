@@ -35,7 +35,11 @@ import java.util.List;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * The base class for job vertexes.
+ * The base class for job vertexes.定点,表示一组chain的操作集合,输出IntermediateDataSet
+ *
+ * 该类的属性是支持序列化的
+ *
+ * JobVertex 相当于是 JobGraph 的顶点，跟 StreamNode 的区别是，它是 Operator Chain 之后的顶点，会包含多个 StreamNode
  */
 public class JobVertex implements java.io.Serializable {
 
@@ -50,7 +54,7 @@ public class JobVertex implements java.io.Serializable {
 	/** The ID of the vertex. */
 	private final JobVertexID id;
 
-	/** The alternative IDs of the vertex. */
+	/** The alternative IDs of the vertex. 可供替代的 */
 	private final ArrayList<JobVertexID> idAlternatives = new ArrayList<>();
 
 	/** The IDs of all operators contained in this vertex. */

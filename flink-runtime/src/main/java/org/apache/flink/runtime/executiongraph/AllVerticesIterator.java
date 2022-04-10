@@ -21,11 +21,14 @@ package org.apache.flink.runtime.executiongraph;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+/**
+ * 迭代器,先迭代jobVertices,然后迭代jobVertices中每一个元素。 以此类推
+ */
 class AllVerticesIterator implements Iterator<ExecutionVertex> {
 
 	private final Iterator<ExecutionJobVertex> jobVertices;
 	
-	private ExecutionVertex[] currVertices;
+	private ExecutionVertex[] currVertices;//jobVertices某一个元素对应的集合
 	
 	private int currPos;
 	

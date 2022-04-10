@@ -68,7 +68,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 public abstract class YarnHighAvailabilityServices implements HighAvailabilityServices {
 
 	/** The name of the sub directory in which Flink stores the recovery data. */
-	public static final String FLINK_RECOVERY_DATA_DIR = "flink_recovery_data";
+	public static final String FLINK_RECOVERY_DATA_DIR = "flink_recovery_data";//高可用文件系统目录
 
 	/** Logger for these services, shared with subclasses. */
 	protected static final Logger LOG = LoggerFactory.getLogger(YarnHighAvailabilityServices.class);
@@ -85,11 +85,11 @@ public abstract class YarnHighAvailabilityServices implements HighAvailabilitySe
 	protected final org.apache.hadoop.fs.FileSystem hadoopFileSystem;
 
 	/** The working directory of this YARN application.
-	 * This MUST NOT be deleted when the HA services clean up */
+	 * This MUST NOT be deleted when the HA services clean up ,HDFS的工作目录*/
 	protected final Path workingDirectory;
 
 	/** The directory for HA persistent data. This should be deleted when the
-	 * HA services clean up. */
+	 * HA services clean up. HA数据文件存储目录路径 HDFS上*/
 	protected final Path haDataDirectory;
 
 	/** Blob store service to be used for the BlobServer and BlobCache. */
@@ -121,7 +121,7 @@ public abstract class YarnHighAvailabilityServices implements HighAvailabilitySe
 
 		this.lock = new ReentrantLock();
 
-		// get and verify the YARN HDFS URI
+		// get and verify the YARN HDFS URI 高可用必须在HDFS文件系统上
 		final URI fsUri = org.apache.hadoop.fs.FileSystem.getDefaultUri(hadoopConf);
 		if (fsUri.getScheme() == null || !"hdfs".equals(fsUri.getScheme().toLowerCase())) {
 			throw new IOException("Invalid file system found for YarnHighAvailabilityServices: " +

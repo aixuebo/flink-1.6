@@ -105,6 +105,7 @@ import java.io.Serializable;
  *
  * @see org.apache.flink.api.common.functions.StoppableFunction
  * @see org.apache.flink.streaming.api.TimeCharacteristic
+ * 数据源函数 -- 一个run,一个cancel方法
  */
 @Public
 public interface SourceFunction<T> extends Function, Serializable {
@@ -159,6 +160,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 	 * }</pre>
 	 *
 	 * @param ctx The context to emit elements to and for accessing locks.
+	 * 给定上下文就可以运行了,源源不断的读取数据信息
 	 */
 	void run(SourceContext<T> ctx) throws Exception;
 
@@ -176,6 +178,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 	 * this method has completed. It is good practice to make any flags altered by
 	 * this method "volatile", in order to guarantee the visibility of the effects of
 	 * this method to any interruption handler.
+	 * 关闭数据源,不在读取数据
 	 */
 	void cancel();
 
@@ -187,6 +190,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 	 * Interface that source functions use to emit elements, and possibly watermarks.
 	 *
 	 * @param <T> The type of the elements produced by the source.
+	 * 数据源函数的上下文对象
 	 */
 	@Public // Interface might be extended in the future with additional methods.
 	interface SourceContext<T> {
@@ -207,6 +211,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 		 * </ul>
 		 *
 		 * @param element The element to emit
+		 * 向下游发送数据
 		 */
 		void collect(T element);
 
@@ -229,6 +234,7 @@ public interface SourceFunction<T> extends Function, Serializable {
 		 *
 		 * @param element The element to emit
 		 * @param timestamp The timestamp in milliseconds since the Epoch
+		 * 发生一个元素,并且带有时间戳
 		 */
 		@PublicEvolving
 		void collectWithTimestamp(T element, long timestamp);

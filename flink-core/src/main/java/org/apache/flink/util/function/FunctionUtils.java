@@ -65,6 +65,8 @@ public class FunctionUtils {
 	 * @param <A> input type
 	 * @param <B> output type
 	 * @return {@link Function} which throws all checked exception as an unchecked exception.
+	 *
+	 * 相当于map操作,functionWithException定义个map函数
 	 */
 	public static <A, B> Function<A, B> uncheckedFunction(FunctionWithException<A, B, ?> functionWithException) {
 		return (A value) -> {

@@ -30,6 +30,7 @@ import java.util.Arrays;
 
 /**
  * A simple and efficient serializer for the {@link java.io.DataOutput} interface.
+ * 支持基础类型的数据 转换成字节数组 ，存储到buffer中
  */
 public class DataOutputSerializer implements DataOutputView {
 
@@ -39,11 +40,11 @@ public class DataOutputSerializer implements DataOutputView {
 
 	// ------------------------------------------------------------------------
 
-	private final byte[] startBuffer;
+	private final byte[] startBuffer;//最初的字节数组大小
 
-	private byte[] buffer;
+	private byte[] buffer;//真实存储数据,该size会自动扩容
 
-	private int position;
+	private int position;//存储数据到哪个位置
 
 	private ByteBuffer wrapper;
 
@@ -59,6 +60,7 @@ public class DataOutputSerializer implements DataOutputView {
 		this.wrapper = ByteBuffer.wrap(buffer);
 	}
 
+	//设置边界
 	public ByteBuffer wrapAsByteBuffer() {
 		this.wrapper.position(0);
 		this.wrapper.limit(this.position);
@@ -108,12 +110,12 @@ public class DataOutputSerializer implements DataOutputView {
 	}
 
 	public void pruneBuffer() {
-		if (this.buffer.length > PRUNE_BUFFER_THRESHOLD) {
+		if (this.buffer.length > PRUNE_BUFFER_THRESHOLD) {//说明数据扩容太大了,要重新设置一下
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("Releasing serialization buffer of " + this.buffer.length + " bytes.");
 			}
 
-			this.buffer = this.startBuffer;
+			this.buffer = this.startBuffer;//被定义成最初的大小
 			this.wrapper = ByteBuffer.wrap(this.buffer);
 		}
 	}

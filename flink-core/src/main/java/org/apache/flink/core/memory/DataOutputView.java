@@ -50,6 +50,7 @@ public interface DataOutputView extends DataOutput {
 	 *
 	 * @throws IOException Thrown, if any I/O related problem occurred, such that either the input view
 	 *                     could not be read, or the output could not be written.
+	 * 将参数的内容输出走
 	 */
 	void write(DataInputView source, int numBytes) throws IOException;
 }

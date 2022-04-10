@@ -77,6 +77,7 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 	/**
 	 * The flag value indicating use of the default parallelism. This value can
 	 * be used to reset the parallelism back to the default state.
+	 * 并行度 -- 说明没有单独设置并行度
 	 */
 	public static final int PARALLELISM_DEFAULT = -1;
 
@@ -124,7 +125,9 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
 
 	private CodeAnalysisMode codeAnalysisMode = CodeAnalysisMode.DISABLE;
 
-	/** If set to true, progress updates are printed to System.out during execution */
+	/** If set to true, progress updates are printed to System.out during execution
+	 * true,表示进度更新的日志,不仅要打印到log,也要打印到System.out
+	 **/
 	private boolean printProgressDuringExecution = true;
 
 	private long autoWatermarkInterval = 0;

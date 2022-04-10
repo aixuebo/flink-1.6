@@ -26,6 +26,7 @@ import org.apache.flink.api.common.operators.util.FieldSet;
 
 /**
  * Container for the semantic properties associated to a single input operator.
+ * 当前输入操作中,关联了语义操作
  */
 @Internal
 public class SingleInputSemanticProperties implements SemanticProperties {

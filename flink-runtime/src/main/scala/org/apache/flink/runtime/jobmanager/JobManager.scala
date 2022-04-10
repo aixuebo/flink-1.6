@@ -1062,7 +1062,8 @@ class JobManager(
 
       updateAccumulators(accumulators)
 
-      instanceManager.reportHeartBeat(instanceID)
+      instanceManager.reportHeartBeat(instanceID) ////说明jobmanager此时接收到了taskmanager的心跳
+
 
     case message: AccumulatorMessage => handleAccumulatorMessage(message)
 

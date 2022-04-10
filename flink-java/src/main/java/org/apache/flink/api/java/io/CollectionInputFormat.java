@@ -36,6 +36,7 @@ import java.util.List;
 
 /**
  * An input format that returns objects from a collection.
+ * 数据源是一个Collection,而不是什么文件系统读取文件
  */
 @PublicEvolving
 public class CollectionInputFormat<T> extends GenericInputFormat<T> implements NonParallelInput {
@@ -64,6 +65,7 @@ public class CollectionInputFormat<T> extends GenericInputFormat<T> implements N
 		return !this.iterator.hasNext();
 	}
 
+	//打开文件 --- 直接从数据源读取迭代器即可
 	@Override
 	public void open(GenericInputSplit split) throws IOException {
 		super.open(split);
@@ -77,7 +79,7 @@ public class CollectionInputFormat<T> extends GenericInputFormat<T> implements N
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+	//dataSet数据输出到out中
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		out.defaultWriteObject();
 
@@ -92,6 +94,7 @@ public class CollectionInputFormat<T> extends GenericInputFormat<T> implements N
 		}
 	}
 
+	//从in中获取数据源dataSet
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
 

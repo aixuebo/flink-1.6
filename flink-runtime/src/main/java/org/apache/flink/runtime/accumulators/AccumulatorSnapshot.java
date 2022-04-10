@@ -31,6 +31,9 @@ import java.util.Map;
  * This class encapsulates a map of accumulators for a single task. It is used
  * for the transfer from TaskManagers to the JobManager and from the JobManager
  * to the Client.
+ * task节点向jobmanager报告属于该jobmanager的内容,必须支持序列化
+ *
+ * 即该job的某一个尝试任务id,在task节点上的map统计信息
  */
 public class AccumulatorSnapshot implements Serializable {
 

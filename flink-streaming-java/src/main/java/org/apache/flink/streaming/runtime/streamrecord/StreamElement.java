@@ -24,6 +24,9 @@ import org.apache.flink.streaming.runtime.streamstatus.StreamStatus;
 
 /**
  * An element in a data stream. Can be a record or a Watermark.
+ * 流里面的一个元素,可以是一条记录，也可以是Watermark
+ *
+ * 一共四类元素 --- 自定义元素StreamRecord(由时间戳+value组成)、Watermark、StreamStatus(流的状态)、LatencyMarker
  */
 @Internal
 public abstract class StreamElement {
@@ -31,6 +34,7 @@ public abstract class StreamElement {
 	/**
 	 * Checks whether this element is a watermark.
 	 * @return True, if this element is a watermark, false otherwise.
+	 * 是否是Watermark元素
 	 */
 	public final boolean isWatermark() {
 		return getClass() == Watermark.class;
@@ -39,6 +43,7 @@ public abstract class StreamElement {
 	/**
 	 * Checks whether this element is a stream status.
 	 * @return True, if this element is a stream status, false otherwise.
+	 * 是否是StreamStatus元素
 	 */
 	public final boolean isStreamStatus() {
 		return getClass() == StreamStatus.class;
@@ -47,6 +52,7 @@ public abstract class StreamElement {
 	/**
 	 * Checks whether this element is a record.
 	 * @return True, if this element is a record, false otherwise.
+	 * 是否是用户定义的待处理元素
 	 */
 	public final boolean isRecord() {
 		return getClass() == StreamRecord.class;
@@ -55,6 +61,7 @@ public abstract class StreamElement {
 	/**
 	 * Checks whether this element is a record.
 	 * @return True, if this element is a record, false otherwise.
+	 * 是否是用户定义的迟到的元素
 	 */
 	public final boolean isLatencyMarker() {
 		return getClass() == LatencyMarker.class;
@@ -64,6 +71,7 @@ public abstract class StreamElement {
 	 * Casts this element into a StreamRecord.
 	 * @return This element as a stream record.
 	 * @throws java.lang.ClassCastException Thrown, if this element is actually not a stream record.
+	 * 转化成用户自定义的元素类型
 	 */
 	@SuppressWarnings("unchecked")
 	public final <E> StreamRecord<E> asRecord() {

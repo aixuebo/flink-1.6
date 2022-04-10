@@ -53,7 +53,7 @@ import org.apache.flink.util.Visitor;
  */
 public class DataSourceNode extends OptimizerNode {
 	
-	private final boolean sequentialInput;
+	private final boolean sequentialInput;//true 表示不能并行读取数据源
 
 	private final boolean replicatedInput;
 
@@ -70,7 +70,7 @@ public class DataSourceNode extends OptimizerNode {
 	public DataSourceNode(GenericDataSourceBase<?, ?> pactContract) {
 		super(pactContract);
 		
-		if (pactContract.getUserCodeWrapper().getUserCodeClass() == null) {
+		if (pactContract.getUserCodeWrapper().getUserCodeClass() == null) {//是一个inputFormat,不能为空,否则没办法读取数据源
 			throw new IllegalArgumentException("Input format has not been set.");
 		}
 		

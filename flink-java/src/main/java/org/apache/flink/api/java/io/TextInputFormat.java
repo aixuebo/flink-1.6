@@ -29,6 +29,7 @@ import java.util.Arrays;
 
 /**
  * Input Format that reads text files. Each line results in another element.
+ * 回车换行决定一行数据
  */
 @PublicEvolving
 public class TextInputFormat extends DelimitedInputFormat<String> {
@@ -82,13 +83,15 @@ public class TextInputFormat extends DelimitedInputFormat<String> {
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+	//bytes包含了一行的所有数据,从offset开始读取即可
 	@Override
 	public String readRecord(String reusable, byte[] bytes, int offset, int numBytes) throws IOException {
 		//Check if \n is used as delimiter and the end of this line is a \r, then remove \r from the line
-		if (this.getDelimiter() != null && this.getDelimiter().length == 1
-				&& this.getDelimiter()[0] == NEW_LINE && offset + numBytes >= 1
-				&& bytes[offset + numBytes - 1] == CARRIAGE_RETURN){
+		//处理\r\n逻辑,将numBytes的结果再次减1
+		if (this.getDelimiter() != null && this.getDelimiter().length == 1 //说明换行符字节是1个
+				&& this.getDelimiter()[0] == NEW_LINE  //定义这一个换行字节是\n
+			    && offset + numBytes >= 1 //确定数据不仅是\n 还有其他内容
+				&& bytes[offset + numBytes - 1] == CARRIAGE_RETURN){//确定数据仅仅是\r\n
 			numBytes -= 1;
 		}
 

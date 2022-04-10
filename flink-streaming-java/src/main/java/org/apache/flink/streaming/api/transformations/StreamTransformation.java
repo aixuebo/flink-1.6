@@ -96,11 +96,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * that connect the sources to the map operation.
  *
  * @param <T> The type of the elements that result from this {@code StreamTransformation}
+ * 表示一个流
+ *
+ * 流: id + name + 输出类型 + 并行度 四元组组成
  */
 @Internal
 public abstract class StreamTransformation<T> {
 
 	// This is used to assign a unique ID to every StreamTransformation
+	// 为每一个转换过程中的流，分配唯一ID
 	protected static Integer idCounter = 0;
 
 	public static int getNewNodeId() {
@@ -109,17 +113,18 @@ public abstract class StreamTransformation<T> {
 	}
 
 
-	protected final int id;
+	protected final int id;//自动分配ID
 
-	protected String name;
+	protected String name;//操作名字,比如map flatMap,做了什么操作转换成什么流
 
-	protected TypeInformation<T> outputType;
+	protected TypeInformation<T> outputType;//输出类型 -- 流存储元素的类型
+
+	private int parallelism;
+
 	// This is used to handle MissingTypeInfo. As long as the outputType has not been queried
 	// it can still be changed using setOutputType(). Afterwards an exception is thrown when
 	// trying to change the output type.
-	protected boolean typeUsed;
-
-	private int parallelism;
+	protected boolean typeUsed;//true表示已经下游获取了该流的数据类型,因此不能在重新设置流类型的--感觉该字段用的地方不多
 
 	/**
 	 * The maximum parallelism for this stream transformation. It defines the upper limit for
@@ -144,12 +149,13 @@ public abstract class StreamTransformation<T> {
 	 * same operator ID across job restarts. There is also the automatically
 	 * generated {@link #id}, which is assigned from a static counter. That
 	 * field is independent from this.
+	 * 用户自定义设置的唯一id,用于log和web页面查看
 	 */
 	private String uid;
 
-	private String userProvidedNodeHash;
+	private String userProvidedNodeHash;//必须32个字符组成的code,用户自定义uid
 
-	protected long bufferTimeout = -1;
+	protected long bufferTimeout = -1;//数据在缓冲区里停留多久后再发送给网络，高的缓存时间,可以提高吞吐率,但降低了延迟性
 
 	private String slotSharingGroup;
 
@@ -312,6 +318,7 @@ public abstract class StreamTransformation<T> {
 	 * transformation and job. Otherwise, job submission will fail.
 	 *
 	 * @param uid The unique user-specified ID of this transformation.
+	 * 用户自定义设置的唯一id,用于log和web页面查看
 	 */
 	public void setUid(String uid) {
 		this.uid = uid;
@@ -431,13 +438,19 @@ public abstract class StreamTransformation<T> {
 	/**
 	 * Set the buffer timeout of this {@code StreamTransformation}. The timeout defines how long data
 	 * may linger in a partially full buffer before being sent over the network.
+	 * 在通过网络发送数据之前，数据可能在部分满的缓冲区中停留多长时间。
 	 *
 	 * <p>Lower timeouts lead to lower tail latencies, but may affect throughput.
 	 * For Flink 1.5+, timeouts of 1ms are feasible for jobs with high parallelism.
+	 * 如果该值设置较低,虽然会延迟性好,即有少量延迟,但少量缓存,频繁发送数据,会影响吞吐量。
+	 * 在并发量高的任务中,1ms是可行的
 	 *
 	 * <p>A value of -1 means that the default buffer timeout should be used. A value
 	 * of zero indicates that no buffering should happen, and all records/events should be
 	 * immediately sent through the network, without additional buffering.
+	 * 0表示不需要缓存,立即发送给网络。-1表示使用系统配置的默认值
+	 *
+	 * 数据在缓冲区里停留多久后再发送给网络，高的缓存时间,可以提高吞吐率,但降低了延迟性
 	 */
 	public void setBufferTimeout(long bufferTimeout) {
 		checkArgument(bufferTimeout >= -1);
@@ -459,6 +472,7 @@ public abstract class StreamTransformation<T> {
 	 * actually has the iteration head as a predecessor.
 	 *
 	 * @return The list of transitive predecessors.
+	 * 依赖哪些流先完成后,他才能执行。相当于血缘依赖关系
 	 */
 	public abstract Collection<StreamTransformation<?>> getTransitivePredecessors();
 

@@ -48,6 +48,7 @@ public interface TimestampExtractor<T> extends Function {
 	 * @param element The element that the timestamp is extracted from.
 	 * @param currentTimestamp The current internal timestamp of the element.
 	 * @return The new timestamp.
+	 * 提取事件时间戳
 	 */
 	long extractTimestamp(T element, long currentTimestamp);
 
@@ -61,6 +62,7 @@ public interface TimestampExtractor<T> extends Function {
 	 * @param currentTimestamp The current timestamp of the element that we last saw.
 	 * @return {@code Long.MIN_VALUE} if no watermark should be emitted, positive value for
 	 *          emitting this value as a watermark.
+	 * 提取水印时间戳
 	 */
 	long extractWatermark(T element, long currentTimestamp);
 

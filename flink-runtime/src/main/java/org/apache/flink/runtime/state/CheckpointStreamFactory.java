@@ -41,6 +41,7 @@ public interface CheckpointStreamFactory {
 	 * @return An output stream that writes state for the given checkpoint.
 	 *
 	 * @throws IOException Exceptions may occur while creating the stream and should be forwarded.
+	 * 返回输出流,可以向文件中输出字节内容
 	 */
 	CheckpointStateOutputStream createCheckpointStateOutputStream(CheckpointedStateScope scope) throws IOException;
 
@@ -70,6 +71,8 @@ public interface CheckpointStreamFactory {
 		 *
 		 * @return A state handle that can create an input stream producing the data written to this stream.
 		 * @throws IOException Thrown, if the stream cannot be closed.
+		 *
+		 * 输出流写入到文件中,并且返回文件句柄,方便以后再次读取到已经存储的数据
 		 */
 		@Nullable
 		public abstract StreamStateHandle closeAndGetHandle() throws IOException;
@@ -84,6 +87,8 @@ public interface CheckpointStreamFactory {
 		 * Closing the stream for the successful case must go through {@link #closeAndGetHandle()}.
 		 *
 		 * @throws IOException Thrown, if the stream cannot be closed.
+		 *
+		 * 此时关闭 不是理解的关闭文件输出流,而是将物理文件都删除掉,以后不会再用到他了
 		 */
 		@Override
 		public abstract void close() throws IOException;

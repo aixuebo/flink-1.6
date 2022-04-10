@@ -50,6 +50,8 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * @see org.apache.flink.api.common.functions.GroupReduceFunction
+ *
+ * 数据要重新分区到下游,有shuffle操作的reduce。 如果子类也实现了GroupCombineFunction,则相当于会在map端先进行一次reduce操作
  */
 @Internal
 public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN, OUT>> extends SingleInputOperator<IN, OUT, FT> {
@@ -57,7 +59,8 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 	/** The ordering for the order inside a reduce group. */
 	private Ordering groupOrder;
 
-	private boolean combinable;
+	//true则走TupleUnwrappingGroupCombinableGroupReducer这个逻辑
+	private boolean combinable;//true 说明实现了GroupReduceFunction 、 GroupCombineFunction两个接口
 	
 	private Partitioner<?> customPartitioner;
 	
@@ -113,9 +116,10 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 	 * must implement the interface {@link GroupCombineFunction}.
 	 * 
 	 * @param combinable Flag to mark the group reduce operation as combinable.
+	 * 如果参数true,表示要合并,因此相当于在reduce的shuffle前要先进行map端聚合,因此一定也要实现GroupCombineFunction接口
 	 */
 	public void setCombinable(boolean combinable) {
-		// sanity check
+		// sanity check 做校验,如果不是实现了2个接口,则抛异常
 		if (combinable && !GroupCombineFunction.class.isAssignableFrom(this.userFunction.getUserCodeClass())) {
 			throw new IllegalArgumentException("Cannot set a UDF as combinable if it does not implement the interface " +
 					GroupCombineFunction.class.getName());
@@ -130,6 +134,7 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 	 * @return True, if the UDF is combinable, false if not.
 	 * 
 	 * @see #setCombinable(boolean)
+	 * true则走TupleUnwrappingGroupCombinableGroupReducer这个逻辑
 	 */
 	public boolean isCombinable() {
 		return this.combinable;
@@ -184,6 +189,7 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 			checkArgument(sortOrderings.length == 0);
 		} else {
 			final TypeComparator<IN> sortComparator = getTypeComparator(inputType, sortColumns, sortOrderings, executionConfig);
+			//先数据排序
 			Collections.sort(inputData, new Comparator<IN>() {
 				@Override
 				public int compare(IN o1, IN o2) {
@@ -199,7 +205,7 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 
 		if (inputData.size() > 0) {
 			final TypeSerializer<IN> inputSerializer = inputType.createSerializer(executionConfig);
-			if (keyColumns.length == 0) {
+			if (keyColumns.length == 0) {//全量输出reduce,即最后一条数据
 				TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
 				List<IN> inputDataCopy = new ArrayList<IN>(inputData.size());
 				for (IN in : inputData) {
@@ -212,12 +218,12 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
 				boolean[] keyOrderings = new boolean[keyColumns.length];
 				final TypeComparator<IN> comparator = getTypeComparator(inputType, keyColumns, keyOrderings, executionConfig);
 
-				ListKeyGroupedIterator<IN> keyedIterator = new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);
+				ListKeyGroupedIterator<IN> keyedIterator = new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);//相同的key组成的集合
 
 				TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
 				CopyingListCollector<OUT> collector = new CopyingListCollector<OUT>(result, outSerializer);
 
-				while (keyedIterator.nextKey()) {
+				while (keyedIterator.nextKey()) {//下一个相同的key组成的集合
 					function.reduce(keyedIterator.getValues(), collector);
 				}
 			}

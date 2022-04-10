@@ -31,6 +31,7 @@ import java.util.Collection;
 
 /**
  * Interface for a {@link ArchivedExecutionGraph} store.
+ * 存储job的结果
  */
 public interface ArchivedExecutionGraphStore extends Closeable {
 
@@ -38,6 +39,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 * Returns the current number of stored {@link ArchivedExecutionGraph}.
 	 *
 	 * @return Current number of stored {@link ArchivedExecutionGraph}
+	 * 返回存储ArchivedExecutionGraph结果集的数量
 	 */
 	int size();
 
@@ -46,6 +48,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 *
 	 * @param jobId identifying the serializable execution graph to retrieve
 	 * @return The stored serializable execution graph or null
+	 * 获取jobId的结果集
 	 */
 	@Nullable
 	ArchivedExecutionGraph get(JobID jobId);
@@ -55,6 +58,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 *
 	 * @param archivedExecutionGraph to store
 	 * @throws IOException if the serializable execution graph could not be stored in the store
+	 * 存放某一个jobId的结果集
 	 */
 	void put(ArchivedExecutionGraph archivedExecutionGraph) throws IOException;
 
@@ -62,6 +66,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 * Return the {@link JobsOverview} for all stored/past jobs.
 	 *
 	 * @return Jobs overview for all stored/past jobs
+	 * job根据状态,获取统计值
 	 */
 	JobsOverview getStoredJobsOverview();
 
@@ -69,6 +74,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 * Return the collection of {@link JobDetails} of all currently stored jobs.
 	 *
 	 * @return Collection of job details of all currently stored jobs
+	 * 返回每一个job的详细状态信息
 	 */
 	Collection<JobDetails> getAvailableJobDetails();
 
@@ -77,6 +83,7 @@ public interface ArchivedExecutionGraphStore extends Closeable {
 	 *
 	 * @param jobId identifying the job for which to retrieve the {@link JobDetails}
 	 * @return {@link JobDetails} of the requested job or null if the job is not available
+	 * 返回某一个job的详细状态信息
 	 */
 	@Nullable
 	JobDetails getAvailableJobDetails(JobID jobId);

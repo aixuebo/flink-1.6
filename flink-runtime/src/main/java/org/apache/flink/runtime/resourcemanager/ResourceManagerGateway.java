@@ -60,13 +60,14 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param jobId The Job ID of the JobMaster that registers
 	 * @param timeout Timeout for the future to complete
 	 * @return Future registration response
+	 * 一个JobMasterId 注册到ResourceManager主节点
 	 */
 	CompletableFuture<RegistrationResponse> registerJobManager(
-		JobMasterId jobMasterId,
-		ResourceID jobMasterResourceId,
-		String jobMasterAddress,
-		JobID jobId,
-		@RpcTimeout Time timeout);
+		JobMasterId jobMasterId,//job manager的leaderid
+		ResourceID jobMasterResourceId,//job manager的资源id
+		String jobMasterAddress,//job manager的网关地址
+		JobID jobId,//job id
+		@RpcTimeout Time timeout);//超时时间  长时间注册未成功，则取消注册，客户端可以重新提交注册申请
 
 	/**
 	 * Requests a slot from the resource manager.
@@ -74,9 +75,10 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param jobMasterId id of the JobMaster
 	 * @param slotRequest The slot to request
 	 * @return The confirmation that the slot gets allocated
+	 * 一个job manager来申请资源，仅仅用于资源的一个排队，即知道来自哪个节点地址的job来发送资源请求了，但暂时不实施分配，而是先加入到队列等待分配
 	 */
 	CompletableFuture<Acknowledge> requestSlot(
-		JobMasterId jobMasterId,
+		JobMasterId jobMasterId,//job manager的leader id
 		SlotRequest slotRequest,
 		@RpcTimeout Time timeout);
 
@@ -84,19 +86,22 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * Cancel the slot allocation requests from the resource manager.
 	 *
 	 * @param allocationID The slot to request
+	 * 取消为该请求id对应的资源申请。
+	 * 每一个请求资源都有唯一的id(AllocationID)，通过该唯一id，可以定位到具体的请求内容
 	 */
 	void cancelSlotRequest(AllocationID allocationID);
 
 	/**
 	 * Register a {@link TaskExecutor} at the resource manager.
 	 *
-	 * @param taskExecutorAddress The address of the TaskExecutor that registers
-	 * @param resourceId The resource ID of the TaskExecutor that registers
-	 * @param dataPort port used for data communication between TaskExecutors
-	 * @param hardwareDescription of the registering TaskExecutor
+	 * @param taskExecutorAddress The address of the TaskExecutor that registers,task manager的地址
+	 * @param resourceId The resource ID of the TaskExecutor that registers ,task manager的id
+	 * @param dataPort port used for data communication between TaskExecutors 与task manager交流的地址端口
+	 * @param hardwareDescription of the registering TaskExecutor 关于一个task manager节点的资源硬件描述
 	 * @param timeout The timeout for the response.
 	 *
 	 * @return The future to the response by the ResourceManager.
+	 * 注册一个taskmanager
 	 */
 	CompletableFuture<RegistrationResponse> registerTaskExecutor(
 		String taskExecutorAddress,
@@ -112,11 +117,12 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param slotReport which is sent to the ResourceManager
 	 * @param timeout for the operation
 	 * @return Future which is completed with {@link Acknowledge} once the slot report has been received.
+	 * task manager定期上报slot情况
 	 */
 	CompletableFuture<Acknowledge> sendSlotReport(
 		ResourceID taskManagerResourceId,
 		InstanceID taskManagerRegistrationId,
-		SlotReport slotReport,
+		SlotReport slotReport,//将task节点山给的slot信息收集好,报告给resourceManager
 		@RpcTimeout Time timeout);
 
 	/**
@@ -125,6 +131,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param instanceId TaskExecutor's instance id
 	 * @param slotID The SlotID of the freed slot
 	 * @param oldAllocationId to which the slot has been allocated
+	 * TaskExecutor通知ResourceManager，slot的任务执行完成，slot资源变成可用
 	 */
 	void notifySlotAvailable(
 		InstanceID instanceId,
@@ -135,6 +142,9 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * Registers an infoMessage listener
 	 *
 	 * @param infoMessageListenerAddress address of infoMessage listener to register to this resource manager
+	 * 反射的方式连接该服务器address的InfoMessageListenerRpcGateway对象，动态道理的方式本地可以直接使用
+	 *
+	 * *******该方法已无效*******
 	 */
 	void registerInfoMessageListener(String infoMessageListenerAddress);
 
@@ -142,7 +152,9 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * Unregisters an infoMessage listener
 	 *
 	 * @param infoMessageListenerAddress address of infoMessage listener to unregister from this resource manager
+	 * 取消参数地址的通知,即不再像参数地址发送通知
 	 *
+	 * *******该方法已无效*******
 	 */
 	void unRegisterInfoMessageListener(String infoMessageListenerAddress);
 
@@ -158,6 +170,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * Gets the currently registered number of TaskManagers.
 	 * 
 	 * @return The future to the number of registered TaskManagers.
+	 * 返回目前有多少个task manager被注册
 	 */
 	CompletableFuture<Integer> getNumberOfRegisteredTaskManagers();
 
@@ -166,13 +179,15 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param heartbeatOrigin unique id of the task manager
 	 * @param slotReport Current slot allocation on the originating TaskManager
+	 * 接收到从TaskManager发来的心跳
 	 */
 	void heartbeatFromTaskManager(final ResourceID heartbeatOrigin, final SlotReport slotReport);
 
 	/**
 	 * Sends the heartbeat to resource manager from job manager
 	 *
-	 * @param heartbeatOrigin unique id of the job manager
+	 * @param heartbeatOrigin unique id of the job manager 参数是jobmanager的id
+	 * 接收到从JobManager发来的心跳
 	 */
 	void heartbeatFromJobManager(final ResourceID heartbeatOrigin);
 
@@ -181,6 +196,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param resourceID identifying the TaskManager to disconnect
 	 * @param cause for the disconnection of the TaskManager
+	 * 关闭与某一个task manager的连接
 	 */
 	void disconnectTaskManager(ResourceID resourceID, Exception cause);
 
@@ -189,14 +205,16 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param jobId JobID for which the JobManager was the leader
 	 * @param cause for the disconnection of the JobManager
+	 * 关闭与某一个job manager的连接
 	 */
 	void disconnectJobManager(JobID jobId, Exception cause);
 
 	/**
 	 * Requests information about the registered {@link TaskExecutor}.
 	 *
-	 * @param timeout of the request
+	 * @param timeout of the request 请求超时时间
 	 * @return Future collection of TaskManager information
+	 * 返回所有的task manager的信息
 	 */
 	CompletableFuture<Collection<TaskManagerInfo>> requestTaskManagerInfo(@RpcTimeout Time timeout);
 
@@ -206,6 +224,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param taskManagerId identifying the TaskExecutor for which to return information
 	 * @param timeout of the request
 	 * @return Future TaskManager information
+	 * 请求某一个task manager的信息
 	 */
 	CompletableFuture<TaskManagerInfo> requestTaskManagerInfo(ResourceID taskManagerId, @RpcTimeout Time timeout);
 	 
@@ -215,6 +234,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param timeout of the request
 	 * @return Future containing the resource overview
+	 * 请求集群信息 : 报告有多少个taskManager、有多少个solt、有多少个空闲的slot
 	 */
 	CompletableFuture<ResourceOverview> requestResourceOverview(@RpcTimeout Time timeout);
 
@@ -223,6 +243,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param timeout for the asynchronous operation
 	 * @return Future containing the collection of resource ids and the corresponding metric query service path
+	 * 返回每一个task manager上的统计信息
 	 */
 	CompletableFuture<Collection<Tuple2<ResourceID, String>>> requestTaskManagerMetricQueryServicePaths(@RpcTimeout Time timeout);
 
@@ -230,11 +251,12 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * Request the file upload from the given {@link TaskExecutor} to the cluster's {@link BlobServer}. The
 	 * corresponding {@link TransientBlobKey} is returned.
 	 *
-	 * @param taskManagerId identifying the {@link TaskExecutor} to upload the specified file
+	 * @param taskManagerId identifying the {@link TaskExecutor} to upload the specified file,代表task节点id
 	 * @param fileType type of the file to upload
 	 * @param timeout for the asynchronous operation
 	 * @return Future which is completed with the {@link TransientBlobKey} after uploading the file to the
 	 * {@link BlobServer}.
+	 * 请求task网关,让task把相关日志上传到blob服务
 	 */
 	CompletableFuture<TransientBlobKey> requestTaskManagerFileUpload(ResourceID taskManagerId, FileType fileType, @RpcTimeout Time timeout);
 }

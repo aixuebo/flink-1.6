@@ -18,6 +18,11 @@
 
 package org.apache.flink.runtime.executiongraph;
 
+/**
+ * ExecutionEdge 表示 ExecutionVertex 的输入，通过 ExecutionEdge 将 ExecutionVertex 和 IntermediateResultPartition 连接起来，进而在不同的 ExecutionVertex 之间建立联系。
+ *
+ * IntermediateResultPartition对生产者是一个ExecutionVertex,消费者是一个或若干个 ExecutionEdge。
+ */
 public class ExecutionEdge {
 
 	private final IntermediateResultPartition source;

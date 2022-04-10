@@ -35,11 +35,11 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 	private static final long serialVersionUID = 1L;
 
 	/** key positions describe which fields are keys in what order */
-	protected int[] keyPositions;
+	protected int[] keyPositions;//第几个属性序号,参与比较,比如 数组内容是2 8 5，表示用第2  8  5三个元素参与比较。注从0开始计数
 
 	/** comparators for the key fields, in the same order as the key fields */
 	@SuppressWarnings("rawtypes")
-	protected TypeComparator[] comparators;
+	protected TypeComparator[] comparators;//每一个属性该如何比较,即 2 8 5 三个属性的比较器
 
 	protected int[] normalizedKeyLengths;
 
@@ -52,7 +52,7 @@ public abstract class TupleComparatorBase<T> extends CompositeTypeComparator<T> 
 
 	/** serializers to deserialize the first n fields for comparison */
 	@SuppressWarnings("rawtypes")
-	protected TypeSerializer[] serializers;
+	protected TypeSerializer[] serializers;//每一个属性的序列化对象
 
 	// cache for the deserialized field objects
 	protected transient Object[] deserializedFields1;

@@ -30,8 +30,8 @@ import org.apache.flink.util.OutputTag;
  * @param <IN> The type of the input value.
  * @param <OUT> The type of the output value.
  * @param <KEY> The type of the key.
- */
-public interface InternalWindowFunction<IN, OUT, KEY, W extends Window> extends Function {
+ */public interface InternalWindowFunction<IN, OUT, KEY, W extends Window> extends Function {
+
 	/**
 	 * Evaluates the window and outputs none or several elements.
 	 *

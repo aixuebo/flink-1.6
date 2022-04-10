@@ -52,6 +52,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * {@link JobMaster} rpc gateway interface.
+ * 每一个job,一个jobMaster,管理job本身
  */
 public interface JobMasterGateway extends
 	CheckpointCoordinatorGateway,
@@ -117,9 +118,14 @@ public interface JobMasterGateway extends
 	 * The next input split is sent back to the sender as a
 	 * {@link SerializedInputSplit} message.
 	 *
-	 * @param vertexID         The job vertex id
-	 * @param executionAttempt The execution attempt id
+	 * @param vertexID         The job vertex id 操作ID
+	 * @param executionAttempt The execution attempt id 第几个任务ID
 	 * @return The future of the input split. If there is no further input split, will return an empty object.
+	 * 返回该任务ID需要读取的数据源,一般用于task executor节点请求jobManager获取要读取的数据源
+	 *
+	 * jobManager知道要加载的所有数据源List<InputSplit>,task节点要执行的时候，只需要请求jobManager,
+	 * jobManager知道task所在的节点host、以及执行第几个task,
+	 * 根据这两个信息，随机或者策略的方式分配一个InputSplit给task去执行。
 	 */
 	CompletableFuture<SerializedInputSplit> requestNextInputSplit(
 			final JobVertexID vertexID,
@@ -167,8 +173,10 @@ public interface JobMasterGateway extends
 	/**
 	 * Disconnects the resource manager from the job manager because of the given cause.
 	 *
-	 * @param resourceManagerId identifying the resource manager leader id
-	 * @param cause of the disconnect
+	 * @param resourceManagerId identifying the resource manager leader id,resource manager的节点资源id
+	 * @param cause of the disconnect 断开连接的原因
+	 *
+	 * resource manager利用动态代理，向jobmaster发送信息，让其关闭与自己的连接。原因有可能无心跳了
 	 */
 	void disconnectResourceManager(
 		final ResourceManagerId resourceManagerId,
@@ -210,6 +218,7 @@ public interface JobMasterGateway extends
 	 * @param taskManagerLocation   location of the task manager
 	 * @param timeout               for the rpc call
 	 * @return Future registration response indicating whether the registration was successful or not
+	 * 一个task节点,请求关联该jobManager网关
 	 */
 	CompletableFuture<RegistrationResponse> registerTaskManager(
 			final String taskManagerRpcAddress,
@@ -229,7 +238,8 @@ public interface JobMasterGateway extends
 	/**
 	 * Sends heartbeat request from the resource manager.
 	 *
-	 * @param resourceID unique id of the resource manager
+	 * @param resourceID unique id of the resource manager 参数是resource manager的id。
+	 * 表示接受到来自resource manager的心跳请求，需要回复给resource manager心跳内容
 	 */
 	void heartbeatFromResourceManager(final ResourceID resourceID);
 

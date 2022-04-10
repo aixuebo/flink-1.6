@@ -40,6 +40,7 @@ import java.util.concurrent.Executor;
 
 /**
  * This class holds the all {@link TaskLocalStateStoreImpl} objects for a task executor (manager).
+ * 节点本地如何管理状态stage的存储
  */
 public class TaskExecutorLocalStateStoresManager {
 
@@ -57,7 +58,7 @@ public class TaskExecutorLocalStateStoresManager {
 	private final boolean localRecoveryEnabled;
 
 	/** This is the root directory for all local state of this task manager / executor. */
-	private final File[] localStateRootDirectories;
+	private final File[] localStateRootDirectories;//本地节点目录,用于存储状态信息的目录根节点目录集合
 
 	/** Executor that runs the discarding of released state objects. */
 	private final Executor discardExecutor;

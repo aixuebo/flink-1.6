@@ -33,19 +33,21 @@ import java.net.Socket;
  *
  * <p>This experimental class is relocated from flink-streaming-contrib. Please see package-info.java
  * for more information.
+ * 本类是客户端:将value转换成二进制,输出到ip+port的服务器
  */
 @Experimental
 public class CollectSink<IN> extends RichSinkFunction<IN> {
 
 	private static final long serialVersionUID = 1L;
 
+	//socket
 	private final InetAddress hostIp;
 	private final int port;
-	private final TypeSerializer<IN> serializer;
+	private final TypeSerializer<IN> serializer;//如何序列化对象
 
-	private transient Socket client;
+	private transient Socket client;//socket客户端
 	private transient OutputStream outputStream;
-	private transient DataOutputViewStreamWrapper streamWriter;
+	private transient DataOutputViewStreamWrapper streamWriter;//client的输出流
 
 	/**
 	 * Creates a CollectSink that will send the data to the specified host.
@@ -60,6 +62,7 @@ public class CollectSink<IN> extends RichSinkFunction<IN> {
 		this.serializer = serializer;
 	}
 
+	//将value转换成二进制,输出到ip+port
 	@Override
 	public void invoke(IN value, Context context) throws Exception {
 		try {
@@ -73,6 +76,7 @@ public class CollectSink<IN> extends RichSinkFunction<IN> {
 	/**
 	 * Initialize the connection with the Socket in the server.
 	 * @param parameters Configuration.
+	 * 建设输出流
 	 */
 	@Override
 	public void open(Configuration parameters) throws Exception {

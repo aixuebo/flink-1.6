@@ -39,6 +39,7 @@ import org.apache.flink.api.common.functions.AbstractRichFunction;
  * </ul>
  *
  * @param <OUT> The type of the records produced by this source.
+ * 富模式函数接口
  */
 @Public
 public abstract class RichSourceFunction<OUT> extends AbstractRichFunction implements SourceFunction<OUT> {

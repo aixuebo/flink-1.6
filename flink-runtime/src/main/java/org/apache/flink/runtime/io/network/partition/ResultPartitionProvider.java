@@ -27,10 +27,12 @@ public interface ResultPartitionProvider {
 
 	/**
 	 * Returns the requested intermediate result partition input view.
+	 * 读取一个分区的子分区内容
 	 */
 	ResultSubpartitionView createSubpartitionView(
-			ResultPartitionID partitionId,
-			int index,
-			BufferAvailabilityListener availabilityListener) throws IOException;
+			ResultPartitionID partitionId,//确定分区
+			int index,//获取第几个子分区数据
+			BufferAvailabilityListener availabilityListener)//读取完成后如何通知
+		throws IOException;
 
 }

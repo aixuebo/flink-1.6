@@ -28,7 +28,7 @@ import org.apache.flink.api.common.operators.UnaryOperatorInformation;
 import org.apache.flink.api.common.operators.util.UserCodeClassWrapper;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
-
+//无操作
 public class NoOpUnaryUdfOp<OUT> extends SingleInputOperator<OUT, OUT, NoOpFunction> {
 	
 	@SuppressWarnings("rawtypes")
@@ -46,6 +46,7 @@ public class NoOpUnaryUdfOp<OUT> extends SingleInputOperator<OUT, OUT, NoOpFunct
 		return new UnaryOperatorInformation<OUT, OUT>(previousOut, previousOut);
 	}
 
+	//因为无操作,直接返回原始内容
 	@Override
 	protected List<OUT> executeOnCollections(List<OUT> inputData, RuntimeContext runtimeContext, ExecutionConfig executionConfig) {
 		return inputData;

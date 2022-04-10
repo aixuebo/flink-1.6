@@ -94,27 +94,28 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
 
 	// --------------------------------------------------------------------------------------------
 
+	//inputData数据按照key+orderBy的字段进行分组，相同group的数据进行merge
 	@Override
 	protected List<OUT> executeOnCollections(List<IN> inputData, RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		GroupCombineFunction<IN, OUT> function = this.userFunction.getUserCodeObject();
 
 		UnaryOperatorInformation<IN, OUT> operatorInfo = getOperatorInfo();
-		TypeInformation<IN> inputType = operatorInfo.getInputType();
+		TypeInformation<IN> inputType = operatorInfo.getInputType();//输入类型
 
 		int[] keyColumns = getKeyColumns(0);
-		int[] sortColumns = keyColumns;
-		boolean[] sortOrderings = new boolean[sortColumns.length];
+		int[] sortColumns = keyColumns;//每一个要排序的字段序号
+		boolean[] sortOrderings = new boolean[sortColumns.length];//true表示倒序
 
 		if (groupOrder != null) {
-			sortColumns = ArrayUtils.addAll(sortColumns, groupOrder.getFieldPositions());
-			sortOrderings = ArrayUtils.addAll(sortOrderings, groupOrder.getFieldSortDirections());
+			sortColumns = ArrayUtils.addAll(sortColumns, groupOrder.getFieldPositions());//追加排序的字段
+			sortOrderings = ArrayUtils.addAll(sortOrderings, groupOrder.getFieldSortDirections());//追加排序的字段排序方式
 		}
 
-		if(sortColumns.length == 0) { // => all reduce. No comparator
+		if(sortColumns.length == 0) { // => all reduce. No comparator 不需要merge
 			checkArgument(sortOrderings.length == 0);
 		} else {
 			final TypeComparator<IN> sortComparator = getTypeComparator(inputType, sortColumns, sortOrderings, executionConfig);
-
+			//对数据进行排序
 			Collections.sort(inputData, new Comparator<IN>() {
 				@Override
 				public int compare(IN o1, IN o2) {
@@ -128,7 +129,7 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
 
 		ArrayList<OUT> result = new ArrayList<OUT>();
 
-		if (keyColumns.length == 0) {
+		if (keyColumns.length == 0) {//全局统一合并
 			final TypeSerializer<IN> inputSerializer = inputType.createSerializer(executionConfig);
 			TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
 			List<IN> inputDataCopy = new ArrayList<IN>(inputData.size());
@@ -143,12 +144,12 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
 			boolean[] keyOrderings = new boolean[keyColumns.length];
 			final TypeComparator<IN> comparator = getTypeComparator(inputType, keyColumns, keyOrderings, executionConfig);
 
-			ListKeyGroupedIterator<IN> keyedIterator = new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);
+			ListKeyGroupedIterator<IN> keyedIterator = new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);//按照key分组
 
 			TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
 			CopyingListCollector<OUT> collector = new CopyingListCollector<OUT>(result, outSerializer);
 
-			while (keyedIterator.nextKey()) {
+			while (keyedIterator.nextKey()) {//下一批次key相同的数据
 				function.combine(keyedIterator.getValues(), collector);
 			}
 		}

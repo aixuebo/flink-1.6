@@ -98,6 +98,7 @@ public class TextOutputFormat<T> extends FileOutputFormat<T> {
 		}
 	}
 
+	//将toString转换成字节数组,输出
 	@Override
 	public void writeRecord(T record) throws IOException {
 		byte[] bytes = record.toString().getBytes(charset);

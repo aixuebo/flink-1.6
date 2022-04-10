@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * Query parameter for job's accumulator handler {@link org.apache.flink.runtime.rest.handler.job.JobAccumulatorsHandler}.
+ * 参数值是参数值是list<Boolean>
  */
 public class AccumulatorsIncludeSerializedValueQueryParameter extends MessageQueryParameter<Boolean> {
 

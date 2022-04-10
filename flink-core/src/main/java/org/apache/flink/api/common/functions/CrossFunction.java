@@ -42,6 +42,13 @@ import java.io.Serializable;
  * @param <IN1> The type of the elements in the first input.
  * @param <IN2> The type of the elements in the second input.
  * @param <OUT> The type of the result elements.
+ * (I1,I2) --> O的转换
+ *
+ * join此算子为内连接，即某方存在另一方不存在的key，舍弃该key对应数据。
+ * Cross 算子对两个数据流的数据类型不做一致性的要求，所有数据会两两结合，生成新的字符串。
+ *             与Join不同，Join需要双方按照约定的键进行等值连接，Cross任意两两都可组合。
+ *
+ *              笛卡尔join
  */
 @Public
 @FunctionalInterface

@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that finds the maximum {@code double} value.
+ * 最大值 -- double类型
  */
 @PublicEvolving
 public class DoubleMaximum implements SimpleAccumulator<Double> {

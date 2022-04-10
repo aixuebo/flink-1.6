@@ -88,6 +88,7 @@ public class BlobCacheService implements BlobService {
 	 * Sets the address of the {@link BlobServer}.
 	 *
 	 * @param blobServerAddress address of the {@link BlobServer}.
+	 * 初始时还尚未连接resourceManager,因此不知道blob服务中心地址,等连接resourceMnager后,就可以设置服务中心地址
 	 */
 	public void setBlobServerAddress(InetSocketAddress blobServerAddress) {
 		permanentBlobCache.setBlobServerAddress(blobServerAddress);

@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Handler which returns the cluster overview information with version.
+ * 获取集群的任务大盘情况
  */
 public class ClusterOverviewHandler extends AbstractRestHandler<RestfulGateway, EmptyRequestBody, ClusterOverviewWithVersion, EmptyMessageParameters> {
 

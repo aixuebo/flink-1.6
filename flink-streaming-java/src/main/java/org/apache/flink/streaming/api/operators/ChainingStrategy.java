@@ -37,17 +37,20 @@ public enum ChainingStrategy {
 	 *
 	 * <p>To optimize performance, it is generally a good practice to allow maximal
 	 * chaining and increase operator parallelism.
+	 * 会与前后两个节点都可以串联  比如map filter函数
 	 */
 	ALWAYS,
 
 	/**
 	 * The operator will not be chained to the preceding or succeeding operators.
+	 * 绝不会与前后节点串联
 	 */
 	NEVER,
 
 	/**
 	 * The operator will not be chained to the predecessor, but successors may chain to this
 	 * operator.
+	 * 与前节点不会串联，但会考虑与后节点串联
 	 */
 	HEAD
 }

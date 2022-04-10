@@ -53,6 +53,8 @@ import java.util.concurrent.Executor;
  * successfully establishing a connection, the job leader listener is notified about the new job
  * leader and its connection. In case that a job leader loses leadership, the job leader listener
  * is notified as well.
+ *
+ * 管理所有的job Leader,与每一个job leader保持连接关系的服务
  */
 public class JobLeaderService {
 
@@ -61,22 +63,23 @@ public class JobLeaderService {
 	/** Self's location, used for the job manager connection. */
 	private final TaskManagerLocation ownLocation;
 
-	/** The leader retrieval service and listener for each registered job. */
+	/** The leader retrieval service and listener for each registered job. 管理的job集合,value是job的zookeeper监听器,以及当监听到job的leader发生变化,该如何处理*/
 	private final Map<JobID, Tuple2<LeaderRetrievalService, JobLeaderService.JobManagerLeaderListener>> jobLeaderServices;
 
 	/** Internal state of the service. */
+	//JobLeaderService服务的状态，CREATED(已创建服务), STARTED(可以稳定对外提供服务), STOPPED(服务停止)
 	private volatile JobLeaderService.State state;
 
-	/** Address of the owner of this service. This address is used for the job manager connection. */
+	/** Address of the owner of this service. This address is used for the job manager connection. task节点的地址,该地址用于与job manager交互*/
 	private String ownerAddress;
 
-	/** Rpc service to use for establishing connections. */
+	/** Rpc service to use for establishing connections. task节点对外提供的服务*/
 	private RpcService rpcService;
 
 	/** High availability services to create the leader retrieval services from. */
 	private HighAvailabilityServices highAvailabilityServices;
 
-	/** Job leader listener listening for job leader changes. */
+	/** Job leader listener listening for job leader changes. 当任意job leader发生变化时,触发回调函数*/
 	private JobLeaderListener jobLeaderListener;
 
 	public JobLeaderService(TaskManagerLocation location) {
@@ -101,10 +104,10 @@ public class JobLeaderService {
 	/**
 	 * Start the job leader service with the given services.
 	 *
- 	 * @param initialOwnerAddress to be used for establishing connections (source address)
-	 * @param initialRpcService to be used to create rpc connections
+ 	 * @param initialOwnerAddress to be used for establishing connections (source address),task节点的对外地址ip
+	 * @param initialRpcService to be used to create rpc connections,task节点的对外提供的服务接口
 	 * @param initialHighAvailabilityServices to create leader retrieval services for the different jobs
-	 * @param initialJobLeaderListener listening for job leader changes
+	 * @param initialJobLeaderListener listening for job leader changes 监控当任意一个job leader发生变化,该如何处理
 	 */
 	public void start(
 			final String initialOwnerAddress,
@@ -205,6 +208,7 @@ public class JobLeaderService {
 	 * Triggers reconnection to the last known leader of the given job.
 	 *
 	 * @param jobId specifying the job for which to trigger reconnection
+	 * 重新连接jobId --- 重新连接job最后一次知道的leader
 	 */
 	public void reconnect(final JobID jobId) {
 		Preconditions.checkNotNull(jobId, "JobID must not be null.");
@@ -220,19 +224,21 @@ public class JobLeaderService {
 
 	/**
 	 * Leader listener which tries to establish a connection to a newly detected job leader.
+	 * 监听zookeeper上的某一个job leader节点变更情况
 	 */
 	private final class JobManagerLeaderListener implements LeaderRetrievalListener {
 
 		/** Job id identifying the job to look for a leader. */
-		private final JobID jobId;
+		private final JobID jobId;//被监控的jobid
 
 		/** Rpc connection to the job leader. */
-		private volatile RegisteredRpcConnection<JobMasterId, JobMasterGateway, JMTMRegistrationSuccess> rpcConnection;
+		//表示与JobMasterGateway网关接口通信,request的对象是JobMasterId,response对象是JMTMRegistrationSuccess
+		private volatile RegisteredRpcConnection<JobMasterId, JobMasterGateway, JMTMRegistrationSuccess> rpcConnection; //task创建与jobManager的leader连接
 
 		/** State of the listener. */
 		private volatile boolean stopped;
 
-		/** Leader id of the current job leader. */
+		/** Leader id of the current job leader. 当前job的leader的uuid是谁 */
 		private volatile JobMasterId currentJobMasterId;
 
 		private JobManagerLeaderListener(JobID jobId) {
@@ -277,34 +283,43 @@ public class JobLeaderService {
 			}
 		}
 
+		//当job的新的leader被选举出来了,如何处理
+		//参数是新leader的地址 以及 对应的唯一ID标识
+		//与新地址建立一个连接
 		@Override
 		public void notifyLeaderAddress(final @Nullable String leaderAddress, final @Nullable UUID leaderId) {
 			if (stopped) {
 				LOG.debug("{}'s leader retrieval listener reported a new leader for job {}. " +
 					"However, the service is no longer running.", JobLeaderService.class.getSimpleName(), jobId);
 			} else {
+				//uuid转换成JobMasterId
 				final JobMasterId jobMasterId = JobMasterId.fromUuidOrNull(leaderId);
 
+				//打印日志,job的新地址 以及 新的uuid
 				LOG.debug("New leader information for job {}. Address: {}, leader id: {}.",
 					jobId, leaderAddress, jobMasterId);
 
-				if (leaderAddress == null || leaderAddress.isEmpty()) {
+				if (leaderAddress == null || leaderAddress.isEmpty()) {//说明还没有leader节点,因此要关闭原来的连接
 					// the leader lost leadership but there is no other leader yet.
 					if (rpcConnection != null) {
 						rpcConnection.close();
 					}
 
-					jobLeaderListener.jobManagerLostLeadership(jobId, currentJobMasterId);
+					//当监听zookeeper时,发现job的jobMasterId 不再是leader,则回调该函数
+					jobLeaderListener.jobManagerLostLeadership(jobId, currentJobMasterId);//说明丢失job的leader节点信息
 
 					currentJobMasterId = jobMasterId;
 				} else {
+
+					//与新地址建立一个连接
 					currentJobMasterId = jobMasterId;
 
 					if (rpcConnection != null) {
 						// check if we are already trying to connect to this leader
-						if (!Objects.equals(jobMasterId, rpcConnection.getTargetLeaderId())) {
-							rpcConnection.close();
+						if (!Objects.equals(jobMasterId, rpcConnection.getTargetLeaderId())) {//说明 leader地址都发生变化了,因此要重新连接
+							rpcConnection.close();//关闭以前的地址
 
+							//重新连接新的地址
 							rpcConnection = new JobManagerRegisteredRpcConnection(
 								LOG,
 								leaderAddress,
@@ -312,6 +327,7 @@ public class JobLeaderService {
 								rpcService.getExecutor());
 						}
 					} else {
+						//task创建与jobManager的leader连接
 						rpcConnection = new JobManagerRegisteredRpcConnection(
 							LOG,
 							leaderAddress,
@@ -343,13 +359,16 @@ public class JobLeaderService {
 
 		/**
 		 * Rpc connection for the job manager <--> task manager connection.
+		 * 去连接一个job leader节点
+		 *
+		 * RegisteredRpcConnection<JobMasterId, JobMasterGateway, JMTMRegistrationSuccess>  表示与JobMasterGateway网关接口通信,request的对象是JobMasterId,response对象是JMTMRegistrationSuccess
 		 */
 		private final class JobManagerRegisteredRpcConnection extends RegisteredRpcConnection<JobMasterId, JobMasterGateway, JMTMRegistrationSuccess> {
 
 			JobManagerRegisteredRpcConnection(
 				Logger log,
-				String targetAddress,
-				JobMasterId jobMasterId,
+				String targetAddress,//job leader节点地址
+				JobMasterId jobMasterId,//job leader节点ID
 				Executor executor) {
 				super(log, targetAddress, jobMasterId, executor);
 			}
@@ -358,19 +377,20 @@ public class JobLeaderService {
 			protected RetryingRegistration<JobMasterId, JobMasterGateway, JMTMRegistrationSuccess> generateRegistration() {
 				return new JobLeaderService.JobManagerRetryingRegistration(
 						LOG,
-						rpcService,
-						"JobManager",
-						JobMasterGateway.class,
-						getTargetAddress(),
-						getTargetLeaderId(),
-						ownerAddress,
+						rpcService,//task节点的服务端接口
+						"JobManager",//请求目标是jobManager
+						JobMasterGateway.class,//请求目标接口class
+						getTargetAddress(),//目标地址ID
+						getTargetLeaderId(),//目标jobmanager的唯一ID
+						ownerAddress,//task节点对外的地址
 						ownLocation);
 			}
 
+			//response成功返回 --- 说明与jobManager的leader节点连接成功
 			@Override
 			protected void onRegistrationSuccess(JMTMRegistrationSuccess success) {
 				// filter out old registration attempts
-				if (Objects.equals(getTargetLeaderId(), currentJobMasterId)) {
+				if (Objects.equals(getTargetLeaderId(), currentJobMasterId)) {//确认连接成功
 					log.info("Successful registration at job manager {} for job {}.", getTargetAddress(), jobId);
 
 					jobLeaderListener.jobManagerGainedLeadership(jobId, getTargetGateway(), success);
@@ -379,10 +399,11 @@ public class JobLeaderService {
 				}
 			}
 
+			//response返回失败
 			@Override
 			protected void onRegistrationFailure(Throwable failure) {
 				// filter out old registration attempts
-				if (Objects.equals(getTargetLeaderId(), currentJobMasterId)) {
+				if (Objects.equals(getTargetLeaderId(), currentJobMasterId)) {//确认是同一个ID,因此确认是失败了
 					log.info("Failed to register at job  manager {} for job {}.", getTargetAddress(), jobId);
 					jobLeaderListener.handleError(failure);
 				} else {
@@ -406,7 +427,7 @@ public class JobLeaderService {
 				Logger log,
 				RpcService rpcService,
 				String targetName,
-				Class<JobMasterGateway> targetType,
+				Class<JobMasterGateway> targetType,//jobMaster提供的服务
 				String targetAddress,
 				JobMasterId jobMasterId,
 				String taskManagerRpcAddress,

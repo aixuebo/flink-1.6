@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that finds the maximum {@code long} value.
+ * 计算最大值 --- long类型
  */
 @PublicEvolving
 public class LongMaximum implements SimpleAccumulator<Long> {

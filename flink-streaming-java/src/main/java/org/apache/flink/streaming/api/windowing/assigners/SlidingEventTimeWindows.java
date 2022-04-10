@@ -33,7 +33,9 @@ import java.util.List;
 
 /**
  * A {@link WindowAssigner} that windows elements into sliding windows based on the timestamp of the
- * elements. Windows can possibly overlap.
+ * elements.
+ *
+ * Windows can possibly overlap.窗口之间可能有间隙
  *
  * <p>For example, in order to window into windows of 1 minute, every 10 seconds:
  * <pre> {@code
@@ -42,16 +44,20 @@ import java.util.List;
  * WindowedStream<Tuple2<String, Integer>, String, TimeWindow> windowed =
  *   keyed.window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(10)));
  * } </pre>
+ *
+ * 事件时间
+ * 一个元素可能存在多个窗口里。比如10分钟一个窗口，但每次滑动3分钟。
+ * 因此开始窗口是0~10分钟，第二个窗口是3~13分钟，第三个窗口是6~16.此时如果是7分来一个元素，应该都归属于这三个窗口
  */
 @PublicEvolving
 public class SlidingEventTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 
-	private final long size;
+	private final long size;//窗口大小,比如窗口大小是1小时
 
-	private final long slide;
+	private final long slide;//滑动窗口大小,
 
-	private final long offset;
+	private final long offset;//比如窗口大小是1小时,但要求每个小时15分为开始,则需要offset设置死为15分。
 
 	protected SlidingEventTimeWindows(long size, long slide, long offset) {
 		if (offset < 0 || offset >= slide || size <= 0) {

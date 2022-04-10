@@ -132,7 +132,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 	private final Object lock = new Object();
 
 	/** the head operator that consumes the input streams of this task. */
-	protected OP headOperator;
+	protected OP headOperator;//StreamOperator 流的入口操作,接下来要进行一系列的chain链式操作
 
 	/** The chain of operators executed by this task. */
 	protected OperatorChain<OUT, OP> operatorChain;
@@ -150,6 +150,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 	 * The internal {@link ProcessingTimeService} used to define the current
 	 * processing time (default = {@code System.currentTimeMillis()}) and
 	 * register timers for tasks to be executed in the future.
+	 * 时间服务
 	 */
 	protected ProcessingTimeService timerService;
 

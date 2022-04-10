@@ -59,6 +59,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @param <REQ> the type of request the server expects to receive.
  * @param <RESP> the type of response the server will send.
+ *
+ * 代表服务端,专门处理某一个特定request的服务端.不同的request要有不同的服务端
  */
 @Internal
 public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends MessageBody> {
@@ -71,20 +73,20 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 	/** AbstractServerBase config: high water mark. */
 	private static final int HIGH_WATER_MARK = 32 * 1024;
 
-	/** The name of the server, useful for debugging. */
+	/** The name of the server, useful for debugging. 服务端名字*/
 	private final String serverName;
 
-	/** The {@link InetAddress address} to listen to. */
+	/** The {@link InetAddress address} to listen to. 服务器ip监听地址 */
 	private final InetAddress bindAddress;
 
-	/** A port range on which to try to connect. */
+	/** A port range on which to try to connect. 端口集合*/
 	private final Set<Integer> bindPortRange;
 
 	/** The number of threads to be allocated to the event loop. */
 	private final int numEventLoopThreads;
 
 	/** The number of threads to be used for query serving. */
-	private final int numQueryThreads;
+	private final int numQueryThreads;//服务端线程数
 
 	/** Atomic shut down future. */
 	private final AtomicReference<CompletableFuture<Void>> serverShutdownFuture = new AtomicReference<>(null);
@@ -93,12 +95,12 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 	private ServerBootstrap bootstrap;
 
 	/** Query executor thread pool. */
-	private ExecutorService queryExecutor;
+	private ExecutorService queryExecutor;//执行的线程池
 
 	/** Address of this server. */
-	private InetSocketAddress serverAddress;
+	private InetSocketAddress serverAddress;//服务端ip+port
 
-	/** The handler used for the incoming messages. */
+	/** The handler used for the incoming messages. 处理每一个请求的对象*/
 	private AbstractServerHandler<REQ, RESP> handler;
 
 	/**
@@ -139,6 +141,7 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 	/**
 	 * Creates a thread pool for the query execution.
 	 * @return Thread pool for query execution
+	 * 线程池
 	 */
 	private ExecutorService createQueryExecutor() {
 		ThreadFactory threadFactory = new ThreadFactoryBuilder()
@@ -150,6 +153,7 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 
 	/**
 	 * Returns the thread-pool responsible for processing incoming requests.
+	 * 获取线程池
 	 */
 	protected ExecutorService getQueryExecutor() {
 		return queryExecutor;
@@ -183,6 +187,7 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 	/**
 	 * Starts the server by binding to the configured bind address (blocking).
 	 * @throws Exception If something goes wrong during the bind operation.
+	 * 获取可以连接的服务器ip+port
 	 */
 	public void start() throws Throwable {
 		Preconditions.checkState(serverAddress == null && serverShutdownFuture.get() == null,
@@ -207,6 +212,7 @@ public abstract class AbstractServerBase<REQ extends MessageBody, RESP extends M
 	 *
 	 * @param port the port to try to bind the server to.
 	 * @throws Exception If something goes wrong during the bind operation.
+	 * 尝试在端口上打开服务
 	 */
 	private boolean attemptToBind(final int port) throws Throwable {
 		log.debug("Attempting to start {} on port {}.", serverName, port);

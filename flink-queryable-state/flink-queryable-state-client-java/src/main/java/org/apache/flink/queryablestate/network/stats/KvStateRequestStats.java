@@ -21,33 +21,34 @@ package org.apache.flink.queryablestate.network.stats;
 /**
  * Simple statistics for monitoring the state server
  * and the client proxy.
+ * 定义统计请求生命周期的动作状态
  */
 public interface KvStateRequestStats {
 
 	/**
-	 * Reports an active connection.
+	 * Reports an active connection.增加连接
 	 */
 	void reportActiveConnection();
 
 	/**
-	 * Reports an inactive connection.
+	 * Reports an inactive connection.减少连接
 	 */
 	void reportInactiveConnection();
 
 	/**
-	 * Reports an incoming request.
+	 * Reports an incoming request.增加请求
 	 */
 	void reportRequest();
 
 	/**
-	 * Reports a successfully handled request.
+	 * Reports a successfully handled request.请求成功
 	 *
-	 * @param durationTotalMillis Duration of the request (in milliseconds).
+	 * @param durationTotalMillis Duration of the request (in milliseconds).请求消耗的时间
 	 */
 	void reportSuccessfulRequest(long durationTotalMillis);
 
 	/**
-	 * Reports a failure during a request.
+	 * Reports a failure during a request.请求失败
 	 */
 	void reportFailedRequest();
 

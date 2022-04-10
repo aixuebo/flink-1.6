@@ -22,7 +22,7 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 
 /**
  * A timestamp assigner that assigns timestamps based on the machine's wall clock.
- *
+ * 基于机器上的时间钟,分配时间戳
  * <p>If this assigner is used after a stream source, it realizes "ingestion time" semantics.
  *
  * @param <T> The elements that get timestamps assigned.
@@ -35,7 +35,7 @@ public class IngestionTimeExtractor<T> implements AssignerWithPeriodicWatermarks
 	@Override
 	public long extractTimestamp(T element, long previousElementTimestamp) {
 		// make sure timestamps are monotonously increasing, even when the system clock re-syncs
-		final long now = Math.max(System.currentTimeMillis(), maxTimestamp);
+		final long now = Math.max(System.currentTimeMillis(), maxTimestamp);//确保时间戳是增量产生的
 		maxTimestamp = now;
 		return now;
 	}
@@ -43,7 +43,7 @@ public class IngestionTimeExtractor<T> implements AssignerWithPeriodicWatermarks
 	@Override
 	public Watermark getCurrentWatermark() {
 		// make sure timestamps are monotonously increasing, even when the system clock re-syncs
-		final long now = Math.max(System.currentTimeMillis(), maxTimestamp);
+		final long now = Math.max(System.currentTimeMillis(), maxTimestamp);//确保时间戳是增量产生的
 		maxTimestamp = now;
 		return new Watermark(now - 1);
 	}

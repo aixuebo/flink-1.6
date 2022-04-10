@@ -1,0 +1,8 @@
+一、FailoverStrategyLoader 策略工厂
+生产FailoverStrategy策略实例对象
+
+二、三个核心策略
+RestartAllStrategy
+RestartPipelinedRegionStrategy
+RestartIndividualStrategy
+

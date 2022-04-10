@@ -44,7 +44,7 @@ public class MemoryBackendCheckpointStorage extends AbstractFsCheckpointStorage 
 
 	/** The target directory for checkpoints (here metadata files only). Null, if not configured. */
 	@Nullable
-	private final Path checkpointsDirectory;
+	private final Path checkpointsDirectory;// $checkpoint/job_id 存储该job的数据
 
 	/** The file system to persist the checkpoints to. Null if this does not durably persist checkpoints. */
 	@Nullable
@@ -130,6 +130,7 @@ public class MemoryBackendCheckpointStorage extends AbstractFsCheckpointStorage 
 		}
 	}
 
+	//
 	@Override
 	public CheckpointStreamFactory resolveCheckpointStorageLocation(
 			long checkpointId,

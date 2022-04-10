@@ -24,12 +24,15 @@ import java.net.InetSocketAddress;
  * An interface for the Queryable State Server running on each Task Manager in the cluster.
  * This server is responsible for serving requests coming from the {@link KvStateClientProxy
  * Queryable State Proxy} and requesting <b>locally</b> stored state.
+ *
+ * 当用户在job中定义了queryable state之后，就可以在外部，通过QueryableStateClient，通过job id, state name, key来查询所对应的状态的实时的值。
  */
 public interface KvStateServer {
 
 	/**
 	 * Returns the {@link InetSocketAddress address} the server is listening to.
 	 * @return Server address.
+	 * 服务器地址
 	 */
 	InetSocketAddress getServerAddress();
 

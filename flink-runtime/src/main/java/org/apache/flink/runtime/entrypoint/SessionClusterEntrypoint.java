@@ -67,8 +67,8 @@ public abstract class SessionClusterEntrypoint extends ClusterEntrypoint {
 			ScheduledExecutor scheduledExecutor) throws IOException {
 		final File tmpDir = new File(ConfigurationUtils.parseTempDirectories(configuration)[0]);
 
-		final Time expirationTime =  Time.seconds(configuration.getLong(JobManagerOptions.JOB_STORE_EXPIRATION_TIME));
-		final long maximumCacheSizeBytes = configuration.getLong(JobManagerOptions.JOB_STORE_CACHE_SIZE);
+		final Time expirationTime =  Time.seconds(configuration.getLong(JobManagerOptions.JOB_STORE_EXPIRATION_TIME));//已完成的job,需要保留多久
+		final long maximumCacheSizeBytes = configuration.getLong(JobManagerOptions.JOB_STORE_CACHE_SIZE);//在内存中存储已经完成的job的信息占用最大的内存,超过该值就要考虑清除一部分了
 
 		return new FileArchivedExecutionGraphStore(
 			tmpDir,

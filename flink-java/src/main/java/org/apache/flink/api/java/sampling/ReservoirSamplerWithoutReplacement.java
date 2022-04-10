@@ -40,6 +40,7 @@ import java.util.Random;
  * "Optimal Random Sampling from Distributed Streams Revisited"</a>.
  *
  * @param <T> The type of the sampler.
+ * 不重复抽样
  */
 @Internal
 public class ReservoirSamplerWithoutReplacement<T> extends DistributedRandomSampler<T> {

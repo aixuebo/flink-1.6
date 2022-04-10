@@ -25,6 +25,10 @@ import org.apache.flink.annotation.PublicEvolving;
  * An input split assigner distributes the {@link InputSplit}s among the instances on which a
  * data source exists.
  * 为节点分配一个待处理的数据块
+ *
+ * jobManager知道要加载的所有数据源List<InputSplit>,task节点要执行的时候，只需要请求jobManager,
+ * jobManager知道task所在的节点host、以及执行第几个task,
+ * 根据这两个信息，随机或者策略的方式分配一个InputSplit给task去执行。
  */
 @PublicEvolving
 public interface InputSplitAssigner {

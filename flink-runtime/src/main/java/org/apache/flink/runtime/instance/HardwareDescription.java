@@ -28,6 +28,9 @@ import java.util.Objects;
 
 /**
  * A hardware description describes the resources available to a task manager.
+ * 关于一个task manager节点的资源硬件描述
+ *
+ * 描述cpu数、物理内存数、jvm堆内存数、堆外内存数
  */
 public final class HardwareDescription implements Serializable {
 

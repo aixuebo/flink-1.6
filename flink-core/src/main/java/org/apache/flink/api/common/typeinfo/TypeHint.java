@@ -35,6 +35,7 @@ import org.apache.flink.util.FlinkRuntimeException;
  * }</pre>
  *
  * @param <T> The type information to hint.
+ * 通过实例类,提取TypeInformation
  */
 @Public
 public abstract class TypeHint<T> {
@@ -47,8 +48,7 @@ public abstract class TypeHint<T> {
 	 */
 	public TypeHint() {
 		try {
-			this.typeInfo = TypeExtractor.createTypeInfo(
-					this, TypeHint.class, getClass(), 0);
+			this.typeInfo = TypeExtractor.createTypeInfo(this, TypeHint.class, getClass(), 0);
 		}
 		catch (InvalidTypesException e) {
 			throw new FlinkRuntimeException("The TypeHint is using a generic variable." +

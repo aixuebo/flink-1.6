@@ -46,6 +46,7 @@ import org.junit.Test;
 
 
 /**
+ *
  */
 public class ChannelViewsTest
 {

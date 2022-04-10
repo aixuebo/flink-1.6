@@ -73,13 +73,14 @@ import org.apache.flink.types.Value;
  * values of one, and one can express <i>average</i> through a sum and a count.
  * 
  * @param <T> The type of the aggregated value.
+ * 相当于reduce的计算逻辑
  */
 @PublicEvolving
 public interface Aggregator<T extends Value> extends Serializable {
 
 	/**
 	 * Gets the aggregator's current aggregate.
-	 * 
+	 * 返回聚合的结果
 	 * @return The aggregator's current aggregate.
 	 */
 	T getAggregate();
@@ -87,6 +88,7 @@ public interface Aggregator<T extends Value> extends Serializable {
 	/**
 	 * Aggregates the given element. In the case of a <i>sum</i> aggregator, this method adds the given
 	 * value to the sum.
+	 * 参与聚合计算
 	 * 
 	 * @param element The element to aggregate.
 	 */
@@ -95,6 +97,7 @@ public interface Aggregator<T extends Value> extends Serializable {
 	/**
 	 * Resets the internal state of the aggregator. This must bring the aggregator into the same
 	 * state as if it was newly initialized.
+	 * 重置聚合结果
 	 */
 	void reset();
 }

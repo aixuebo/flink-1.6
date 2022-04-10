@@ -31,16 +31,22 @@ package org.apache.flink.metrics;
  * smoother transitions between rates.
  *
  * <p>The events are counted by a {@link Counter}.
+ *
+ * 比如统计周期是1分钟，计算该周期内,平均每秒多少条数据
  */
 public class MeterView implements Meter, View {
 	/** The underlying counter maintaining the count. */
 	private final Counter counter;
+
 	/** The time-span over which the average is calculated. */
-	private final int timeSpanInSeconds;
+	private final int timeSpanInSeconds;//统计周期
+
 	/** Circular array containing the history of values. */
-	private final long[] values;
+	private final long[] values;//存储数据的数组分桶
+
 	/** The index in the array for the current time. */
-	private int time = 0;
+	private int time = 0;//当前桶的下标
+
 	/** The last rate we computed. */
 	private double currentRate = 0;
 
@@ -50,8 +56,8 @@ public class MeterView implements Meter, View {
 
 	public MeterView(Counter counter, int timeSpanInSeconds) {
 		this.counter = counter;
-		this.timeSpanInSeconds = timeSpanInSeconds - (timeSpanInSeconds % UPDATE_INTERVAL_SECONDS);
-		this.values = new long[this.timeSpanInSeconds / UPDATE_INTERVAL_SECONDS + 1];
+		this.timeSpanInSeconds = timeSpanInSeconds - (timeSpanInSeconds % UPDATE_INTERVAL_SECONDS); //计算UPDATE_INTERVAL_SECONDS的整数倍
+		this.values = new long[this.timeSpanInSeconds / UPDATE_INTERVAL_SECONDS + 1];//分桶,并且多一个桶,目的存储超出范围的数据
 	}
 
 	@Override
@@ -74,10 +80,11 @@ public class MeterView implements Meter, View {
 		return currentRate;
 	}
 
+	//核心问题是谁周期的调用该方法
 	@Override
 	public void update() {
-		time = (time + 1) % values.length;
-		values[time] = counter.getCount();
+		time = (time + 1) % values.length;//切换桶下标
+		values[time] = counter.getCount();//计算该时间点桶内的累计值
 		currentRate =  ((double) (values[time] - values[(time + 1) % values.length]) / timeSpanInSeconds);
 	}
 }

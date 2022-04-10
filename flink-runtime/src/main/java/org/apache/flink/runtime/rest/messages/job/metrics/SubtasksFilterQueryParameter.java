@@ -22,6 +22,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 
 /**
  * {@link MessageQueryParameter} for selecting subtasks when aggregating metrics.
+ * 参数值是list<String>
  */
 public class SubtasksFilterQueryParameter extends MessageQueryParameter<String> {
 

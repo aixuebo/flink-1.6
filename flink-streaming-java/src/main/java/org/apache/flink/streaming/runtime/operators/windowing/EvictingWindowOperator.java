@@ -57,6 +57,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @param <IN> The type of the incoming elements.
  * @param <OUT> The type of elements emitted by the {@code InternalWindowFunction}.
  * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns.
+ *
+ * 在窗口计算前,要做一些数据清理工作,因此要对数据不能预聚合,要先缓存数据
  */
 @Internal
 public class EvictingWindowOperator<K, IN, OUT, W extends Window>
@@ -67,8 +69,9 @@ public class EvictingWindowOperator<K, IN, OUT, W extends Window>
 	// ------------------------------------------------------------------------
 	// these fields are set by the API stream graph builder to configure the operator
 
-	private final Evictor<? super IN, ? super W> evictor;
+	private final Evictor<? super IN, ? super W> evictor; //具体对数据做清理操作的函数
 
+	//如何缓存窗口内的数据,使用List
 	private final StateDescriptor<? extends ListState<StreamRecord<IN>>, ?> evictingWindowStateDescriptor;
 
 	// ------------------------------------------------------------------------
@@ -76,7 +79,7 @@ public class EvictingWindowOperator<K, IN, OUT, W extends Window>
 
 	private transient EvictorContext evictorContext;
 
-	private transient InternalListState<K, W, StreamRecord<IN>> evictingWindowState;
+	private transient InternalListState<K, W, StreamRecord<IN>> evictingWindowState;//每一个key,存储一个list
 
 	// ------------------------------------------------------------------------
 
@@ -98,8 +101,10 @@ public class EvictingWindowOperator<K, IN, OUT, W extends Window>
 		this.evictingWindowStateDescriptor = checkNotNull(windowStateDescriptor);
 	}
 
+	//如何处理一条数据 --- 肯定是要先缓存到list中
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
+		//数据分配到哪些window内
 		final Collection<W> elementWindows = windowAssigner.assignWindows(
 				element.getValue(), element.getTimestamp(), windowAssignerContext);
 

@@ -26,6 +26,7 @@ public interface BufferAvailabilityListener {
 
 	/**
 	 * Called whenever there might be new data available.
+	 * 是否有新数据了,如果有新数据了,就会收到通知
 	 */
 	void notifyDataAvailable();
 }

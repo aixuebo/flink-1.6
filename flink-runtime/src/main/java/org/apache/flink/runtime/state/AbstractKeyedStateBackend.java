@@ -52,15 +52,23 @@ public abstract class AbstractKeyedStateBackend<K> implements
 	Closeable,
 	CheckpointListener {
 
+	//---------------InternalKeyContext 上下文信息
 	/** {@link TypeSerializer} for our key. */
-	protected final TypeSerializer<K> keySerializer;
+	protected final TypeSerializer<K> keySerializer;//构造函数设置
 
 	/** The currently active key. */
-	private K currentKey;
+	private K currentKey;//setkey设置
 
-	/** The key group of the currently active key. */
-	private int currentKeyGroup;
+	/** The key group of the currently active key.*/
+	private int currentKeyGroup;//setkey设置,计算公式hash(key)/numberOfKeyGroups
 
+	/** The number of key-groups aka max parallelism. */
+	protected final int numberOfKeyGroups;//构造函数设置
+
+	/** Range of key-groups for which this backend is responsible. */
+	protected final KeyGroupRange keyGroupRange;//构造函数设置
+
+	//---------------
 	/** So that we can give out state when the user uses the same key. */
 	private final HashMap<String, InternalKvState<K, ?, ?>> keyValueStatesByName;
 
@@ -69,12 +77,6 @@ public abstract class AbstractKeyedStateBackend<K> implements
 
 	@SuppressWarnings("rawtypes")
 	private InternalKvState lastState;
-
-	/** The number of key-groups aka max parallelism. */
-	protected final int numberOfKeyGroups;
-
-	/** Range of key-groups for which this backend is responsible. */
-	protected final KeyGroupRange keyGroupRange;
 
 	/** KvStateRegistry helper for this task. */
 	protected final TaskKvStateRegistry kvStateRegistry;

@@ -22,6 +22,7 @@ import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpMethod;
 
 /**
  * This class wraps netty's {@link HttpMethod}s into an enum, allowing us to use them in switches.
+ * 请求方式
  */
 public enum HttpMethodWrapper {
 	GET(HttpMethod.GET),

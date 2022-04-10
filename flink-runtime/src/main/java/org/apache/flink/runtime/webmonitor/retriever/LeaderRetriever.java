@@ -75,7 +75,7 @@ public class LeaderRetriever implements LeaderRetrievalListener {
 			try {
 				final CompletableFuture<Tuple2<String, UUID>> newLeaderFuture = CompletableFuture.completedFuture(Tuple2.of(leaderAddress, leaderSessionID));
 
-				final CompletableFuture<Tuple2<String, UUID>> oldLeaderFuture = atomicLeaderFuture.getAndSet(newLeaderFuture);
+				final CompletableFuture<Tuple2<String, UUID>> oldLeaderFuture = atomicLeaderFuture.getAndSet(newLeaderFuture);//设置新值,并且返回老值
 
 				if (!oldLeaderFuture.isDone()) {
 					// initial leader future

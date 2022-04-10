@@ -65,6 +65,7 @@ public interface ReadOnlyBroadcastState<K, V> extends State {
 	 *
 	 * <p>The user code must not modify the entries of the returned immutable
 	 * iterator, as this can lead to inconsistent states.
+	 * 返回Map的迭代器,相当于get
 	 */
 	Iterable<Map.Entry<K, V>> immutableEntries() throws Exception;
 }

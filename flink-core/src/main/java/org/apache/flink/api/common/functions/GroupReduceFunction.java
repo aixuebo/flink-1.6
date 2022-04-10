@@ -46,6 +46,8 @@ import java.io.Serializable;
  *
  * @param <T> Type of the elements that this function processes.
  * @param <O> The type of the elements returned by the user-defined function.
+ *
+ * 数据要重新分区到下游,有shuffle操作的reduce。 如果子类也实现了GroupCombineFunction,则相当于会在map端先进行一次reduce操作
  */
 @Public
 @FunctionalInterface
@@ -54,7 +56,7 @@ public interface GroupReduceFunction<T, O> extends Function, Serializable {
 	/**
 	 * The reduce method. The function receives one call per group of elements.
 	 *
-	 * @param values All records that belong to the given input key.
+	 * @param values All records that belong to the given input key.相同的key下所有的数据集合
 	 * @param out The collector to hand results to.
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation

@@ -132,6 +132,7 @@ public interface ListCheckpointed<T extends Serializable> {
 	 *                   checkpoint to fail. The system may decide to fail the operation (and trigger
 	 *                   recovery), or to discard this checkpoint attempt and to continue running
 	 *                   and to try again with the next checkpoint attempt.
+	 * 保存当前的快照,保存到List中
 	 */
 	List<T> snapshotState(long checkpointId, long timestamp) throws Exception;
 
@@ -154,6 +155,7 @@ public interface ListCheckpointed<T extends Serializable> {
 	 *                   The exact consequence depends on the configured failure handling strategy,
 	 *                   but typically the system will re-attempt the recovery, or try recovering
 	 *                   from a different checkpoint.
+	 *  还原数据,因此传入的是状态缓存的list。程序读取该list做还原处理--相当于程序读取数据库保存的值
 	 */
 	void restoreState(List<T> state) throws Exception;
 }

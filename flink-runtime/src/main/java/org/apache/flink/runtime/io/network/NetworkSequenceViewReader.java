@@ -31,10 +31,11 @@ import java.io.IOException;
  */
 public interface NetworkSequenceViewReader {
 
+	//读取一个子分区数据
 	void requestSubpartitionView(
-		ResultPartitionProvider partitionProvider,
-		ResultPartitionID resultPartitionId,
-		int subPartitionIndex) throws IOException;
+		ResultPartitionProvider partitionProvider,//如何读取分区数据
+		ResultPartitionID resultPartitionId,//读取哪个分区
+		int subPartitionIndex) throws IOException;//读取哪个子分区
 
 	BufferAndAvailability getNextBuffer() throws IOException, InterruptedException;
 

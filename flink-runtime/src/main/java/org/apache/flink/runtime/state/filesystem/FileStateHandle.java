@@ -32,16 +32,18 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * {@link StreamStateHandle} for state that was written to a file stream. The written data is
  * identifier by the file path. The state can be read again by calling {@link #openInputStream()}.
+ * stage信息存储在文件中,因此需要文件路径 以及 文件存储stage信息的字节数
+ * 代表checkpoint完成后的元数据
  */
 public class FileStateHandle implements StreamStateHandle {
 
 	private static final long serialVersionUID = 350284443258002355L;
 
 	/** The path to the file in the filesystem, fully describing the file system */
-	private final Path filePath;
+	private final Path filePath;//存储全路径
 
 	/** The size of the state in the file */
-	private final long stateSize;
+	private final long stateSize;//占用字节大小
 
 	/**
 	 * Creates a new file state for the given file path.
@@ -63,6 +65,7 @@ public class FileStateHandle implements StreamStateHandle {
 		return filePath;
 	}
 
+	//打开该文件,产生输出流
 	@Override
 	public FSDataInputStream openInputStream() throws IOException {
 		return getFileSystem().open(filePath);
@@ -73,6 +76,7 @@ public class FileStateHandle implements StreamStateHandle {
 	 * of the state is empty after deleting the state file, it is also deleted.
 	 *
 	 * @throws Exception Thrown, if the file deletion (not the directory deletion) fails.
+	 * 删除该文件
 	 */
 	@Override
 	public void discardState() throws Exception {

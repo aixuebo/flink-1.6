@@ -46,6 +46,7 @@ public final class Utils {
 
 	public static final Random RNG = new Random();
 
+	//通过堆栈获取名字
 	public static String getCallLocationName() {
 		return getCallLocationName(4);
 	}
@@ -70,13 +71,14 @@ public final class Utils {
 	 * {@link DataSet#count()} function.
 	 *
 	 * @param <T> Type of elements to count.
+	 * 向输出结果中,统计记录数
 	 */
 	@SkipCodeAnalysis
 	public static class CountHelper<T> extends RichOutputFormat<T> {
 
 		private static final long serialVersionUID = 1L;
 
-		private final String id;
+		private final String id;//输出结果key
 		private long counter;
 
 		public CountHelper(String id) {

@@ -43,6 +43,10 @@ import java.util.Objects;
  *     <li>Extended resources</li>
  * </ol>
  * The extended resources are compared ordered by the resource names.
+ *
+ * 优先比较内存资源、然后比较核
+ *
+ * 描述固定的资源信息
  */
 public class ResourceProfile implements Serializable, Comparable<ResourceProfile> {
 
@@ -53,22 +57,22 @@ public class ResourceProfile implements Serializable, Comparable<ResourceProfile
 	// ------------------------------------------------------------------------
 
 	/** How many cpu cores are needed, use double so we can specify cpu like 0.1. */
-	private final double cpuCores;
+	private final double cpuCores;//需要的CPU核数
 
 	/** How many heap memory in mb are needed. */
-	private final int heapMemoryInMB;
+	private final int heapMemoryInMB;//堆内存
 
 	/** How many direct memory in mb are needed. */
-	private final int directMemoryInMB;
+	private final int directMemoryInMB;//堆外内存
 
 	/** How many native memory in mb are needed. */
-	private final int nativeMemoryInMB;
+	private final int nativeMemoryInMB;//native内存
 
 	/** Memory used for the task in the slot to communicate with its upstreams. Set by job master. */
 	private final int networkMemoryInMB;
 
 	/** A extensible field for user specified resources from {@link ResourceSpec}. */
-	private final Map<String, Resource> extendedResources = new HashMap<>(1);
+	private final Map<String, Resource> extendedResources = new HashMap<>(1);//其他额外资源
 
 	// ------------------------------------------------------------------------
 
@@ -201,6 +205,7 @@ public class ResourceProfile implements Serializable, Comparable<ResourceProfile
 	 *
 	 * @param required the required resource profile
 	 * @return true if the requirement is matched, otherwise false
+	 * true 说明该ResourceProfile资源可以满足参数需要的资源
 	 */
 	public boolean isMatching(ResourceProfile required) {
 		if (cpuCores >= required.getCpuCores() &&
@@ -220,6 +225,7 @@ public class ResourceProfile implements Serializable, Comparable<ResourceProfile
 		return false;
 	}
 
+	//优先比较内存资源、然后比较核
 	@Override
 	public int compareTo(@Nonnull ResourceProfile other) {
 		int cmp = Integer.compare(this.getMemoryInMB(), other.getMemoryInMB());

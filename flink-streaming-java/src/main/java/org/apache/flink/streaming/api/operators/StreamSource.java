@@ -37,6 +37,8 @@ import java.util.concurrent.ScheduledFuture;
  *
  * @param <OUT> Type of the output elements
  * @param <SRC> Type of the source function of this stream source operator
+ *
+ * 核心方式调用function的run方法
  */
 @Internal
 public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
@@ -44,7 +46,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 
 	private static final long serialVersionUID = 1L;
 
-	private transient SourceFunction.SourceContext<OUT> ctx;
+	private transient SourceFunction.SourceContext<OUT> ctx;//实现类 StreamSourceContexts
 
 	private transient volatile boolean canceledOrStopped = false;
 
@@ -62,13 +64,14 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 			final StreamStatusMaintainer streamStatusMaintainer,
 			final Output<StreamRecord<OUT>> collector) throws Exception {
 
-		final TimeCharacteristic timeCharacteristic = getOperatorConfig().getTimeCharacteristic();
+		final TimeCharacteristic timeCharacteristic = getOperatorConfig().getTimeCharacteristic();//事件时间方式
 
 		final Configuration configuration = this.getContainingTask().getEnvironment().getTaskManagerInfo().getConfiguration();
 		final long latencyTrackingInterval = getExecutionConfig().isLatencyTrackingConfigured()
 			? getExecutionConfig().getLatencyTrackingInterval()
 			: configuration.getLong(MetricOptions.LATENCY_INTERVAL);
 
+		//设置接受延迟的消息
 		LatencyMarksEmitter<OUT> latencyEmitter = null;
 		if (latencyTrackingInterval > 0) {
 			latencyEmitter = new LatencyMarksEmitter<>(
@@ -79,19 +82,21 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 				getRuntimeContext().getIndexOfThisSubtask());
 		}
 
+		//watermarkInterval时间周期
 		final long watermarkInterval = getRuntimeContext().getExecutionConfig().getAutoWatermarkInterval();
 
+		//设置上下文对象
 		this.ctx = StreamSourceContexts.getSourceContext(
-			timeCharacteristic,
-			getProcessingTimeService(),
-			lockingObject,
-			streamStatusMaintainer,
-			collector,
-			watermarkInterval,
+			timeCharacteristic,//事件时间方式
+			getProcessingTimeService(),//时间对象
+			lockingObject,//锁对象
+			streamStatusMaintainer,//流的状态变更对象
+			collector,//输出流
+			watermarkInterval,//watermarkInterval时间周期
 			-1);
 
 		try {
-			userFunction.run(ctx);
+			userFunction.run(ctx);//核心方式调用function的run方法
 
 			// if we get here, then the user function either exited after being done (finite source)
 			// or the function was canceled or stopped. For the finite source case, we should emit
@@ -139,6 +144,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 		return canceledOrStopped;
 	}
 
+	//接受延迟的消息
 	private static class LatencyMarksEmitter<OUT> {
 		private final ScheduledFuture<?> latencyMarkTimer;
 

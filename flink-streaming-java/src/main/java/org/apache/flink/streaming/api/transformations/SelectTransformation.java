@@ -35,6 +35,10 @@ import java.util.List;
  * connected to downstream operations.
  *
  * @param <T> The type of the elements that result from this {@code SelectTransformation}
+ * 配合SplitTransformation,SplitTransformation将一个流拆分成多个流,而SelectTransformation是选择若干个流
+ * 参见SplitTransformation
+ *
+ * 流内数据元素，经过SplitTransformation,相当于map操作,为每一个元素打了一组标签。组成新的流，此时从新的流选择输出哪些标签的数据，相当于filter操作
  */
 @Internal
 public class SelectTransformation<T> extends StreamTransformation<T> {

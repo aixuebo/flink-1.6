@@ -23,6 +23,7 @@ import org.apache.flink.runtime.rest.messages.MessagePathParameter;
 
 /**
  * Path parameter for the checkpoint id of type {@link Long}.
+ * 参数值是Long
  */
 public class CheckpointIdPathParameter extends MessagePathParameter<Long> {
 

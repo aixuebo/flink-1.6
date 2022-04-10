@@ -26,6 +26,7 @@ import org.apache.flink.configuration.Configuration;
  * An output format that simply discards all elements.
  *
  * @param <T> The type of the elements accepted by the output format.
+ * 丢弃所有的输出元素
  */
 @Public
 public class DiscardingOutputFormat<T> implements OutputFormat<T> {

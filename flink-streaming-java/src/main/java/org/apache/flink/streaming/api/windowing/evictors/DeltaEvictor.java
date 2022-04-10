@@ -34,12 +34,14 @@ import java.util.Iterator;
  * which have a higher delta then the threshold.
  *
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
+ * 该实现最常用，因为足够定制化，即deltaFunction.getDelta(每一个元素, 最后一个元素) >= this.threshold,则删除
  */
 @PublicEvolving
 public class DeltaEvictor<T, W extends Window> implements Evictor<T, W> {
 	private static final long serialVersionUID = 1L;
 
-	DeltaFunction<T> deltaFunction;
+	//保留大于threshold的数据
+	DeltaFunction<T> deltaFunction;//比较函数,将每一个元素与最后一个元素进行比较，返回的结果与threshold比较
 	private double threshold;
 	private final boolean doEvictAfter;
 
@@ -70,9 +72,10 @@ public class DeltaEvictor<T, W extends Window> implements Evictor<T, W> {
 	}
 
 	private void evict(Iterable<TimestampedValue<T>> elements, int size, EvictorContext ctx) {
-		TimestampedValue<T> lastElement = Iterables.getLast(elements);
-		for (Iterator<TimestampedValue<T>> iterator = elements.iterator(); iterator.hasNext();){
+		TimestampedValue<T> lastElement = Iterables.getLast(elements);//循环一次elements,返回最后一个元素的值
+		for (Iterator<TimestampedValue<T>> iterator = elements.iterator(); iterator.hasNext();){//再循环一次
 			TimestampedValue<T> element = iterator.next();
+			//计算当前元素 与 最后一个元素之间的delta,如果超过阈值,则将其删除
 			if (deltaFunction.getDelta(element.getValue(), lastElement.getValue()) >= this.threshold) {
 				iterator.remove();
 			}

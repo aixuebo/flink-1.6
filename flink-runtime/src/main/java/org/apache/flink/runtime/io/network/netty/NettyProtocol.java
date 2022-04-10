@@ -26,6 +26,7 @@ import org.apache.flink.shaded.netty4.io.netty.channel.ChannelHandler;
 
 /**
  * Defines the server and client channel handlers, i.e. the protocol, used by netty.
+ * 定义服务端、客户端的传输协议
  */
 public class NettyProtocol {
 
@@ -75,6 +76,7 @@ public class NettyProtocol {
 	 * </pre>
 	 *
 	 * @return channel handlers
+	 * 服务端处理数据流程
 	 */
 	public ChannelHandler[] getServerChannelHandlers() {
 		PartitionRequestQueue queueOfPartitionQueues = new PartitionRequestQueue();
@@ -82,10 +84,10 @@ public class NettyProtocol {
 			partitionProvider, taskEventDispatcher, queueOfPartitionQueues, creditBasedEnabled);
 
 		return new ChannelHandler[] {
-			messageEncoder,
-			new NettyMessage.NettyMessageDecoder(!creditBasedEnabled),
-			serverHandler,
-			queueOfPartitionQueues
+			messageEncoder,//属于writer 用于输出给客户端response时,将NettyMessage对象转换成字节数组
+			new NettyMessage.NettyMessageDecoder(!creditBasedEnabled),//属于read --- 读取客户端的消息后,对消息进行解码,成NettyMessage对象
+			serverHandler,//属于read
+			queueOfPartitionQueues //属于read
 		};
 	}
 
@@ -120,15 +122,16 @@ public class NettyProtocol {
 	 * </pre>
 	 *
 	 * @return channel handlers
+	 * 每一次连接后，接下来要处理的业务核心流程 -- 客户端client处理数据流程
 	 */
 	public ChannelHandler[] getClientChannelHandlers() {
 		NetworkClientHandler networkClientHandler =
 			creditBasedEnabled ? new CreditBasedPartitionRequestClientHandler() :
-				new PartitionRequestClientHandler();
+				new PartitionRequestClientHandler();//如何处理response返回的NettyMessage对象
 		return new ChannelHandler[] {
-			messageEncoder,
-			new NettyMessage.NettyMessageDecoder(!creditBasedEnabled),
-			networkClientHandler};
+			messageEncoder,//如何编码，属于writer -- 因为客户端首先是发送数据,即写出数据，即将NettyMessage对象转换成buffer
+			new NettyMessage.NettyMessageDecoder(!creditBasedEnabled),//如何解码，属于read --- 客户端接收到服务端返回的数据,如何解码,即将buffer转换成NettyMessage对象
+			networkClientHandler};//属于read
 	}
 
 }

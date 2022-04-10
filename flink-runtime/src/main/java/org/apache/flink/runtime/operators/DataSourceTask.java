@@ -172,7 +172,7 @@ public class DataSourceTask<OT> extends AbstractInvokable {
 				LOG.debug(getLogString("Starting to read input from split " + split.toString()));
 				
 				try {
-					final Collector<OT> output = new CountingCollector<>(this.output, numRecordsOut);
+					final Collector<OT> output = new CountingCollector<>(this.output, numRecordsOut);//可计数的输出流
 
 					if (objectReuseEnabled) {
 						OT reuse = serializer.createInstance();

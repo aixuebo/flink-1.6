@@ -75,7 +75,7 @@ import java.util.Set;
  * However, incorrect semantic annotations can cause the optimizer to generate incorrect execution plans which compute wrong results!
  * So be careful when adding semantic annotations.
  * </b>
- *
+ * 注解的方式,获取函数对象
  */
 @Public
 public class FunctionAnnotation {

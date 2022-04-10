@@ -22,6 +22,7 @@ import org.apache.commons.cli.Option;
 
 /**
  * Container class for command line options.
+ * 定义配置信息
  */
 public class CommandLineOptions {
 

@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 
 /**
  * Configuration object for the network stack.
+ * 配置netty如何传输数据--包含task对外提供数据传输的本地地址+端口
  */
 public class NetworkEnvironmentConfiguration {
 
@@ -46,7 +47,7 @@ public class NetworkEnvironmentConfiguration {
 
 	private final int floatingNetworkBuffersPerGate;
 
-	private final NettyConfig nettyConfig;
+	private final NettyConfig nettyConfig;//包含task对外提供数据传输的本地地址+端口
 
 	/**
 	 * Constructor for a setup with purely local communication (no netty).

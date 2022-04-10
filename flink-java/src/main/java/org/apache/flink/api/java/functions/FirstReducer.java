@@ -26,6 +26,10 @@ import org.apache.flink.util.Collector;
 /**
  * Reducer that only emits the first N elements in a group.
  * @param <T>
+ * map+reduce功能
+ *
+ * map端对相同的数据,只发送count个元素到下游
+ * 如果该类应用到reduce阶段,也是一样,只发送count个元素到下游
  */
 @Internal
 public class FirstReducer<T> implements GroupReduceFunction<T, T>, GroupCombineFunction<T, T> {
@@ -37,6 +41,7 @@ public class FirstReducer<T> implements GroupReduceFunction<T, T>, GroupCombineF
 		this.count = n;
 	}
 
+	//reduce端
 	@Override
 	public void reduce(Iterable<T> values, Collector<T> out) throws Exception {
 
@@ -51,6 +56,7 @@ public class FirstReducer<T> implements GroupReduceFunction<T, T>, GroupCombineF
 		}
 	}
 
+	//map端
 	@Override
 	public void combine(Iterable<T> values, Collector<T> out) throws Exception {
 		reduce(values, out);

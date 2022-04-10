@@ -26,6 +26,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
  * contains state for an operator that is not part of the job.
  *
  * @see SavepointRestoreSettings#allowNonRestoredState()
+ * 参数值是参数值是list<Boolean>
  */
 public class AllowNonRestoredStateQueryParameter extends MessageQueryParameter<Boolean> {
 

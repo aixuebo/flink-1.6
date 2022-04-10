@@ -27,6 +27,9 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 /**
  * {@link org.apache.flink.streaming.api.operators.StreamOperator} for processing
  * {@link CoFlatMapFunction CoFlatMapFunctions}.
+ * 两个流,每一个流进行flatMap操作
+ *
+ * 处理两个流的connect操作
  */
 @Internal
 public class CoStreamFlatMap<IN1, IN2, OUT>
@@ -51,7 +54,6 @@ public class CoStreamFlatMap<IN1, IN2, OUT>
 	public void processElement1(StreamRecord<IN1> element) throws Exception {
 		collector.setTimestamp(element);
 		userFunction.flatMap1(element.getValue(), collector);
-
 	}
 
 	@Override

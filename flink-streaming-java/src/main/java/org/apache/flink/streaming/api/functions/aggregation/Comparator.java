@@ -24,13 +24,14 @@ import java.io.Serializable;
 
 /**
  * Internal comparator implementation, for use with {@link ComparableAggregator}.
+ * 参与聚合比较的方法
  */
 @Internal
 public abstract class Comparator implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	public abstract <R> int isExtremal(Comparable<R> o1, R o2);
+	public abstract <R> int isExtremal(Comparable<R> o1, R o2);//1 表示 o1 > o2
 
 	public static Comparator getForAggregation(AggregationType type) {
 		switch (type) {
@@ -58,6 +59,7 @@ public abstract class Comparator implements Serializable {
 
 	}
 
+	//越大,越在前面
 	private static class MaxByComparator extends Comparator {
 
 		private static final long serialVersionUID = 1L;
@@ -77,6 +79,7 @@ public abstract class Comparator implements Serializable {
 
 	}
 
+	//越小,越在前面
 	private static class MinByComparator extends Comparator {
 
 		private static final long serialVersionUID = 1L;

@@ -36,6 +36,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Handler which returns the dashboard configuration.
+ * 获取集群的信息，比如集群版本等信息
+ *
+ * 不需要输入,但response需要是DashboardConfiguration类型数据
  */
 public class DashboardConfigHandler extends AbstractRestHandler<RestfulGateway, EmptyRequestBody, DashboardConfiguration, EmptyMessageParameters> {
 
@@ -50,9 +53,10 @@ public class DashboardConfigHandler extends AbstractRestHandler<RestfulGateway, 
 			long refreshInterval) {
 		super(localRestAddress, leaderRetriever, timeout, responseHeaders, messageHeaders);
 
-		dashboardConfiguration = DashboardConfiguration.from(refreshInterval, ZonedDateTime.now());
+		dashboardConfiguration = DashboardConfiguration.from(refreshInterval, ZonedDateTime.now());//构造信息
 	}
 
+	//直接返回对象
 	@Override
 	public CompletableFuture<DashboardConfiguration> handleRequest(@Nonnull HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request, @Nonnull RestfulGateway gateway) {
 		return CompletableFuture.completedFuture(dashboardConfiguration);

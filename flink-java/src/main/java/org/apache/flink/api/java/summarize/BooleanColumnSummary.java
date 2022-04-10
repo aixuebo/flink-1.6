@@ -26,9 +26,9 @@ import org.apache.flink.annotation.PublicEvolving;
 @PublicEvolving
 public class BooleanColumnSummary extends ColumnSummary {
 
-	private long trueCount;
-	private long falseCount;
-	private long nullCount;
+	private long trueCount;//true的数量
+	private long falseCount;//false的数量
+	private long nullCount;//null的数量
 
 	public BooleanColumnSummary(long trueCount, long falseCount, long nullCount) {
 		this.trueCount = trueCount;

@@ -32,17 +32,18 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * A configuration object for {@link RestClient}s.
+ * 客户端的配置信息
  */
 public final class RestClientConfiguration {
 
 	@Nullable
-	private final SSLEngineFactory sslEngineFactory;
+	private final SSLEngineFactory sslEngineFactory;//套一层ssl安全引擎
 
 	private final long connectionTimeout;
 
 	private final long idlenessTimeout;
 
-	private final int maxContentLength;
+	private final int maxContentLength;//最大response内容
 
 	private RestClientConfiguration(
 			@Nullable final SSLEngineFactory sslEngineFactory,

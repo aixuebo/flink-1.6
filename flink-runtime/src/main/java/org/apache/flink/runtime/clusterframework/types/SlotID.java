@@ -35,10 +35,10 @@ public class SlotID implements ResourceIDRetrievable, Serializable {
 	private static final long serialVersionUID = -6399206032549807771L;
 
 	/** The resource id which this slot located */
-	private final ResourceID resourceId;
+	private final ResourceID resourceId;//slotId归属的task节点唯一ID
 
 	/** The numeric id for single slot */
-	private final int slotNumber;
+	private final int slotNumber;//slot是task节点第几个slot
 	
 	public SlotID(ResourceID resourceId, int slotNumber) {
 		checkArgument(0 <= slotNumber, "Slot number must be positive.");

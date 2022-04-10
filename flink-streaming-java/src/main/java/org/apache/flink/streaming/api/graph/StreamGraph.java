@@ -71,7 +71,7 @@ import java.util.Set;
 /**
  * Class representing the streaming topology. It contains all the information
  * necessary to build the jobgraph for the execution.
- *
+ * 表示一个有向无环图
  */
 @Internal
 public class StreamGraph extends StreamingPlan {
@@ -86,9 +86,9 @@ public class StreamGraph extends StreamingPlan {
 
 	private boolean chaining;
 
-	private Map<Integer, StreamNode> streamNodes;
-	private Set<Integer> sources;
-	private Set<Integer> sinks;
+	private Map<Integer, StreamNode> streamNodes;//每一个操作的唯一ID，与操作对象的映射
+	private Set<Integer> sources;//数据源ID集合
+	private Set<Integer> sinks;//输出ID集合
 	private Map<Integer, Tuple2<Integer, List<String>>> virtualSelectNodes;
 	private Map<Integer, Tuple2<Integer, OutputTag>> virtualSideOutputNodes;
 	private Map<Integer, Tuple2<Integer, StreamPartitioner<?>>> virtualPartitionNodes;
@@ -164,13 +164,13 @@ public class StreamGraph extends StreamingPlan {
 		return !vertexIDtoLoopTimeout.isEmpty();
 	}
 
-	public <IN, OUT> void addSource(Integer vertexID,
-		String slotSharingGroup,
-		@Nullable String coLocationGroup,
-		StreamOperator<OUT> operatorObject,
-		TypeInformation<IN> inTypeInfo,
-		TypeInformation<OUT> outTypeInfo,
-		String operatorName) {
+	public <IN, OUT> void addSource(Integer vertexID,//操作唯一ID
+		String slotSharingGroup,//slot组名,默认是default
+		@Nullable String coLocationGroup,//允许为空
+		StreamOperator<OUT> operatorObject,//数据源函数，生产数据源
+		TypeInformation<IN> inTypeInfo,//输入类型，默认是null,因为数据源不需要输入类型，默认就是字符串
+		TypeInformation<OUT> outTypeInfo,//输出类型
+		String operatorName) {//设置别名
 		addOperator(vertexID, slotSharingGroup, coLocationGroup, operatorObject, inTypeInfo, outTypeInfo, operatorName);
 		sources.add(vertexID);
 	}
@@ -195,18 +195,17 @@ public class StreamGraph extends StreamingPlan {
 			TypeInformation<OUT> outTypeInfo,
 			String operatorName) {
 
-		if (operatorObject instanceof StoppableStreamSource) {
+		if (operatorObject instanceof StoppableStreamSource) {//当job接收到stop信号的时候,source数据源要停止发送数据
 			addNode(vertexID, slotSharingGroup, coLocationGroup, StoppableSourceStreamTask.class, operatorObject, operatorName);
-		} else if (operatorObject instanceof StreamSource) {
+		} else if (operatorObject instanceof StreamSource) {//数据源source
 			addNode(vertexID, slotSharingGroup, coLocationGroup, SourceStreamTask.class, operatorObject, operatorName);
-		} else {
+		} else {//有输入和输出
 			addNode(vertexID, slotSharingGroup, coLocationGroup, OneInputStreamTask.class, operatorObject, operatorName);
 		}
 
+		//设置vertexID节点的输入和输出方式
 		TypeSerializer<IN> inSerializer = inTypeInfo != null && !(inTypeInfo instanceof MissingTypeInfo) ? inTypeInfo.createSerializer(executionConfig) : null;
-
 		TypeSerializer<OUT> outSerializer = outTypeInfo != null && !(outTypeInfo instanceof MissingTypeInfo) ? outTypeInfo.createSerializer(executionConfig) : null;
-
 		setSerializers(vertexID, inSerializer, null, outSerializer);
 
 		if (operatorObject instanceof OutputTypeConfigurable && outTypeInfo != null) {
@@ -377,6 +376,7 @@ public class StreamGraph extends StreamingPlan {
 		}
 	}
 
+	//上游 下游 关系
 	public void addEdge(Integer upStreamVertexID, Integer downStreamVertexID, int typeNumber) {
 		addEdgeInternal(upStreamVertexID,
 				downStreamVertexID,
@@ -387,8 +387,8 @@ public class StreamGraph extends StreamingPlan {
 
 	}
 
-	private void addEdgeInternal(Integer upStreamVertexID,
-			Integer downStreamVertexID,
+	private void addEdgeInternal(Integer upStreamVertexID,//上游操作ID
+			Integer downStreamVertexID,//下游操作ID
 			int typeNumber,
 			StreamPartitioner<?> partitioner,
 			List<String> outputNames,
@@ -422,9 +422,9 @@ public class StreamGraph extends StreamingPlan {
 
 			// If no partitioner was specified and the parallelism of upstream and downstream
 			// operator matches use forward partitioning, use rebalance otherwise.
-			if (partitioner == null && upstreamNode.getParallelism() == downstreamNode.getParallelism()) {
+			if (partitioner == null && upstreamNode.getParallelism() == downstreamNode.getParallelism()) {//并行度相同,则直接链式操作
 				partitioner = new ForwardPartitioner<Object>();
-			} else if (partitioner == null) {
+			} else if (partitioner == null) { //并行度不同，则重新分配路由关系
 				partitioner = new RebalancePartitioner<Object>();
 			}
 
@@ -437,8 +437,10 @@ public class StreamGraph extends StreamingPlan {
 				}
 			}
 
+			//创建一条边
 			StreamEdge edge = new StreamEdge(upstreamNode, downstreamNode, typeNumber, outputNames, partitioner, outputTag);
 
+			//设置上下游信息
 			getStreamNode(edge.getSourceId()).addOutEdge(edge);
 			getStreamNode(edge.getTargetId()).addInEdge(edge);
 		}
@@ -496,6 +498,7 @@ public class StreamGraph extends StreamingPlan {
 		}
 	}
 
+	//设置vertexID操作节点的输入和输出类型
 	public void setSerializers(Integer vertexID, TypeSerializer<?> in1, TypeSerializer<?> in2, TypeSerializer<?> out) {
 		StreamNode vertex = getStreamNode(vertexID);
 		vertex.setSerializerIn1(in1);

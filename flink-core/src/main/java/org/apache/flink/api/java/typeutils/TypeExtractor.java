@@ -134,7 +134,7 @@ public class TypeExtractor {
 	// --------------------------------------------------------------------------------------------
 	//  TypeInfoFactory registry
 	// --------------------------------------------------------------------------------------------
-
+    //注册类型 与 类型工程映射关系
 	private static Map<Type, Class<? extends TypeInfoFactory>> registeredTypeInfoFactories = new HashMap<>();
 
 	/**
@@ -559,9 +559,9 @@ public class TypeExtractor {
 
 				// parameters must be accessed from behind, since JVM can add additional parameters e.g. when using local variables inside lambda function
 				// paramLen is the total number of parameters of the provided lambda, it includes parameters added through closure
-				final int paramLen = exec.getParameterTypes().length;
+				final int paramLen = exec.getParameterTypes().length;//方法参数数量
 
-				final Method sam = TypeExtractionUtils.getSingleAbstractMethod(baseClass);
+				final Method sam = TypeExtractionUtils.getSingleAbstractMethod(baseClass);//抽象方法
 
 				// number of parameters the SAM of implemented interface has; the parameter indexing applies to this range
 				final int baseParametersLen = sam.getParameterTypes().length;
@@ -1210,6 +1210,15 @@ public class TypeExtractor {
 	//  Extract type parameters
 	// --------------------------------------------------------------------------------------------
 
+	/**
+	 *
+	 * @param baseClass 接口类,比如Mapper<KIN,VIN,KOUT,VOUT>
+	 * @param clazz 具体实现了baseClass接口的类,比如实现了Mapper的具体类
+	 * @param pos 获取class的第几个参数泛型对象
+	 * @return
+	 * 在class的接口和父类中,找到baseClass的实现类,即class肯定实现了baseClass。
+	 * 同时baseClass是带有泛型的,因此获取第pos个泛型对应的class
+	 */
 	@PublicEvolving
 	public static Type getParameterType(Class<?> baseClass, Class<?> clazz, int pos) {
 		return getParameterType(baseClass, null, clazz, pos);
@@ -1219,7 +1228,7 @@ public class TypeExtractor {
 		if (typeHierarchy != null) {
 			typeHierarchy.add(clazz);
 		}
-		Type[] interfaceTypes = clazz.getGenericInterfaces();
+		Type[] interfaceTypes = clazz.getGenericInterfaces();//返回实现的哪些Type接口,type表示形式是class+泛型
 
 		// search in interfaces for base class
 		for (Type t : interfaceTypes) {
@@ -1230,7 +1239,7 @@ public class TypeExtractor {
 		}
 
 		// search in superclass for base class
-		Type t = clazz.getGenericSuperclass();
+		Type t = clazz.getGenericSuperclass();//从父类中寻找
 		Type parameter = getParameterTypeFromGenericType(baseClass, typeHierarchy, t, pos);
 		if (parameter != null) {
 			return parameter;
@@ -1240,21 +1249,31 @@ public class TypeExtractor {
 						"Support for synthetic interfaces, lambdas, and generic or raw types is limited at this point");
 	}
 
+	/**
+	 *
+	 * @param baseClass 接口对象
+	 * @param typeHierarchy
+	 * @param t 具体集成或者实现的接口
+	 * @param pos
+	 * @return
+	 */
 	private static Type getParameterTypeFromGenericType(Class<?> baseClass, ArrayList<Type> typeHierarchy, Type t, int pos) {
 		// base class
-		if (t instanceof ParameterizedType && baseClass.equals(((ParameterizedType) t).getRawType())) {
+		//t是带有泛型的接口实现类,并且实现了baseClass
+		if (t instanceof ParameterizedType && baseClass.equals(((ParameterizedType) t).getRawType())) {//getRawType 表示不带泛型的class
 			if (typeHierarchy != null) {
 				typeHierarchy.add(t);
 			}
-			ParameterizedType baseClassChild = (ParameterizedType) t;
-			return baseClassChild.getActualTypeArguments()[pos];
+			ParameterizedType baseClassChild = (ParameterizedType) t;//带有泛型的接口实现类
+			return baseClassChild.getActualTypeArguments()[pos];//获取某一个泛型class
 		}
 		// interface that extended base class as class or parameterized type
+		//t是带有泛型的接口实现类,并且是baseClass的子类
 		else if (t instanceof ParameterizedType && baseClass.isAssignableFrom((Class<?>) ((ParameterizedType) t).getRawType())) {
 			if (typeHierarchy != null) {
 				typeHierarchy.add(t);
 			}
-			return getParameterType(baseClass, typeHierarchy, (Class<?>) ((ParameterizedType) t).getRawType(), pos);
+			return getParameterType(baseClass, typeHierarchy, (Class<?>) ((ParameterizedType) t).getRawType(), pos);//既然是子类,则继续向上寻找,一定能找到具体实现了baseClass的class,因此迭代向上找
 		}
 		else if (t instanceof Class<?> && baseClass.isAssignableFrom((Class<?>) t)) {
 			if (typeHierarchy != null) {
@@ -1269,6 +1288,7 @@ public class TypeExtractor {
 	//  Validate input
 	// --------------------------------------------------------------------------------------------
 
+	//校验java类型可以转换成TypeInformation
 	private static void validateInputType(Type t, TypeInformation<?> inType) {
 		ArrayList<Type> typeHierarchy = new ArrayList<Type>();
 		try {
@@ -1279,6 +1299,7 @@ public class TypeExtractor {
 		}
 	}
 
+	//class可以集成多个类,找到属于baseClass的实现类,该类是泛型,找到泛型需要的参数,判断该参数是TypeInformation类型
 	private static void validateInputType(Class<?> baseClass, Class<?> clazz, int inputParamPos, TypeInformation<?> inTypeInfo) {
 		ArrayList<Type> typeHierarchy = new ArrayList<Type>();
 
@@ -1515,14 +1536,16 @@ public class TypeExtractor {
 
 	/**
 	 * Returns the type information factory for a type using the factory registry or annotations.
+	 * 找到Type的工程类,并且实例化
 	 */
 	@Internal
 	public static <OUT> TypeInfoFactory<OUT> getTypeInfoFactory(Type t) {
 		final Class<?> factoryClass;
-		if (registeredTypeInfoFactories.containsKey(t)) {
+		if (registeredTypeInfoFactories.containsKey(t)) {//有映射类存在
 			factoryClass = registeredTypeInfoFactories.get(t);
 		}
 		else {
+			//t不是class,也不是TypeInfo(不能创建typeInfoFactory),因此返回null
 			if (!isClassType(t) || !typeToClass(t).isAnnotationPresent(TypeInfo.class)) {
 				return null;
 			}
@@ -1540,6 +1563,7 @@ public class TypeExtractor {
 
 	/**
 	 * @return number of items with equal type or same raw type
+	 * 与type相同的class有多少个
 	 */
 	private static int countTypeInHierarchy(ArrayList<Type> typeHierarchy, Type type) {
 		int count = 0;
@@ -1572,6 +1596,7 @@ public class TypeExtractor {
 		return factory;
 	}
 
+	//有多少个属性
 	private int countFieldsInClass(Class<?> clazz) {
 		int fieldCount = 0;
 		for(Field field : clazz.getFields()) { // get all fields
@@ -1595,15 +1620,15 @@ public class TypeExtractor {
 			Type curT = typeHierarchy.get(i);
 
 			// parameterized type
-			if (curT instanceof ParameterizedType) {
-				Class<?> rawType = ((Class<?>) ((ParameterizedType) curT).getRawType());
+			if (curT instanceof ParameterizedType) {//必须含有泛型
+				Class<?> rawType = ((Class<?>) ((ParameterizedType) curT).getRawType());//获取带有泛型的class
 
-				for (int paramIndex = 0; paramIndex < rawType.getTypeParameters().length; paramIndex++) {
+				for (int paramIndex = 0; paramIndex < rawType.getTypeParameters().length; paramIndex++) {//循环每一个泛型的类型
 
-					TypeVariable<?> curVarOfCurT = rawType.getTypeParameters()[paramIndex];
+					TypeVariable<?> curVarOfCurT = rawType.getTypeParameters()[paramIndex];//确定泛型类型
 
 					// check if variable names match
-					if (sameTypeVars(curVarOfCurT, inTypeTypeVar)) {
+					if (sameTypeVars(curVarOfCurT, inTypeTypeVar)) {//相同
 						Type curVarType = ((ParameterizedType) curT).getActualTypeArguments()[paramIndex];
 
 						// another type variable level

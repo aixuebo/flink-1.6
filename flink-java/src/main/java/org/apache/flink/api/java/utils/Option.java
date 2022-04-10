@@ -28,18 +28,19 @@ import java.util.Set;
 
 /**
  * Internal representation of a parameter passed to a user defined function.
+ * 代表一个参数
  */
 @PublicEvolving
 public class Option {
 
-	private String longName;
-	private String shortName;
+	private String longName;//参数长名称
+	private String shortName;//参数短名称
 
-	private String defaultValue;
-	private Set<String> choices;
+	private String defaultValue;//参数默认值
+	private Set<String> choices;//该参数有效的值 --- 比如参数值只允许是0和1,此时就需要将所有的有效值赋予给参数
 
-	private String helpText;
-	private OptionType type = OptionType.STRING;
+	private String helpText;//参数帮助提示信息
+	private OptionType type = OptionType.STRING;//参数类型,默认都是String类型
 
 	public Option(String name) {
 		this.longName = name;
@@ -81,7 +82,7 @@ public class Option {
 		if (this.choices.isEmpty()) {
 			return this.setDefaultValue(defaultValue);
 		} else {
-			if (this.choices.contains(defaultValue)) {
+			if (this.choices.contains(defaultValue)) {//默认值是有效的
 				return this.setDefaultValue(defaultValue);
 			} else {
 				throw new RequiredParametersException("Default value " + defaultValue +
@@ -95,16 +96,17 @@ public class Option {
 	 *
 	 * @param choices - the allowed values of the parameter.
 	 * @return the updated Option
+	 * 添加参数的有效值集合
 	 */
 	public Option choices(String... choices) throws RequiredParametersException {
 		if (this.defaultValue != null) {
-			if (Arrays.asList(choices).contains(defaultValue)) {
+			if (Arrays.asList(choices).contains(defaultValue)) {//默认值必须包含在有效值内
 				Collections.addAll(this.choices, choices);
-			} else {
+			} else {//说明默认值不在有效值内,则抛异常
 				throw new RequiredParametersException("Valid values for option " + this.longName +
 						" do not contain defined default value " + defaultValue);
 			}
-		} else {
+		} else {//直接设置参数有效值集合
 			Collections.addAll(this.choices, choices);
 		}
 		return this;
@@ -125,10 +127,12 @@ public class Option {
 		return this.longName;
 	}
 
+	//是否有短名称
 	public boolean hasAlt() {
 		return this.shortName != null;
 	}
 
+	//是否设置了参数类型
 	public boolean hasType() {
 		return this.type != null;
 	}
@@ -149,6 +153,7 @@ public class Option {
 		return this.choices;
 	}
 
+	//是否有默认值
 	public boolean hasDefaultValue() {
 		return this.defaultValue != null;
 	}
@@ -162,6 +167,7 @@ public class Option {
 		return this;
 	}
 
+	//是否value可以转换成参数需要的类型值
 	public boolean isCastableToDefinedType(String value) {
 		switch (this.type) {
 			case INTEGER:

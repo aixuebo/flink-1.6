@@ -35,6 +35,7 @@ public interface ParserResultFactory<T> {
 	 * arguments.
 	 *
 	 * @return Options to use for the parsing
+	 * 获取命令行集合
 	 */
 	Options getOptions();
 
@@ -43,6 +44,7 @@ public interface ParserResultFactory<T> {
 	 *
 	 * @param commandLine to extract the options from
 	 * @return Result of the parsing
+	 * 返回配置工厂对象
 	 */
 	T createResult(@Nonnull CommandLine commandLine);
 }

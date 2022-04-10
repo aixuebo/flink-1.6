@@ -43,9 +43,9 @@ import org.apache.flink.util.Collector;
  * <p>The {@code processElementOnBroadcastSide()} takes as argument (among others) a context that allows it to
  * read/write to the broadcast state, while the {@code processElement()} has read-only access to the broadcast state.
  *
- * @param <IN1> The input type of the non-broadcast side.
- * @param <IN2> The input type of the broadcast side.
- * @param <OUT> The output type of the operator.
+ * @param <IN1> The input type of the non-broadcast side. 非广播数据源类型
+ * @param <IN2> The input type of the broadcast side. 广播数据源类型
+ * @param <OUT> The output type of the operator. 输出类型
  */
 @PublicEvolving
 public abstract class BroadcastProcessFunction<IN1, IN2, OUT> extends BaseBroadcastProcessFunction {
@@ -68,6 +68,7 @@ public abstract class BroadcastProcessFunction<IN1, IN2, OUT> extends BaseBroadc
 	 * @param out The collector to emit resulting elements to
 	 * @throws Exception The function may throw exceptions which cause the streaming program
 	 *                   to fail and go into recovery.
+	 *  如何处理一条数据,并且可以从广播流中读取到一些信息参与处理数据计算
 	 */
 	public abstract void processElement(final IN1 value, final ReadOnlyContext ctx, final Collector<OUT> out) throws Exception;
 
@@ -88,6 +89,7 @@ public abstract class BroadcastProcessFunction<IN1, IN2, OUT> extends BaseBroadc
 	 * @param out The collector to emit resulting elements to
 	 * @throws Exception The function may throw exceptions which cause the streaming program
 	 *                   to fail and go into recovery.
+	 * 如何向广播中写入数据
 	 */
 	public abstract void processBroadcastElement(final IN2 value, final Context ctx, final Collector<OUT> out) throws Exception;
 

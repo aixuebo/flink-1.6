@@ -145,7 +145,7 @@ public class ExecutionGraphBuilder {
 		final JobID jobId = jobGraph.getJobID();
 
 		final FailoverStrategy.Factory failoverStrategy =
-				FailoverStrategyLoader.loadFailoverStrategy(jobManagerConfig, log);
+				FailoverStrategyLoader.loadFailoverStrategy(jobManagerConfig, log);//加载配置文件,创建对应的策略实例
 
 		final JobInformation jobInformation = new JobInformation(
 			jobId,
@@ -194,6 +194,7 @@ public class ExecutionGraphBuilder {
 		final long initMasterStart = System.nanoTime();
 		log.info("Running initialization on master for job {} ({}).", jobName, jobId);
 
+		//构造 初始化 每一个任务顶点需要的class等信息
 		for (JobVertex vertex : jobGraph.getVertices()) {
 			String executableClass = vertex.getInvokableClassName();
 			if (executableClass == null || executableClass.isEmpty()) {
@@ -213,7 +214,7 @@ public class ExecutionGraphBuilder {
 			}
 
 			try {
-				vertex.initializeOnMaster(classLoader);
+				vertex.initializeOnMaster(classLoader);//核心方法调用
 			}
 			catch (Throwable t) {
 					throw new JobExecutionException(jobId,
@@ -225,7 +226,7 @@ public class ExecutionGraphBuilder {
 				(System.nanoTime() - initMasterStart) / 1_000_000);
 
 		// topologically sort the job vertices and attach the graph to the existing one
-		List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
+		List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();//对节点排序,比如数据源再最前面
 		if (log.isDebugEnabled()) {
 			log.debug("Adding {} vertices from job graph {} ({}).", sortedTopology.size(), jobName, jobId);
 		}

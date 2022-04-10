@@ -56,28 +56,30 @@ public class StreamConfig implements Serializable {
 	// ------------------------------------------------------------------------
 
 	private static final String NUMBER_OF_OUTPUTS = "numberOfOutputs";
-	private static final String NUMBER_OF_INPUTS = "numberOfInputs";
+	private static final String NUMBER_OF_INPUTS = "numberOfInputs";//多少个输入,比如正常是1个,当join的时候是2个
 	private static final String CHAINED_OUTPUTS = "chainedOutputs";
 	private static final String CHAINED_TASK_CONFIG = "chainedTaskConfig_";
 	private static final String IS_CHAINED_VERTEX = "isChainedSubtask";
 	private static final String CHAIN_INDEX = "chainIndex";
-	private static final String VERTEX_NAME = "vertexID";
+	private static final String VERTEX_NAME = "vertexID";//操作ID
 	private static final String ITERATION_ID = "iterationId";
 	private static final String OUTPUT_SELECTOR_WRAPPER = "outputSelectorWrapper";
 	private static final String SERIALIZEDUDF = "serializedUDF";
 	private static final String USER_FUNCTION = "userFunction";
 	private static final String BUFFER_TIMEOUT = "bufferTimeout";
-	private static final String TYPE_SERIALIZER_IN_1 = "typeSerializer_in_1";
-	private static final String TYPE_SERIALIZER_IN_2 = "typeSerializer_in_2";
-	private static final String TYPE_SERIALIZER_OUT_1 = "typeSerializer_out";
+
+	private static final String TYPE_SERIALIZER_IN_1 = "typeSerializer_in_1";//输入类型1,如何序列化
+	private static final String TYPE_SERIALIZER_IN_2 = "typeSerializer_in_2";//输入类型2,如何序列化
+	private static final String TYPE_SERIALIZER_OUT_1 = "typeSerializer_out";//输出类型,如何序列化
+
 	private static final String TYPE_SERIALIZER_SIDEOUT_PREFIX = "typeSerializer_sideout_";
 	private static final String ITERATON_WAIT = "iterationWait";
 	private static final String NONCHAINED_OUTPUTS = "nonChainedOutputs";
 	private static final String EDGES_IN_ORDER = "edgesInOrder";
-	private static final String OUT_STREAM_EDGES = "outStreamEdges";
-	private static final String IN_STREAM_EDGES = "inStreamEdges";
+	private static final String OUT_STREAM_EDGES = "outStreamEdges";//List<StreamEdge> 输出的边集合,即下游
+	private static final String IN_STREAM_EDGES = "inStreamEdges";//List<StreamEdge> 输入的边,即上游
 	private static final String OPERATOR_NAME = "operatorName";
-	private static final String OPERATOR_ID = "operatorID";
+	private static final String OPERATOR_ID = "operatorID";//用为为每一个操作自定义名称，用于在监控页面看到自己的操作执行内容
 	private static final String CHAIN_END = "chainEnd";
 
 	private static final String CHECKPOINTING_ENABLED = "checkpointing";

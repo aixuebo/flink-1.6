@@ -50,19 +50,21 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * Configuration for the task manager services such as the network environment, the memory manager,
  * the io manager and the metric registry.
+ *
+ * 配置节点的网络环境变量
  */
 public class TaskManagerServicesConfiguration {
 	private static final Logger LOG = LoggerFactory.getLogger(TaskManagerServicesConfiguration.class);
 
-	private final InetAddress taskManagerAddress;
+	private final InetAddress taskManagerAddress;//本地节点服务的ip信息,用于暴露给外部
 
-	private final String[] tmpDirPaths;
+	private final String[] tmpDirPaths;//本地生产的临时存放目录
 
-	private final String[] localRecoveryStateRootDirectories;
+	private final String[] localRecoveryStateRootDirectories;//本地生产的临时存放目录,在task节点存储stage状态信息
 
-	private final int numberOfSlots;
+	private final int numberOfSlots;//task节点对外提供多少个slot
 
-	private final NetworkEnvironmentConfiguration networkConfig;
+	private final NetworkEnvironmentConfiguration networkConfig;//配置netty如何传输数据--包含task对外提供数据传输的本地地址+端口
 
 	private final QueryableStateConfiguration queryableStateConfig;
 
@@ -71,17 +73,17 @@ public class TaskManagerServicesConfiguration {
 	 *
 	 * @see TaskManagerOptions#MANAGED_MEMORY_SIZE
 	 */
-	private final long configuredMemory;
+	private final long configuredMemory;//配置文件解析
 
-	private final MemoryType memoryType;
+	private final MemoryType memoryType;//内存类型是堆内内存 还是堆外内存
 
-	private final boolean preAllocateMemory;
+	private final boolean preAllocateMemory;//配置文件解析
 
-	private final float memoryFraction;
+	private final float memoryFraction;//配置文件解析 -- 内存占比
 
-	private final long timerServiceShutdownTimeout;
+	private final long timerServiceShutdownTimeout;//配置文件解析
 
-	private final boolean localRecoveryEnabled;
+	private final boolean localRecoveryEnabled;//解析配置文件
 
 	public TaskManagerServicesConfiguration(
 			InetAddress taskManagerAddress,
@@ -190,12 +192,12 @@ public class TaskManagerServicesConfiguration {
 	 * @param configuration The configuration.
 	 * @param remoteAddress identifying the IP address under which the TaskManager will be accessible
 	 * @param localCommunication True, to skip initializing the network stack.
-	 *                                      Use only in cases where only one task manager runs.
+	 *                                      Use only in cases where only one task manager runs.默认一般都是false
 	 * @return TaskExecutorConfiguration that wrappers InstanceConnectionInfo, NetworkEnvironmentConfiguration, etc.
 	 */
 	public static TaskManagerServicesConfiguration fromConfiguration(
 			Configuration configuration,
-			InetAddress remoteAddress,
+			InetAddress remoteAddress,//本地节点服务的ip信息,用于暴露给外部
 			boolean localCommunication) throws Exception {
 
 		// we need this because many configs have been written with a "-1" entry
@@ -291,6 +293,7 @@ public class TaskManagerServicesConfiguration {
 	 * @param taskManagerAddress address of the task manager
 	 * @param slots to start the task manager with
 	 * @return Network environment configuration
+	 * 配置netty如何传输数据--包含task对外提供数据传输的本地地址+端口
 	 */
 	@SuppressWarnings("deprecation")
 	private static NetworkEnvironmentConfiguration parseNetworkEnvironmentConfiguration(
@@ -342,6 +345,7 @@ public class TaskManagerServicesConfiguration {
 			}
 		}
 
+		//包含task对外提供数据传输的本地地址+端口
 		final NettyConfig nettyConfig;
 		if (!localTaskManagerCommunication) {
 			final InetSocketAddress taskManagerInetSocketAddress = new InetSocketAddress(taskManagerAddress, dataport);
@@ -410,6 +414,7 @@ public class TaskManagerServicesConfiguration {
 	 * @param networkBufMax 		maximum memory size for network buffers (in bytes)
 	 *
 	 * @throws IllegalConfigurationException if the condition does not hold
+	 * 校验数据有效性
 	 */
 	protected static void checkNetworkBufferConfig(
 			final int pageSize, final float networkBufFraction, final long networkBufMin,
@@ -441,6 +446,7 @@ public class TaskManagerServicesConfiguration {
 	 *
 	 * @param config configuration object
 	 * @return <tt>true</tt> if the new configuration method is used, <tt>false</tt> otherwise
+	 * true表示缓冲区缓存网络之间的数据
 	 */
 	@SuppressWarnings("deprecation")
 	public static boolean hasNewNetworkBufConf(final Configuration config) {
@@ -485,6 +491,7 @@ public class TaskManagerServicesConfiguration {
 	 * @param errorMessage  The optional custom error message to append to the exception message.
 	 *
 	 * @throws IllegalConfigurationException if the condition does not hold
+	 * 校验condition必须是true
 	 */
 	static void checkConfigParameter(boolean condition, Object parameter, String name, String errorMessage)
 			throws IllegalConfigurationException {

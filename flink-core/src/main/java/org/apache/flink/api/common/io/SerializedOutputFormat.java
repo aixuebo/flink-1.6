@@ -28,6 +28,7 @@ import org.apache.flink.core.memory.DataOutputView;
  * Stores elements by serializing them with their regular serialization/deserialization functionality.
  * 
  * @see SerializedInputFormat
+ * 将对象T序列化成字节数组
  */
 @Public
 public class SerializedOutputFormat<T extends IOReadableWritable> extends BinaryOutputFormat<T> {

@@ -47,8 +47,10 @@ import static org.apache.flink.util.Preconditions.checkState;
  *
  * <p>Subclasses must correctly implement {@link #equals(Object)} and {@link #hashCode()}.
  *
- * @param <S> The type of the State objects created from this {@code StateDescriptor}.
- * @param <T> The type of the value of the state object described by this state descriptor.
+ * @param <S> The type of the State objects created from this {@code StateDescriptor}.描述一个状态
+ * @param <T> The type of the value of the state object described by this state descriptor.设置状态的值类型
+ *
+ * 即存储什么类型的状态、状态的具体值
  */
 @PublicEvolving
 public abstract class StateDescriptor<S extends State, T> implements Serializable {
@@ -56,6 +58,7 @@ public abstract class StateDescriptor<S extends State, T> implements Serializabl
 	/**
 	 * An enumeration of the types of supported states. Used to identify the state type
 	 * when writing and restoring checkpoints and savepoints.
+	 * 状态类型
 	 */
 	// IMPORTANT: Do not change the order of the elements in this enum, ordinal is used in serialization
 	public enum Type {
@@ -64,12 +67,12 @@ public abstract class StateDescriptor<S extends State, T> implements Serializabl
 		 */
 		@Deprecated
 		UNKNOWN,
-		VALUE,
-		LIST,
-		REDUCING,
-		FOLDING,
-		AGGREGATING,
-		MAP
+		VALUE,//仅仅是一个类型的值
+		LIST,//List<T>
+		REDUCING,//ReduceFunction<T> 输入和输出类型相同
+		FOLDING,//FoldFunction<T, ACC> 输入和输出不同类型,并且输出有默认初始化的元素类型来确定
+		AGGREGATING,//AggregateFunction<IN, ACC, OUT> aggFunction;每一个输入都参与聚合,输入和输出类型不同,高级版的REDUCING、FOLDING
+		MAP //Map
 	}
 
 	private static final long serialVersionUID = 1L;
@@ -100,7 +103,7 @@ public abstract class StateDescriptor<S extends State, T> implements Serializabl
 
 	/** The default value returned by the state when no other value is bound to a key. */
 	@Nullable
-	protected transient T defaultValue;
+	protected transient T defaultValue;//状态默认值
 
 	// ------------------------------------------------------------------------
 

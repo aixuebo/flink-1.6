@@ -42,6 +42,8 @@ import static org.apache.flink.runtime.state.StateSnapshotTransformer.Collection
  * for collection types of state, like list or map.
  *
  * @param <T> type of state
+ *
+ * 对分区内的数据做一下过滤，不是所有数据都要做快照
  */
 @FunctionalInterface
 public interface StateSnapshotTransformer<T> {
@@ -50,6 +52,11 @@ public interface StateSnapshotTransformer<T> {
 	 *
 	 * @param value non-serialized form of value
 	 * @return value to snapshot or null which means the entry is not included
+	 *
+	 * 对state原始内容做处理。
+	 * 1.输入value是state原始内容
+	 * 2.将原始value做格式转换,然后再存储。
+	 * 3.或者对原始value做判断，如果不想存储,则设置为null,就会将其过滤掉,不会存储在快照中
 	 */
 	@Nullable
 	T filterOrTransform(@Nullable T value);
@@ -57,11 +64,11 @@ public interface StateSnapshotTransformer<T> {
 	/** Collection state specific transformer which says how to transform entries of the collection. */
 	interface CollectionStateSnapshotTransformer<T> extends StateSnapshotTransformer<T> {
 		enum TransformStrategy {
-			/** Transform all entries. */
+			/** Transform all entries. 全部元素都参与转换*/
 			TRANSFORM_ALL,
 
 			/**
-			 * Skip first null entries.
+			 * Skip first null entries.第一个元素被转换了,则后面元素都不需要再转换了，原封不动的添加进去就可以
 			 *
 			 * <p>While traversing collection entries, as optimisation, stops transforming
 			 * if encounters first non-null included entry and returns it plus the rest untouched.
@@ -81,9 +88,11 @@ public interface StateSnapshotTransformer<T> {
 	 * and transforms the whole list state.
 	 * If the wrapped per entry transformer is {@link CollectionStateSnapshotTransformer},
 	 * it respects its {@link TransformStrategy}.
+	 *
+	 * 对list类型的value进行转换处理,因为list中的value可能在转换过程中会被丢弃
 	 */
 	class ListStateSnapshotTransformer<T> implements StateSnapshotTransformer<List<T>> {
-		private final StateSnapshotTransformer<T> entryValueTransformer;
+		private final StateSnapshotTransformer<T> entryValueTransformer;//list中的每一个元素如何处理转换操作
 		private final TransformStrategy transformStrategy;
 
 		public ListStateSnapshotTransformer(StateSnapshotTransformer<T> entryValueTransformer) {
@@ -103,9 +112,9 @@ public interface StateSnapshotTransformer<T> {
 			boolean anyChange = false;
 			for (int i = 0; i < list.size(); i++) {
 				T entry = list.get(i);
-				T transformedEntry = entryValueTransformer.filterOrTransform(entry);
+				T transformedEntry = entryValueTransformer.filterOrTransform(entry);//对list中的元素进行转换处理
 				if (transformedEntry != null) {
-					if (transformStrategy == STOP_ON_FIRST_INCLUDED) {
+					if (transformStrategy == STOP_ON_FIRST_INCLUDED) {//第一个元素被转换了,则后面元素都不需要再转换了，原封不动的添加进去就可以
 						transformedList = list.subList(i, list.size());
 						anyChange = i > 0;
 						break;
@@ -113,9 +122,9 @@ public interface StateSnapshotTransformer<T> {
 						transformedList.add(transformedEntry);
 					}
 				}
-				anyChange |= transformedEntry == null || !Objects.equals(entry, transformedEntry);
+				anyChange |= transformedEntry == null || !Objects.equals(entry, transformedEntry);//true 说明转换起了作用
 			}
-			transformedList = anyChange ? transformedList : list;
+			transformedList = anyChange ? transformedList : list;//存储换换后的数据 还是 没有转换的数据
 			return transformedList.isEmpty() ? null : transformedList;
 		}
 	}
@@ -125,6 +134,8 @@ public interface StateSnapshotTransformer<T> {
 	 *
 	 * <p>This transformer wraps a transformer per-entry
 	 * and transforms the whole map state.
+	 *
+	 * 对map类型的value进行转换处理,因为map中的value可能在转换过程中会被丢弃
 	 */
 	class MapStateSnapshotTransformer<K, V> implements StateSnapshotTransformer<Map<K, V>> {
 		private final StateSnapshotTransformer<V> entryValueTransformer;
@@ -146,9 +157,9 @@ public interface StateSnapshotTransformer<T> {
 				if (transformedValue != null) {
 					transformedMap.put(entry.getKey(), transformedValue);
 				}
-				anyChange |= transformedValue == null || !Objects.equals(entry.getValue(), transformedValue);
+				anyChange |= transformedValue == null || !Objects.equals(entry.getValue(), transformedValue); //true表示经过转换,返回值是null或者已经跟原始值不一样了
 			}
-			return anyChange ? (transformedMap.isEmpty() ? null : transformedMap) : map;
+			return anyChange ? (transformedMap.isEmpty() ? null : transformedMap) : map;//有更改,则存储更改后的数据,没有更改,则存储map原本内容
 		}
 	}
 

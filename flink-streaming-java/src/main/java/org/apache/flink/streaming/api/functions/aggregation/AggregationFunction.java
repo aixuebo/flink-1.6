@@ -31,6 +31,8 @@ public abstract class AggregationFunction<T> implements ReduceFunction<T> {
 	 * Aggregation types that can be used on a windowed stream or keyed stream.
 	 */
 	public enum AggregationType {
-		SUM, MIN, MAX, MINBY, MAXBY,
+		SUM,
+		MIN, MAX, //获取最小值,但不是那条记录
+		MINBY, MAXBY,//获取的最小值，同时也是最小值的那条记录
 	}
 }

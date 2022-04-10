@@ -29,15 +29,16 @@ import javax.annotation.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 
+//因为jobManager发给resourceManager的请求不能立刻有资源,因此需要等待。
 public class PendingSlotRequest {
 
-	private final SlotRequest slotRequest;
+	private final SlotRequest slotRequest;//缓存持有请求的资源
 
 	@Nullable
-	private CompletableFuture<Acknowledge> requestFuture;
+	private CompletableFuture<Acknowledge> requestFuture;//返回请求的资源
 
 	/** Timestamp when this pending slot request has been created. */
-	private final long creationTimestamp;
+	private final long creationTimestamp;//请求什么时间点被等待的,有可能后续需要根据等待时间的前后顺序安排资源
 
 	public PendingSlotRequest(SlotRequest slotRequest) {
 		this.slotRequest = Preconditions.checkNotNull(slotRequest);
@@ -66,6 +67,7 @@ public class PendingSlotRequest {
 		return creationTimestamp;
 	}
 
+	//true表示请求已经分配
 	public boolean isAssigned() {
 		return null != requestFuture;
 	}

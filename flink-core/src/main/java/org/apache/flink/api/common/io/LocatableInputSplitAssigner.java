@@ -35,24 +35,25 @@ import org.apache.flink.util.NetUtils;
 /**
  * The locatable input split assigner assigns to each host splits that are local, before assigning
  * splits that are not local.
+ * 基于本地的数据块分配器
  */
 @Public
 public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LocatableInputSplitAssigner.class);
 
-	// unassigned input splits
+	// unassigned input splits 存储所有未分配的数据块
 	private final Set<LocatableInputSplitWithCount> unassigned = new HashSet<LocatableInputSplitWithCount>();
 
-	// input splits indexed by host for local assignment
+	// input splits indexed by host for local assignment host与的数据块分配器映射
 	private final ConcurrentHashMap<String, LocatableInputSplitChooser> localPerHost = new ConcurrentHashMap<String, LocatableInputSplitChooser>();
 
-	// unassigned splits for remote assignment
+	// unassigned splits for remote assignment 未分配的数据块由远程节点可以分配
 	private final LocatableInputSplitChooser remoteSplitChooser;
 
-	private int localAssignments;		// lock protected by the unassigned set lock
+	private int localAssignments;		// lock protected by the unassigned set lock 本地分配数据块的数量
 
-	private int remoteAssignments;		// lock protected by the unassigned set lock
+	private int remoteAssignments;		// lock protected by the unassigned set lock 远程分配数据块的数量
 
 	// --------------------------------------------------------------------------------------------
 
@@ -60,7 +61,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 		for(LocatableInputSplit split : splits) {
 			this.unassigned.add(new LocatableInputSplitWithCount(split));
 		}
-		this.remoteSplitChooser = new LocatableInputSplitChooser(unassigned);
+		this.remoteSplitChooser = new LocatableInputSplitChooser(unassigned);//如何远程去分配数据块
 	}
 
 	public LocatableInputSplitAssigner(LocatableInputSplit[] splits) {
@@ -71,7 +72,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+    //返回节点需要的数据块信息 --- 包括数据块序号、数据块所在节点
 	@Override
 	public LocatableInputSplit getNextInputSplit(String host, int taskId) {
 
@@ -84,7 +85,8 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 
 					if (split != null) {
 						// got a split to assign. Double check that it hasn't been assigned before.
-						if (this.unassigned.remove(split)) {
+						//再次校验一下他确实没有被分配
+						if (this.unassigned.remove(split)) {//可以删除,说明确实没分配
 							if (LOG.isInfoEnabled()) {
 								LOG.info("Assigning split to null host (random assignment).");
 							}
@@ -105,6 +107,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 			}
 		}
 
+		//代码到这里,说明一定是有host值,需要按照host就近分配数据块
 		host = host.toLowerCase(Locale.US);
 
 		// for any non-null host, we take the list of non-null splits
@@ -120,12 +123,12 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 
 				// if someone else beat us in the case to create this list, then we do not populate this one, but
 				// simply work with that other list
-				if (prior == null) {
+				if (prior == null) {//双重校验,确保添加映射前,确实不存在上一个选择器
 					// we are the first, we populate
 
 					// first, copy the remaining splits to release the lock on the set early
 					// because that is shared among threads
-					LocatableInputSplitWithCount[] remaining;
+					LocatableInputSplitWithCount[] remaining; //获取还尚未分配的数据块集合
 					synchronized (this.unassigned) {
 						remaining = this.unassigned.toArray(new LocatableInputSplitWithCount[this.unassigned.size()]);
 					}
@@ -141,7 +144,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 					}
 
 				}
-				else {
+				else {//说明已经分配了,所以只能分配一次,获取上一次即可
 					// someone else was faster
 					localSplits = prior;
 				}
@@ -230,7 +233,7 @@ public final class LocatableInputSplitAssigner implements InputSplitAssigner {
 	private static class LocatableInputSplitWithCount {
 
 		private final LocatableInputSplit split;
-		private int localCount;
+		private int localCount;//被多少个host可以访问
 
 		public LocatableInputSplitWithCount(LocatableInputSplit split) {
 			this.split = split;

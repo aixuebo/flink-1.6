@@ -24,6 +24,8 @@ import javax.annotation.Nonnull;
 
 /**
  * A combination of a {@link AllocatedSlot} and a {@link Locality}.
+ *
+ * 返回要调度的slot是谁，即slot的唯一id以及slot匹配的方式
  */
 public class SlotAndLocality {
 

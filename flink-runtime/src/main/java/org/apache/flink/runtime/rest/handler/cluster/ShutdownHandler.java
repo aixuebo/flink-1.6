@@ -36,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * REST handler which allows to shut down the cluster.
+ * 关闭集群.不需要输入和输出,只是一个命令
  */
 public class ShutdownHandler extends
 		AbstractRestHandler<RestfulGateway, EmptyRequestBody, EmptyResponseBody, EmptyMessageParameters> {
@@ -49,6 +50,7 @@ public class ShutdownHandler extends
 		super(localRestAddress, leaderRetriever, timeout, responseHeaders, messageHeaders);
 	}
 
+	//网管关闭集群
 	@Override
 	protected CompletableFuture<EmptyResponseBody> handleRequest(
 			@Nonnull final HandlerRequest<EmptyRequestBody, EmptyMessageParameters> request,

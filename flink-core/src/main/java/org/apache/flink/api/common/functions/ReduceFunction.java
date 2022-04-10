@@ -43,6 +43,21 @@ import java.io.Serializable;
  * <p>Like all functions, the ReduceFunction needs to be serializable, as defined in {@link java.io.Serializable}.
  *
  * @param <T> Type of the elements that this function processes.
+ * (I,I) --> I的转换,即I类型与merge类型,转换成I类型
+ * 应用在KeyedStream下。
+ * 确保相同的key的元素一起聚合成新的值
+ *
+ *
+ * 使用方式
+ * public void apply(W window, Iterable<T> input, Collector<R> out) throws Exception {
+ *   T curr = null;
+ *   for (T val: input) {
+ *   	if (curr == null) {
+ *  		 curr = val;
+ *   	} else {
+ *   	curr = function.reduce(curr, val);
+ *   	}
+ * }
  */
 @Public
 @FunctionalInterface
@@ -52,9 +67,9 @@ public interface ReduceFunction<T> extends Function, Serializable {
 	 * The core method of ReduceFunction, combining two values into one value of the same type.
 	 * The reduce function is consecutively applied to all values of a group until only a single value remains.
 	 *
-	 * @param value1 The first value to combine.
-	 * @param value2 The second value to combine.
-	 * @return The combined value of both input values.
+	 * @param value1 The first value to combine.聚合后的值
+	 * @param value2 The second value to combine.每一行元素
+	 * @return The combined value of both input values.做聚合
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.

@@ -30,12 +30,13 @@ public interface CheckpointListener {
 
 	/**
 	 * This method is called as a notification once a distributed checkpoint has been completed.
-	 * 
+	 * 一旦checkpoint完成后,会发送一个通知,下游实现如何处理该通知
 	 * Note that any exception during this method will not cause the checkpoint to
 	 * fail any more.
 	 * 
-	 * @param checkpointId The ID of the checkpoint that has been completed.
+	 * @param checkpointId The ID of the checkpoint that has been completed.已经完成的checkpointId
 	 * @throws Exception
+	 * 通知checkpoint已经完成
 	 */
 	void notifyCheckpointComplete(long checkpointId) throws Exception;
 }

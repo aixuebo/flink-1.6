@@ -50,7 +50,7 @@ public class AggregatingStateDescriptor<IN, ACC, OUT> extends StateDescriptor<Ag
 	 *
 	 * @param name The (unique) name for the state.
 	 * @param aggFunction The {@code AggregateFunction} used to aggregate the state.
-	 * @param stateType The type of the accumulator. The accumulator is stored in the state.
+	 * @param stateType The type of the accumulator. The accumulator is stored in the state.中间类型
 	 */
 	public AggregatingStateDescriptor(
 			String name,

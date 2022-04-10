@@ -35,6 +35,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * A {@code JobStatusListener} and {@code ExecutionStatusListener} that sends an actor message
  * for each status change.
+ *
+ * 当job发生状态变化,则要发送信息给target
  */
 public class StatusListenerMessenger implements JobStatusListener, ExecutionStatusListener {
 
@@ -44,6 +46,13 @@ public class StatusListenerMessenger implements JobStatusListener, ExecutionStat
 		this.target = new AkkaActorGateway(checkNotNull(target), leaderSessionId);
 	}
 
+	/**
+	 * job发生状态变化
+	 * @param jobId         The ID of the job.
+	 * @param newJobStatus  The status the job switched to.job的新状态
+	 * @param timestamp     The timestamp when the status transition occurred.
+	 * @param error         In case the job status switches to a failure state, this is the
+	 */
 	@Override
 	public void jobStatusChanges(JobID jobId, JobStatus newJobStatus, long timestamp, Throwable error) {
 		ExecutionGraphMessages.JobStatusChanged message =

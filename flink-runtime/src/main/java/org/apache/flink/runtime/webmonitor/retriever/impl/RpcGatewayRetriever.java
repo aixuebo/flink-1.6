@@ -41,7 +41,7 @@ public class RpcGatewayRetriever<F extends Serializable, T extends FencedRpcGate
 
 	private final RpcService rpcService;
 	private final Class<T> gatewayType;
-	private final Function<UUID, F> fencingTokenMapper;
+	private final Function<UUID, F> fencingTokenMapper;//给定uuid后,创建F对象
 
 	private final int retries;
 	private final Time retryDelay;
@@ -62,6 +62,7 @@ public class RpcGatewayRetriever<F extends Serializable, T extends FencedRpcGate
 		this.retryDelay = Preconditions.checkNotNull(retryDelay);
 	}
 
+	//新leader服务器地址+sessionID
 	@Override
 	protected CompletableFuture<T> createGateway(CompletableFuture<Tuple2<String, UUID>> leaderFuture) {
 		return FutureUtils.retryWithDelay(

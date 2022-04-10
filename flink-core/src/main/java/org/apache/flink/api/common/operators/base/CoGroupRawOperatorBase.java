@@ -46,6 +46,8 @@ import org.apache.flink.api.common.ExecutionConfig;
 
 /**
  * @see org.apache.flink.api.common.functions.CoGroupFunction
+ *
+ * 针对原生的两个数据源，分别排序后，交给CoGroupFunction函数处理原生两个集合
  */
 @Internal
 public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {
@@ -83,7 +85,7 @@ public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN
 	/**
 	 * Sets the order of the elements within a group for the given input.
 	 *
-	 * @param inputNum The number of the input (here either <i>0</i> or <i>1</i>).
+	 * @param inputNum The number of the input (here either <i>0</i> or <i>1</i>).为第几个数据集设置order属性
 	 * @param order    The order for the elements in a group.
 	 */
 	public void setGroupOrder(int inputNum, Ordering order) {
@@ -120,6 +122,7 @@ public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN
 	 *
 	 * @param inputNum The number of the input (here either <i>0</i> or <i>1</i>).
 	 * @return The group order.
+	 * 获取第几个数据集合对应的order信息
 	 */
 	public Ordering getGroupOrder(int inputNum) {
 		if (inputNum == 0) {
@@ -221,8 +224,9 @@ public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN
 		return ((CompositeType<T>) inputType).createComparator(inputKeys, inputSortDirections, 0, executionConfig);
 	}
 
+	//对数据源进行排序，然后返回排序后的迭代器
 	public static class SimpleListIterable<IN> implements Iterable<IN> {
-		private List<IN> values;
+		private List<IN> values;//数据源排序
 		private TypeSerializer<IN> serializer;
 		private boolean copy;
 

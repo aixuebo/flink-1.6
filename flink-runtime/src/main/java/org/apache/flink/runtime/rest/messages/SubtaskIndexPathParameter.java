@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * Path parameter specifying the index of a subtask.
+ * 参数值是Integer
  */
 public class SubtaskIndexPathParameter extends MessagePathParameter<Integer> {
 

@@ -27,6 +27,8 @@ import org.apache.flink.annotation.Public;
  * @param <T> The type of the argument to the function.
  * @param <R> The type of the result of the supplier.
  * @param <E> The type of Exceptions thrown by this function.
+ *
+ * 函数式变成接口<原始值类型,输出值类型,异常类型>
  */
 @Public
 @FunctionalInterface

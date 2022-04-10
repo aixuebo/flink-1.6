@@ -35,6 +35,7 @@ import org.apache.flink.annotation.PublicEvolving;
  *
  * @deprecated The Key type is a relict of a deprecated and removed API and will be removed
  *             in future (2.0) versions as well.
+ * 该key可以比较
  */
 @Deprecated
 @PublicEvolving

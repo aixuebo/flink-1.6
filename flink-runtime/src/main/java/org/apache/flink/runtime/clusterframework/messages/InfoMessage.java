@@ -24,6 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A simple informational message sent by the resource master to the client.
+ * resource master向某一个节点发送信息的内容，包含信息内容+时间
+ *
  */
 public class InfoMessage implements java.io.Serializable {
 

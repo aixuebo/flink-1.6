@@ -20,11 +20,13 @@ package org.apache.flink.metrics;
 
 /**
  * A Counter is a {@link Metric} that measures a count.
+ * 计数器  增加/减少/读取计数器值
  */
 public interface Counter extends Metric {
 
 	/**
 	 * Increment the current count by 1.
+	 * 增加1
 	 */
 	void inc();
 

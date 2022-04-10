@@ -29,14 +29,20 @@ import java.util.Set;
 /**
  * A snapshot of internal timers, containing event and processing timers and
  * the serializers to use to write / read them.
+ *
+ * InternalTimers的快照,包含所有的timers序列化的内容，如何序列化/反序列化这些数据
+ *
+ * 快照包含的内容--说明已经反序列化完成的对象
  */
 public class InternalTimersSnapshot<K, N> {
 
+	//key和命名空间N如何序列化,用于具体序列化TimerSerializer的key和命名空间
 	private TypeSerializer<K> keySerializer;
 	private TypeSerializerConfigSnapshot keySerializerConfigSnapshot;
 	private TypeSerializer<N> namespaceSerializer;
 	private TypeSerializerConfigSnapshot namespaceSerializerConfigSnapshot;
 
+	//TimerSerializer 对象用于 序列化K和N 以及 时间戳,描述 key在空间N的到期时间,到期后会触发回调。
 	private Set<TimerHeapInternalTimer<K, N>> eventTimeTimers;
 	private Set<TimerHeapInternalTimer<K, N>> processingTimeTimers;
 
@@ -49,7 +55,7 @@ public class InternalTimersSnapshot<K, N> {
 			TypeSerializerConfigSnapshot keySerializerConfigSnapshot,
 			TypeSerializer<N> namespaceSerializer,
 			TypeSerializerConfigSnapshot namespaceSerializerConfigSnapshot,
-			@Nullable Set<TimerHeapInternalTimer<K, N>> eventTimeTimers,
+			@Nullable Set<TimerHeapInternalTimer<K, N>> eventTimeTimers,//允许是null
 			@Nullable Set<TimerHeapInternalTimer<K, N>> processingTimeTimers) {
 
 		this.keySerializer = Preconditions.checkNotNull(keySerializer);
@@ -92,6 +98,7 @@ public class InternalTimersSnapshot<K, N> {
 		this.namespaceSerializerConfigSnapshot = namespaceSerializerConfigSnapshot;
 	}
 
+	//TimerSerializer 对象用于 序列化K和N 以及 时间戳,描述 key在空间N的到期时间,到期后会触发回调。
 	public Set<TimerHeapInternalTimer<K, N>> getEventTimeTimers() {
 		return eventTimeTimers;
 	}
@@ -100,6 +107,7 @@ public class InternalTimersSnapshot<K, N> {
 		this.eventTimeTimers = eventTimeTimers;
 	}
 
+	//TimerSerializer 对象用于 序列化K和N 以及 时间戳,描述 key在空间N的到期时间,到期后会触发回调。
 	public Set<TimerHeapInternalTimer<K, N>> getProcessingTimeTimers() {
 		return processingTimeTimers;
 	}

@@ -25,14 +25,15 @@ import org.apache.flink.util.Preconditions;
 
 /**
  * This class extends the {@link TaskExecutorConnection}, adding the worker information.
+ * 代表一个task manager，
  */
 public class WorkerRegistration<WorkerType extends ResourceIDRetrievable> extends TaskExecutorConnection {
 
 	private final WorkerType worker;
 
-	private final int dataPort;
+	private final int dataPort;//请求端口
 
-	private final HardwareDescription hardwareDescription;
+	private final HardwareDescription hardwareDescription;//硬件信息
 
 	public WorkerRegistration(
 			TaskExecutorGateway taskExecutorGateway,

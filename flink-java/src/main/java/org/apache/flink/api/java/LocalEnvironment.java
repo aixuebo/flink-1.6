@@ -121,7 +121,7 @@ public class LocalEnvironment extends ExecutionEnvironment {
 
 		// create a new local executor
 		executor = PlanExecutor.createLocalExecutor(configuration);
-		executor.setPrintStatusDuringExecution(getConfig().isSysoutLoggingEnabled());
+		executor.setPrintStatusDuringExecution(getConfig().isSysoutLoggingEnabled());//设置日志是否输出到System out中
 
 		// if we have a session, start the mini cluster eagerly to have it available across sessions
 		if (getSessionTimeout() > 0) {
@@ -151,6 +151,7 @@ public class LocalEnvironment extends ExecutionEnvironment {
 	 *
 	 * <p><b>IMPORTANT:</b> This must be a static inner class to hold no reference to the outer class.
 	 * Otherwise, the outer class could never become garbage collectible while this thread runs.
+	 * 当trigger触发时,要关闭正在执行的任务进程
 	 */
 	private static class ShutdownThread extends Thread {
 

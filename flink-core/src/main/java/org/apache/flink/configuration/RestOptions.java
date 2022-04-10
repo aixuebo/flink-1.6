@@ -39,6 +39,7 @@ public class RestOptions {
 
 	/**
 	 * The address that should be used by clients to connect to the server.
+	 * 服务端地址
 	 */
 	public static final ConfigOption<String> ADDRESS =
 		key("rest.address")
@@ -48,6 +49,7 @@ public class RestOptions {
 
 	/**
 	 * The port that the server listens on / the client connects to.
+	 * 服务端监听端口 或者客户端需要连接的端口
 	 */
 	public static final ConfigOption<Integer> PORT =
 		key("rest.port")
@@ -103,6 +105,7 @@ public class RestOptions {
 
 	/**
 	 * The maximum content length that the server will handle.
+	 * rpc的response的内容太长了
 	 */
 	public static final ConfigOption<Integer> SERVER_MAX_CONTENT_LENGTH =
 		key("rest.server.max-content-length")

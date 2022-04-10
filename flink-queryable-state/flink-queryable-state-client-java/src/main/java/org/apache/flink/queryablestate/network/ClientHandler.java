@@ -40,6 +40,8 @@ import java.nio.channels.ClosedChannelException;
  *
  * @param <REQ> the type of request the client will send.
  * @param <RESP> the type of response the client expects to receive.
+ *
+ * 处理客户端逻辑,当请求成功、请求失败、服务器失败时，如何处理三种关系
  */
 @Internal
 public class ClientHandler<REQ extends MessageBody, RESP extends MessageBody> extends ChannelInboundHandlerAdapter {
@@ -75,14 +77,14 @@ public class ClientHandler<REQ extends MessageBody, RESP extends MessageBody> ex
 			ByteBuf buf = (ByteBuf) msg;
 			MessageType msgType = MessageSerializer.deserializeHeader(buf);
 
-			if (msgType == MessageType.REQUEST_RESULT) {
+			if (msgType == MessageType.REQUEST_RESULT) {//成功接收请求的response
 				long requestId = MessageSerializer.getRequestId(buf);
 				RESP result = serializer.deserializeResponse(buf);
 				callback.onRequestResult(requestId, result);
-			} else if (msgType == MessageType.REQUEST_FAILURE) {
+			} else if (msgType == MessageType.REQUEST_FAILURE) {//请求失败
 				RequestFailure failure = MessageSerializer.deserializeRequestFailure(buf);
 				callback.onRequestFailure(failure.getRequestId(), failure.getCause());
-			} else if (msgType == MessageType.SERVER_FAILURE) {
+			} else if (msgType == MessageType.SERVER_FAILURE) {//请求的服务器有问题,服务后期不能再提供服务
 				throw MessageSerializer.deserializeServerFailure(buf);
 			} else {
 				throw new IllegalStateException("Unexpected response type '" + msgType + "'");

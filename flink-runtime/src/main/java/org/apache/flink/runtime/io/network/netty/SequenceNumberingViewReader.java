@@ -40,7 +40,7 @@ class SequenceNumberingViewReader implements BufferAvailabilityListener, Network
 
 	private final Object requestLock = new Object();
 
-	private final InputChannelID receiverId;
+	private final InputChannelID receiverId;//客户端请求过来的id,该id是客户端持有的,所以每次response要把该id带回给客户端
 
 	private final PartitionRequestQueue requestQueue;
 
@@ -55,11 +55,12 @@ class SequenceNumberingViewReader implements BufferAvailabilityListener, Network
 		this.requestQueue = requestQueue;
 	}
 
+	//读取一个子分区的数据
 	@Override
 	public void requestSubpartitionView(
-		ResultPartitionProvider partitionProvider,
-		ResultPartitionID resultPartitionId,
-		int subPartitionIndex) throws IOException {
+		ResultPartitionProvider partitionProvider,//如何读取分区
+		ResultPartitionID resultPartitionId,//读取哪个分区
+		int subPartitionIndex) throws IOException {//读取哪个子分区
 
 		synchronized (requestLock) {
 			if (subpartitionView == null) {

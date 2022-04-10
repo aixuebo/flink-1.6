@@ -29,13 +29,14 @@ import java.util.Iterator;
 
 /**
  * Immutable unordered collection of fields IDs.
+ * 存储Integer的id集合---set是没有顺序的
  */
 @Internal
 public class FieldSet implements Iterable<Integer> {
 	
 	public static final FieldSet EMPTY_SET = new FieldSet();
 	
-	protected final Collection<Integer> collection;
+	protected final Collection<Integer> collection;//用于存储id集合---此时只是一个集合,具体有子类实现,有可能是无序的set,也可能是有序的list
 
 	// --------------------------------------------------------------------------------------------
 
@@ -102,6 +103,7 @@ public class FieldSet implements Iterable<Integer> {
 	/**
 	 * @param fieldSet The first part of the new set, NOT NULL!
 	 * @param fieldID The ID to be added, NOT NULL!
+	 * merge,产生新的set集合
 	 */
 	private FieldSet(FieldSet fieldSet, Integer fieldID) {
 		if (fieldSet.size() == 0) {
@@ -114,7 +116,8 @@ public class FieldSet implements Iterable<Integer> {
 			this.collection = Collections.unmodifiableSet(set);
 		}
 	}
-	
+
+	//merge,产生新的set集合
 	private FieldSet(FieldSet fieldSet, int... fieldIDs) {
 		if (fieldIDs == null || fieldIDs.length == 0) {
 			this.collection = fieldSet.collection;
@@ -129,7 +132,8 @@ public class FieldSet implements Iterable<Integer> {
 			this.collection = Collections.unmodifiableSet(set);
 		}
 	}
-	
+
+	//merge,产生新的set集合
 	private FieldSet(FieldSet fieldSet1, FieldSet fieldSet2) {
 		if (fieldSet2.size() == 0) {
 			this.collection = fieldSet1.collection;
@@ -146,7 +150,7 @@ public class FieldSet implements Iterable<Integer> {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//merge当前的FieldSet,返回新的FieldSet
 	public FieldSet addField(Integer fieldID) {
 		if (fieldID == null) {
 			throw new IllegalArgumentException("Field ID must not be null.");
@@ -224,6 +228,7 @@ public class FieldSet implements Iterable<Integer> {
 	 * 
 	 * @param set The set that is a candidate subset.
 	 * @return True, if the given set is a subset of this set, false otherwise.
+	 * true表示参数是一个子集
 	 */
 	public boolean isValidSubset(FieldSet set) {
 		if (set.size() > size()) {

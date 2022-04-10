@@ -26,10 +26,15 @@ import java.io.Serializable;
 
 /**
  * A special {@link ChannelSelector} for use in streaming programs.
+ * 返回该记录应该输出到哪些通道里。
+ * 比如广播时,要将数据发布到所有子分区内。
+ * 正常partition分布时,只返回一个分区。
  */
 @Internal
 public abstract class StreamPartitioner<T> implements
-		ChannelSelector<SerializationDelegate<StreamRecord<T>>>, Serializable {
+		ChannelSelector<SerializationDelegate<StreamRecord<T>>>, //序列化StreamRecord对象
+	 Serializable {
+
 	private static final long serialVersionUID = 1L;
 
 	public abstract StreamPartitioner<T> copy();

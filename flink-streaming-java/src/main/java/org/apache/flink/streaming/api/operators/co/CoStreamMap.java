@@ -26,6 +26,11 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 /**
  * {@link org.apache.flink.streaming.api.operators.StreamOperator} for processing
  * {@link CoMapFunction CoMapFunctions}.
+ *
+ * stream1.coGroup(stream2)
+ * 简单理解就是当stream1数据到来时，会调用flatMap1方法，stream2收到数据之时，会调用flatMap2方法
+ *
+ * 处理两个流的connect操作
  */
 @Internal
 public class CoStreamMap<IN1, IN2, OUT>

@@ -26,6 +26,9 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * channels.
  *
  * @param <T> Type of the elements in the Stream being rebalanced
+ * 轮训的方式,输出到不同的channel通道里
+ *
+ * 所以常用来处理带有自然倾斜的原始数据流，比如各Partition之间数据量差距比较大的Kafka Topic,经过RebalancePartitioner后,下游每一个分区的数据量是相近的
  */
 @Internal
 public class RebalancePartitioner<T> extends StreamPartitioner<T> {
@@ -33,10 +36,11 @@ public class RebalancePartitioner<T> extends StreamPartitioner<T> {
 
 	private final int[] returnArray = new int[] {-1};
 
+	//选择要输出的通道
 	@Override
 	public int[] selectChannels(SerializationDelegate<StreamRecord<T>> record,
 			int numberOfOutputChannels) {
-		int newChannel = ++this.returnArray[0];
+		int newChannel = ++this.returnArray[0];//获取通道 ---- 数组的元素值不断累加1
 		if (newChannel >= numberOfOutputChannels) {
 			this.returnArray[0] = 0;
 		}

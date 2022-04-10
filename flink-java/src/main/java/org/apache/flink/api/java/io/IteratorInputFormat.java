@@ -27,6 +27,7 @@ import java.util.Iterator;
 
 /**
  * An input format that returns objects from an iterator.
+ * 数据源本身就是一个迭代器,不是读取文件这么复杂的方式
  */
 @PublicEvolving
 public class IteratorInputFormat<T> extends GenericInputFormat<T> implements NonParallelInput {

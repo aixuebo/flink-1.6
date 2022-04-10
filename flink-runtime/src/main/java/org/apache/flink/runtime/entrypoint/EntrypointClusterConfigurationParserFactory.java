@@ -41,11 +41,11 @@ public class EntrypointClusterConfigurationParserFactory implements ParserResult
 	@Override
 	public Options getOptions() {
 		final Options options = new Options();
-		options.addOption(CONFIG_DIR_OPTION);
-		options.addOption(REST_PORT_OPTION);
-		options.addOption(DYNAMIC_PROPERTY_OPTION);
-		options.addOption(HOST_OPTION);
-		options.addOption(EXECUTION_MODE_OPTION);
+		options.addOption(CONFIG_DIR_OPTION);//configDir
+		options.addOption(REST_PORT_OPTION);//webui-port
+		options.addOption(DYNAMIC_PROPERTY_OPTION);//-D动态参数
+		options.addOption(HOST_OPTION);//host
+		options.addOption(EXECUTION_MODE_OPTION);//executionMode
 
 		return options;
 	}

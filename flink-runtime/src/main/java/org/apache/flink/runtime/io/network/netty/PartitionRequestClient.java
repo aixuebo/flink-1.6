@@ -44,22 +44,22 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * Partition request client for remote partition requests.
  *
- * <p>This client is shared by all remote input channels, which request a partition
- * from the same {@link ConnectionID}.
+ * <p>This client is shared by all remote input channels, which request a partition from the same {@link ConnectionID}.
+ * 代表与远程地址建立的tcp连接
  */
 public class PartitionRequestClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PartitionRequestClient.class);
 
-	private final Channel tcpChannel;
+	private final Channel tcpChannel;//连接的通道,该通道可以互发信息
 
-	private final NetworkClientHandler clientHandler;
+	private final NetworkClientHandler clientHandler;//连接如何处理
 
-	private final ConnectionID connectionId;
+	private final ConnectionID connectionId;//连接哪个远程节点
 
-	private final PartitionRequestClientFactory clientFactory;
+	private final PartitionRequestClientFactory clientFactory;//连接工厂--连接如何创建的
 
-	/** If zero, the underlying TCP channel can be safely closed. */
+	/** If zero, the underlying TCP channel can be safely closed. 引用该连接的数量,如果是0,说明没有连接使用,可以被关闭*/
 	private final AtomicDisposableReferenceCounter closeReferenceCounter = new AtomicDisposableReferenceCounter();
 
 	PartitionRequestClient(
@@ -74,6 +74,7 @@ public class PartitionRequestClient {
 		this.clientFactory = checkNotNull(clientFactory);
 	}
 
+	//是否可以销毁
 	boolean disposeIfNotUsed() {
 		return closeReferenceCounter.disposeIfNotUsed();
 	}
@@ -90,15 +91,16 @@ public class PartitionRequestClient {
 
 	/**
 	 * Requests a remote intermediate result partition queue.
-	 *
+	 * 请求远程partition节点，去获取需要的中间结果数据
 	 * <p>The request goes to the remote producer, for which this partition
 	 * request client instance has been created.
 	 */
 	public ChannelFuture requestSubpartition(
-			final ResultPartitionID partitionId,
-			final int subpartitionIndex,
-			final RemoteInputChannel inputChannel,
-			int delayMs) throws IOException {
+			final ResultPartitionID partitionId,//获取partition的ID
+			final int subpartitionIndex,//第几个子partition
+			final RemoteInputChannel inputChannel,//返回的信息拉回来后，存储在哪个流里? 暂时还不确定
+			int delayMs) //延期发送请求
+		 throws IOException {
 
 		checkNotClosed();
 
@@ -107,9 +109,11 @@ public class PartitionRequestClient {
 
 		clientHandler.addInputChannel(inputChannel);
 
+		//发送请求到远程服务器
 		final PartitionRequest request = new PartitionRequest(
 				partitionId, subpartitionIndex, inputChannel.getInputChannelId(), inputChannel.getInitialCredit());
 
+		//监听request请求返回的内容
 		final ChannelFutureListener listener = new ChannelFutureListener() {
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
@@ -127,9 +131,9 @@ public class PartitionRequestClient {
 
 		if (delayMs == 0) {
 			ChannelFuture f = tcpChannel.writeAndFlush(request);
-			f.addListener(listener);
+			f.addListener(listener);//异步监听request请求返回信息
 			return f;
-		} else {
+		} else { //延期发送请求
 			final ChannelFuture[] f = new ChannelFuture[1];
 			tcpChannel.eventLoop().schedule(new Runnable() {
 				@Override
@@ -154,12 +158,12 @@ public class PartitionRequestClient {
 	public void sendTaskEvent(ResultPartitionID partitionId, TaskEvent event, final RemoteInputChannel inputChannel) throws IOException {
 		checkNotClosed();
 
-		tcpChannel.writeAndFlush(new TaskEventRequest(event, partitionId, inputChannel.getInputChannelId()))
-				.addListener(
+		tcpChannel.writeAndFlush(new TaskEventRequest(event, partitionId, inputChannel.getInputChannelId()))//向远程节点发送请求
+				.addListener(//对返回值进行监听
 						new ChannelFutureListener() {
 							@Override
-							public void operationComplete(ChannelFuture future) throws Exception {
-								if (!future.isSuccess()) {
+							public void operationComplete(ChannelFuture future) throws Exception {//当返回成功时,如何处理
+								if (!future.isSuccess()) {//仅处理返回失败的情况
 									SocketAddress remoteAddr = future.channel().remoteAddress();
 									inputChannel.onError(new LocalTransportException(
 										String.format("Sending the task event to '%s' failed.", remoteAddr),
@@ -191,6 +195,7 @@ public class PartitionRequestClient {
 		}
 	}
 
+	//说明已经被关闭,则抛异常
 	private void checkNotClosed() throws IOException {
 		if (closeReferenceCounter.isDisposed()) {
 			final SocketAddress localAddr = tcpChannel.localAddress();

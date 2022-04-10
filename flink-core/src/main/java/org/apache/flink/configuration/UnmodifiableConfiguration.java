@@ -24,6 +24,7 @@ import java.util.Properties;
 
 /**
  * Unmodifiable version of the Configuration class.
+ * 不允许修改的配置文件对象
  */
 @Public
 public class UnmodifiableConfiguration extends Configuration {

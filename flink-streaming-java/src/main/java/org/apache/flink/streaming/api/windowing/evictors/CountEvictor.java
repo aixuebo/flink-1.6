@@ -28,13 +28,15 @@ import java.util.Iterator;
  * An {@link Evictor} that keeps up to a certain amount of elements.
  *
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
+ *
+ * 以元素计数为标准，决定元素是否会被移除。
  */
 @PublicEvolving
 public class CountEvictor<W extends Window> implements Evictor<Object, W> {
 	private static final long serialVersionUID = 1L;
 
-	private final long maxCount;
-	private final boolean doEvictAfter;
+	private final long maxCount;//比如10,说明仅保留最近10条数据
+	private final boolean doEvictAfter;//true 表示evictAfter执行,默认是false,即默认是evictBefore进行删除元素
 
 	private CountEvictor(long count, boolean doEvictAfter) {
 		this.maxCount = count;
@@ -61,14 +63,14 @@ public class CountEvictor<W extends Window> implements Evictor<Object, W> {
 	}
 
 	private void evict(Iterable<TimestampedValue<Object>> elements, int size, EvictorContext ctx) {
-		if (size <= maxCount) {
+		if (size <= maxCount) {//说明size不足10个,因此全部保留
 			return;
 		} else {
-			int evictedCount = 0;
-			for (Iterator<TimestampedValue<Object>> iterator = elements.iterator(); iterator.hasNext();){
+			int evictedCount = 0;//删除多少个元素
+			for (Iterator<TimestampedValue<Object>> iterator = elements.iterator(); iterator.hasNext();){//循环
 				iterator.next();
 				evictedCount++;
-				if (evictedCount > size - maxCount) {
+				if (evictedCount > size - maxCount) { //比如size=60,说明一共有60个元素，maxCount=10 说明只保存10个元素，因此从0开始循环，一直到删除第50个后，就可以被保留了
 					break;
 				} else {
 					iterator.remove();

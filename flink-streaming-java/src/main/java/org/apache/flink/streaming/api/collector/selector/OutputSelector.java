@@ -30,6 +30,8 @@ import java.io.Serializable;
  *
  * @param <OUT>
  *            Type parameter of the split values.
+ * 如何将一个流 拆分成 多个流。
+ * DataStream.split方法转换成该流
  */
 @PublicEvolving
 public interface OutputSelector<OUT> extends Serializable {
@@ -41,6 +43,12 @@ public interface OutputSelector<OUT> extends Serializable {
 	 *
 	 * @param value
 	 *            Output object for which the output selection should be made.
+	 * 将一个元素,输出到哪些流name中
+	 *
+	 * 将参数转换成迭代器
+	 *
+	 * 参数是输入的元素，输出是该元素被打的tag集合。
+	 * 后期是需要被SplitStream的select(String... outputNames) 或者  selectOutput(String[] outputNames) 选择要哪些tag子流
 	 */
 	Iterable<String> select(OUT value);
 }

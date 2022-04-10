@@ -23,9 +23,9 @@ package org.apache.flink.runtime.io.network.partition;
  */
 public enum ResultPartitionType {
 
-	BLOCKING(false, false, false),
+	BLOCKING(false, false, false),//仅在生成完整结果后向下游发送数据
 
-	PIPELINED(true, true, false),
+	PIPELINED(true, true, false),//一旦产生数据就可以持续向下游发送有限数据流或无限数据流 --- 无限的管道
 
 	/**
 	 * Pipelined partitions with a bounded (local) buffer pool.
@@ -37,8 +37,9 @@ public enum ResultPartitionType {
 	 *
 	 * <p>For batch jobs, it will be best to keep this unlimited ({@link #PIPELINED}) since there are
 	 * no checkpoint barriers.
+	 * 使用固定的缓冲池,避免数据缓存太多,造成checkpoint等延迟
 	 */
-	PIPELINED_BOUNDED(true, true, true);
+	PIPELINED_BOUNDED(true, true, true); //一旦产生数据就可以持续向下游发送有限数据流或无限数据流 --- 有限长度的管道
 
 	/** Can the partition be consumed while being produced? */
 	private final boolean isPipelined;
@@ -74,6 +75,7 @@ public enum ResultPartitionType {
 	 * Whether this partition uses a limited number of (network) buffers or not.
 	 *
 	 * @return <tt>true</tt> if the number of buffers should be bound to some limit
+	 * 是否有界
 	 */
 	public boolean isBounded() {
 		return isBounded;

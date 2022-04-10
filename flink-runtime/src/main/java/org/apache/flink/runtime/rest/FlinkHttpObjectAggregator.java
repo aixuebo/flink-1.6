@@ -35,6 +35,7 @@ import java.util.Map;
 /**
  * Same as {@link org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpObjectDecoder}
  * but returns HTTP 413 to the client if the payload exceeds {@link #maxContentLength}.
+ * rpc的response的内容太长了,则抛异常
  */
 public class FlinkHttpObjectAggregator extends org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpObjectAggregator {
 
@@ -59,7 +60,7 @@ public class FlinkHttpObjectAggregator extends org.apache.flink.shaded.netty4.io
 				false,
 				new ErrorResponseBody(String.format(
 					e.getMessage() + " Try to raise [%s]",
-					RestOptions.SERVER_MAX_CONTENT_LENGTH.key())),
+					RestOptions.SERVER_MAX_CONTENT_LENGTH.key())),//rpc的response的内容太长了
 				HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE,
 				responseHeaders);
 		}

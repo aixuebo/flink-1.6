@@ -35,33 +35,38 @@ import java.nio.ByteOrder;
  * one-by-one using {@link #continueWritingWithNextBufferBuilder(BufferBuilder)}.
  *
  * @param <T> The type of the records that are serialized.
+ *
+ * 数据拆分成两部分，一个数据大小的buffer、一个data buffer，输出到memorySegment中
+ * 返回结果是 该条数据是否输出完成，容器是否满了
+ *
+ * 持续输出记录
  */
 public class SpanningRecordSerializer<T extends IOReadableWritable> implements RecordSerializer<T> {
 
 	/** Flag to enable/disable checks, if buffer not set/full or pending serialization. */
-	private static final boolean CHECKED = false;
+	private static final boolean CHECKED = false;//是否启动检查功能
 
 	/** Intermediate data serialization. */
-	private final DataOutputSerializer serializationBuffer;
+	private final DataOutputSerializer serializationBuffer;//输出流--输出的是字节数组，但可以直接传入int、string等基础信息,自动会转换成字节数组
 
 	/** Intermediate buffer for data serialization (wrapped from {@link #serializationBuffer}). */
-	private ByteBuffer dataBuffer;
+	private ByteBuffer dataBuffer;//用于存储数据的中间结果buffer
 
 	/** Intermediate buffer for length serialization. */
-	private final ByteBuffer lengthBuffer;
+	private final ByteBuffer lengthBuffer;//用于存储中间结果的长度，4个字节
 
 	/** Current target {@link Buffer} of the serializer. */
 	@Nullable
-	private BufferBuilder targetBuffer;
+	private BufferBuilder targetBuffer;//背后是MemorySegment,一整块大内存
 
 	public SpanningRecordSerializer() {
-		serializationBuffer = new DataOutputSerializer(128);
+		serializationBuffer = new DataOutputSerializer(128);//创建一个buffer输出流,初始化128个字节
 
 		lengthBuffer = ByteBuffer.allocate(4);
 		lengthBuffer.order(ByteOrder.BIG_ENDIAN);
 
 		// ensure initial state with hasRemaining false (for correct continueWritingWithNextBufferBuilder logic)
-		dataBuffer = serializationBuffer.wrapAsByteBuffer();
+		dataBuffer = serializationBuffer.wrapAsByteBuffer();//输出流转换成ByteBuffer 用于存储数据
 		lengthBuffer.position(4);
 	}
 
@@ -85,15 +90,15 @@ public class SpanningRecordSerializer<T extends IOReadableWritable> implements R
 		lengthBuffer.clear();
 
 		// write data and length
-		record.write(serializationBuffer);
+		record.write(serializationBuffer);//向内存byte[]输出数据
 
 		int len = serializationBuffer.length();
 		lengthBuffer.putInt(0, len);
 
-		dataBuffer = serializationBuffer.wrapAsByteBuffer();
+		dataBuffer = serializationBuffer.wrapAsByteBuffer();//返回写入的byte数组内容
 
 		// Copy from intermediate buffers to current target memory segment
-		if (targetBuffer != null) {
+		if (targetBuffer != null) {//初始化的时候没有该buffer容器，所以返回结果是PARTIAL_RECORD_MEMORY_SEGMENT_FULL
 			targetBuffer.append(lengthBuffer);
 			targetBuffer.append(dataBuffer);
 			targetBuffer.commit();
@@ -102,6 +107,7 @@ public class SpanningRecordSerializer<T extends IOReadableWritable> implements R
 		return getSerializationResult();
 	}
 
+	//更换下一个buffer容器 --- 将数据写入到BufferBuilder中
 	@Override
 	public SerializationResult continueWritingWithNextBufferBuilder(BufferBuilder buffer) throws IOException {
 		targetBuffer = buffer;
@@ -124,9 +130,9 @@ public class SpanningRecordSerializer<T extends IOReadableWritable> implements R
 		SerializationResult result = getSerializationResult();
 
 		// make sure we don't hold onto the large buffers for too long
-		if (result.isFullRecord()) {
+		if (result.isFullRecord()) {//true说明一条完整的数据都写入了,缓存的内容已经无意义了
 			serializationBuffer.clear();
-			serializationBuffer.pruneBuffer();
+			serializationBuffer.pruneBuffer();//如果缓存太大了,则缩小一下缓存空间
 			dataBuffer = serializationBuffer.wrapAsByteBuffer();
 		}
 
@@ -147,6 +153,7 @@ public class SpanningRecordSerializer<T extends IOReadableWritable> implements R
 		targetBuffer = null;
 	}
 
+	//true 表示已经写入序列化数据到字节数组中
 	@Override
 	public boolean hasSerializedData() {
 		return lengthBuffer.hasRemaining() || dataBuffer.hasRemaining();

@@ -80,6 +80,7 @@ class HeapListState<K, N, V>
 	//  state access
 	// ------------------------------------------------------------------------
 
+	//直接获取value,得到List本身就是迭代器
 	@Override
 	public Iterable<V> get() {
 		return getInternal();
@@ -92,7 +93,7 @@ class HeapListState<K, N, V>
 		final N namespace = currentNamespace;
 
 		final StateTable<K, N, List<V>> map = stateTable;
-		List<V> list = map.get(namespace);
+		List<V> list = map.get(namespace);//通过命名空间 获取对应的值
 
 		if (list == null) {
 			list = new ArrayList<>();
@@ -149,12 +150,13 @@ class HeapListState<K, N, V>
 		return a;
 	}
 
+	//完全替代
 	@Override
 	public void update(List<V> values) throws Exception {
 		Preconditions.checkNotNull(values, "List of values to add cannot be null.");
 
 		if (values.isEmpty()) {
-			clear();
+			clear();//相当于delete
 			return;
 		}
 
@@ -167,6 +169,7 @@ class HeapListState<K, N, V>
 		stateTable.put(currentNamespace, newStateList);
 	}
 
+	//追加数据
 	@Override
 	public void addAll(List<V> values) throws Exception {
 		Preconditions.checkNotNull(values, "List of values to add cannot be null.");

@@ -40,6 +40,9 @@ import java.util.Collections;
  * WindowedStream<Tuple2<String, Integer>, String, TimeWindows> windowed =
  *   keyed.window(TumblingProcessingTimeWindows.of(Time.of(1, MINUTES), Time.of(10, SECONDS));
  * } </pre>
+ *
+ * 滚动窗口，一个元素只能分配到一个窗口内
+ * 基于处理时间做分割
  */
 public class TumblingProcessingTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;

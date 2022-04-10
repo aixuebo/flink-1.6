@@ -29,6 +29,8 @@ import org.apache.flink.streaming.api.operators.StoppableStreamSource;
  *
  * @param <OUT> Type of the produced elements
  * @param <SRC> Stoppable source function
+ *
+ * 可以有stop方法的 SourceStreamTask
  */
 public class StoppableSourceStreamTask<OUT, SRC extends SourceFunction<OUT> & StoppableFunction>
 	extends SourceStreamTask<OUT, SRC, StoppableStreamSource<OUT, SRC>> implements StoppableTask {
@@ -41,8 +43,8 @@ public class StoppableSourceStreamTask<OUT, SRC extends SourceFunction<OUT> & St
 
 	@Override
 	protected void run() throws Exception {
-		if (!stopped) {
-			super.run();
+		if (!stopped) {//对SourceStreamTask套了一层stop,每次执行run的时候先查看一下是否stop。
+			super.run();//调用父类的run方法
 		}
 	}
 

@@ -32,7 +32,9 @@ import java.util.Collections;
 
 /**
  * A {@link WindowAssigner} that windows elements into windows based on the timestamp of the
- * elements. Windows cannot overlap.
+ * elements.
+ *
+ * Windows cannot overlap.注意 窗口之间没有间隙
  *
  * <p>For example, in order to window into windows of 1 minute:
  * <pre> {@code
@@ -41,14 +43,17 @@ import java.util.Collections;
  * WindowedStream<Tuple2<String, Integer>, String, TimeWindow> windowed =
  *   keyed.window(TumblingEventTimeWindows.of(Time.minutes(1)));
  * } </pre>
+ *
+ * 滚动窗口，一个元素只能分配到一个窗口内
+ * 基于事件时间做分割
  */
 @PublicEvolving
 public class TumblingEventTimeWindows extends WindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 
-	private final long size;
+	private final long size;//窗口大小,比如窗口大小是1小时
 
-	private final long offset;
+	private final long offset;//比如窗口大小是1小时,但要求每个小时15分为开始,则需要offset设置死为15分。
 
 	protected TumblingEventTimeWindows(long size, long offset) {
 		if (offset < 0 || offset >= size) {
@@ -59,6 +64,7 @@ public class TumblingEventTimeWindows extends WindowAssigner<Object, TimeWindow>
 		this.offset = offset;
 	}
 
+	//滚动窗口，一个元素只能分配到一个窗口内
 	@Override
 	public Collection<TimeWindow> assignWindows(Object element, long timestamp, WindowAssignerContext context) {
 		if (timestamp > Long.MIN_VALUE) {
@@ -100,11 +106,13 @@ public class TumblingEventTimeWindows extends WindowAssigner<Object, TimeWindow>
 	 * <p>For example, if you want window a stream by hour,but window begins at the 15th minutes
 	 * of each hour, you can use {@code of(Time.hours(1),Time.minutes(15))},then you will get
 	 * time windows start at 0:15:00,1:15:00,2:15:00,etc.
+	 * 比如每一个小时产生一个window窗口流，但要求从每个小时的15分钟开始计算，即0点15，1点15这样的一小时。因此需要offset设置15分
 	 *
 	 * <p>Rather than that,if you are living in somewhere which is not using UTC±00:00 time,
 	 * such as China which is using UTC+08:00,and you want a time window with size of one day,
 	 * and window begins at every 00:00:00 of local time,you may use {@code of(Time.days(1),Time.hours(-8))}.
 	 * The parameter of offset is {@code Time.hours(-8))} since UTC+08:00 is 8 hours earlier than UTC time.
+	 * 同理，不仅有正向加法15min，也有减法的场景，比如北京时间比正常时间小8个小时，因此offset设置-8小时
 	 *
 	 * @param size The size of the generated windows.
 	 * @param offset The offset which window start would be shifted by.

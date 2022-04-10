@@ -54,6 +54,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * </ul>
  * 
  * @param <T> The type represented by this type information.
+ * 针对java任意的PoJo对象进行封装
  */
 @Public
 public class PojoTypeInfo<T> extends CompositeType<T> {

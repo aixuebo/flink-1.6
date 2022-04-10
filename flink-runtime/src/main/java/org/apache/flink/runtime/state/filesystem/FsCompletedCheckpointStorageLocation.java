@@ -27,6 +27,7 @@ import java.io.IOException;
 /**
  * A {@link CompletedCheckpointStorageLocation} that resides on a file system.
  * This locattion is internally represented through the checkpoint directory plus the metadata file.
+ * 代表一次已经完成的checkpoint存储
  */
 public class FsCompletedCheckpointStorageLocation implements CompletedCheckpointStorageLocation {
 
@@ -52,16 +53,19 @@ public class FsCompletedCheckpointStorageLocation implements CompletedCheckpoint
 		this.externalPointer = externalPointer;
 	}
 
+	//path的全路径
 	@Override
 	public String getExternalPointer() {
 		return externalPointer;
 	}
 
+	//文件目录的元数据
 	@Override
 	public FileStateHandle getMetadataHandle() {
 		return metadataFileHandle;
 	}
 
+	//销毁文件目录
 	@Override
 	public void disposeStorageLocation() throws IOException {
 		if (fs == null) {

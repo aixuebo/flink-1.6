@@ -25,7 +25,9 @@ package org.apache.flink.runtime.state;
  * When two objects are equal, they indicate the same priority, but indicating the same priority does not require that
  * both objects are equal.
  *
- * @param <T> type of the compared objects.
+ * @param <T> type of the compared objects. 实现了PriorityComparable的对象,即该对象可以比较
+ *
+ * 该接口表示比较器
  */
 @FunctionalInterface
 public interface PriorityComparator<T> {
@@ -39,6 +41,7 @@ public interface PriorityComparator<T> {
 	 * @param right left operand in the comparison by priority.
 	 * @return a negative integer, zero, or a positive integer as the first argument has lower, equal to, or higher
 	 * priority than the second.
+	 * <0的排列在top位置
 	 */
 	int comparePriority(T left, T right);
 

@@ -38,6 +38,7 @@ import java.io.Serializable;
  *
  * @param <T> Type of the input elements.
  * @param <O> Type of the returned elements.
+ * 传入数据I,输出集合O
  */
 @Public
 @FunctionalInterface

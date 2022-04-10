@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that finds the minimum {@code integer} value.
+ * 最小值 -- Integer类型
  */
 @PublicEvolving
 public class IntMinimum implements SimpleAccumulator<Integer> {

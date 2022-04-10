@@ -205,7 +205,7 @@ public abstract class MemorySegment {
 	/**
 	 * Gets the size of the memory segment, in bytes.
 	 *
-	 * @return The size of the memory segment.
+	 * @return The size of the memory segment.返回内存容量，而不是已经用了多少内存
 	 */
 	public int size() {
 		return size;

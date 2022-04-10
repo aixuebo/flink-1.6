@@ -75,6 +75,7 @@ public class ConfigurationUtils {
 	 *
 	 * @param configuration configuration object
 	 * @return array of configured directories (in order)
+	 * 获取服务器临时目录集合
 	 */
 	@Nonnull
 	public static String[] parseTempDirectories(Configuration configuration) {

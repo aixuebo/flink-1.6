@@ -36,6 +36,7 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * TypeInformation for Case Classes. Creation and access is different from
  * our Java Tuples so we have to treat them differently.
+  * 针对scala的case class类型对象进行包装
  */
 @Public
 abstract class CaseClassTypeInfo[T <: Product](

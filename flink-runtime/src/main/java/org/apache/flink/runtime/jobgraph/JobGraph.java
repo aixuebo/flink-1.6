@@ -54,6 +54,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>The JobGraph defines the job-wide configuration settings, while each vertex and intermediate result
  * define the characteristics of the concrete operation and intermediate data.
+ *
+ *  JobGraph 将会在原来的基础上做相应的优化（主要是算子的 Chain 操作，Chain 在一起的算子将会在同一个 task 上运行，会极大减少 shuffle 的开销
  */
 public class JobGraph implements Serializable {
 
@@ -401,7 +403,7 @@ public class JobGraph implements Serializable {
 	// --------------------------------------------------------------------------------------------
 	//  Topological Graph Access
 	// --------------------------------------------------------------------------------------------
-
+	//ExecutionGraphBuilder中调用该函数
 	public List<JobVertex> getVerticesSortedTopologicallyFromSources() throws InvalidProgramException {
 		// early out on empty lists
 		if (this.taskVertices.isEmpty()) {
@@ -418,7 +420,7 @@ public class JobGraph implements Serializable {
 			while (iter.hasNext()) {
 				JobVertex vertex = iter.next();
 
-				if (vertex.hasNoConnectedInputs()) {
+				if (vertex.hasNoConnectedInputs()) {//添加输入源
 					sorted.add(vertex);
 					iter.remove();
 				}

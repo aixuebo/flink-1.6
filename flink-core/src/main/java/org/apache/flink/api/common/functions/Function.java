@@ -25,6 +25,7 @@ import org.apache.flink.annotation.Public;
  *
  * <p>This interface is empty in order to allow extending interfaces to
  * be SAM (single abstract method) interfaces that can be implemented via Java 8 lambdas.</p>
+ * function支持序列化,因为函数会被发送到任意节点去处理
  */
 @Public
 public interface Function extends java.io.Serializable {

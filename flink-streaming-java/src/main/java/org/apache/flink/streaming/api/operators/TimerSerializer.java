@@ -41,6 +41,8 @@ import java.util.Objects;
  *
  * @param <K> type of the timer key.
  * @param <N> type of the timer namespace.
+ *
+ * 如何序列化K和N 以及 时间戳
  */
 public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer<K, N>> {
 
@@ -51,14 +53,14 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 
 	/** Serializer for the key. */
 	@Nonnull
-	private final TypeSerializer<K> keySerializer;
+	private final TypeSerializer<K> keySerializer;//如何序列化K
 
 	/** Serializer for the namespace. */
 	@Nonnull
-	private final TypeSerializer<N> namespaceSerializer;
+	private final TypeSerializer<N> namespaceSerializer;//如何序列化N
 
 	/** The bytes written for one timer, or -1 if variable size. */
-	private final int length;
+	private final int length;//long(时间戳) + K + N的序列化总长度
 
 	/** True iff the serialized type (and composite objects) are immutable. */
 	private final boolean immutableType;
@@ -74,10 +76,10 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 	}
 
 	private TimerSerializer(
-		@Nonnull TypeSerializer<K> keySerializer,
+		@Nonnull TypeSerializer<K> keySerializer,//如何序列化
 		@Nonnull TypeSerializer<N> namespaceSerializer,
-		int length,
-		boolean immutableType) {
+		int length,//序列化后的长度
+		boolean immutableType) {//是否不可变类型
 
 		this.keySerializer = keySerializer;
 		this.namespaceSerializer = namespaceSerializer;
@@ -85,6 +87,7 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 		this.immutableType = immutableType;
 	}
 
+	//序列化后的长度
 	private static int computeTotalByteLength(
 		TypeSerializer<?> keySerializer,
 		TypeSerializer<?> namespaceSerializer) {
@@ -101,6 +104,7 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 		return immutableType;
 	}
 
+	//复制一个序列化对象
 	@Override
 	public TimerSerializer<K, N> duplicate() {
 
@@ -121,6 +125,7 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 		}
 	}
 
+	//如何创建一个新对象
 	@Override
 	public TimerHeapInternalTimer<K, N> createInstance() {
 		return new TimerHeapInternalTimer<>(
@@ -129,6 +134,7 @@ public class TimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer
 			namespaceSerializer.createInstance());
 	}
 
+	//复制参数的对象,产生一个新的对象
 	@Override
 	public TimerHeapInternalTimer<K, N> copy(TimerHeapInternalTimer<K, N> from) {
 

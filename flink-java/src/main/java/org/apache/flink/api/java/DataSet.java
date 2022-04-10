@@ -409,13 +409,13 @@ public abstract class DataSet<T> {
 		final String id = new AbstractID().toString();
 		final TypeSerializer<T> serializer = getType().createSerializer(getExecutionEnvironment().getConfig());
 
-		this.output(new Utils.CollectHelper<>(id, serializer)).name("collect()");
-		JobExecutionResult res = getExecutionEnvironment().execute();
+		this.output(new Utils.CollectHelper<>(id, serializer)).name("collect()");//注册一个sink,并且为sink定义一个name。为结果定义与id进行关联
+		JobExecutionResult res = getExecutionEnvironment().execute();//开始从sink向上推结果
 
-		ArrayList<byte[]> accResult = res.getAccumulatorResult(id);
+		ArrayList<byte[]> accResult = res.getAccumulatorResult(id);//获取结果
 		if (accResult != null) {
 			try {
-				return SerializedListAccumulator.deserializeList(accResult, serializer);
+				return SerializedListAccumulator.deserializeList(accResult, serializer);//结果反序列化
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException("Cannot find type class of collected data type.", e);
 			} catch (IOException e) {

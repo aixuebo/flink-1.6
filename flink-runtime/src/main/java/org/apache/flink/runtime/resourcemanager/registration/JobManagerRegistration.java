@@ -26,13 +26,16 @@ import org.apache.flink.util.Preconditions;
 
 /**
  * Container for JobManager related registration information, such as the leader id or the job id.
+ * 注册到resourceManager上关于jobmanager的信息
+ *
+ * 包含jobid、网关对象、资源对象id
  */
 public class JobManagerRegistration {
 	private final JobID jobID;
 
-	private final ResourceID jobManagerResourceID;
+	private final ResourceID jobManagerResourceID;//jobmanager对应的资源ID
 
-	private final JobMasterGateway jobManagerGateway;
+	private final JobMasterGateway jobManagerGateway;//job网关
 
 	public JobManagerRegistration(
 			JobID jobID,

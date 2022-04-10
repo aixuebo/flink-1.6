@@ -25,6 +25,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * Partitioner that sends all elements to the downstream operator with subtask ID=0.
  *
  * @param <T> Type of the elements in the Stream being partitioned
+ * 统一输出到一个桶里--即输出到0号分区内
  */
 @Internal
 public class GlobalPartitioner<T> extends StreamPartitioner<T> {

@@ -29,6 +29,14 @@ import javax.annotation.Nonnull;
  *
  * @param <K> Type of the keys to which timers are scoped.
  * @param <N> Type of the namespace to which timers are scoped.
+ *
+ * TimerSerializer 对象用于 序列化K和N 以及 时间戳
+ *
+ * 描述 key在空间N的到期时间,到期后会触发回调。
+ *
+ * 因为可能会维护很多k在不同时间的回调,因此需要根据到期时间排序一下。
+ *
+ * 基于内存的一种实现类,并且实现了基于堆内如何索引的方式查找元素的能力(看代码应该没有实现,不知道什么时候set的方式写入数据,此时会被实现该接口)
  */
 @Internal
 public final class TimerHeapInternalTimer<K, N> implements InternalTimer<K, N>, HeapPriorityQueueElement {
@@ -42,13 +50,14 @@ public final class TimerHeapInternalTimer<K, N> implements InternalTimer<K, N>, 
 	private final N namespace;
 
 	/** The expiration timestamp. */
-	private final long timestamp;
+	private final long timestamp;//到期时间
 
 	/**
 	 * This field holds the current physical index of this timer when it is managed by a timer heap so that we can
 	 * support fast deletes.
+	 * 设置在优先队列中的位置
 	 */
-	private transient int timerHeapIndex;
+	private transient int timerHeapIndex;// NOT_CONTAINED 表示 没有实现堆内的索引查询元素功能
 
 	TimerHeapInternalTimer(long timestamp, @Nonnull K key, @Nonnull N namespace) {
 		this.timestamp = timestamp;
@@ -90,6 +99,7 @@ public final class TimerHeapInternalTimer<K, N> implements InternalTimer<K, N>, 
 		return false;
 	}
 
+	//设置在优先队列中的位置
 	@Override
 	public int getInternalIndex() {
 		return timerHeapIndex;
@@ -125,6 +135,7 @@ public final class TimerHeapInternalTimer<K, N> implements InternalTimer<K, N>, 
 				'}';
 	}
 
+	//使用到期触发的时间戳进行排序
 	@Override
 	public int comparePriorityTo(@Nonnull InternalTimer<?, ?> other) {
 		return Long.compare(timestamp, other.getTimestamp());

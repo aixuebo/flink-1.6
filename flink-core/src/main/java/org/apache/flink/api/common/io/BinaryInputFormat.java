@@ -49,6 +49,7 @@ import java.util.List;
  *
  * A block will contain a {@link BlockInfo} at the end of the block. There, the reader can find some statistics
  * about the split currently being read, that will help correctly parse the contents of the block.
+ * 读取文本文件,该文本文件是字节数组文件,将反其序列化成对象T
  */
 @Public
 public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
@@ -79,6 +80,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 	 * The number of records already read from the block.
 	 * This is used to decide if the end of the block has been
 	 * reached.
+	 * 一个数据块文件读取了多少条数据
 	 */
 	private long readRecords = 0;
 
@@ -118,8 +120,8 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 			final FileSystem fs = file.getPath().getFileSystem();
 			final long blockSize = this.blockSize == NATIVE_BLOCK_SIZE ? fs.getDefaultBlockSize() : this.blockSize;
 
-			for (long pos = 0, length = file.getLen(); pos < length; pos += blockSize) {
-				long remainingLength = Math.min(pos + blockSize, length) - pos;
+			for (long pos = 0, length = file.getLen(); pos < length; pos += blockSize) {//根据数据块大小,读取数据块
+				long remainingLength = Math.min(pos + blockSize, length) - pos;//读取每一个数据块需要的长度
 
 				// get the block locations and make sure they are in order with respect to their offset
 				final BlockLocation[] blocks = fs.getFileBlockLocations(file, pos, remainingLength);
@@ -130,7 +132,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 			}
 		}
 
-		if (inputSplits.size() < minNumSplits) {
+		if (inputSplits.size() < minNumSplits) {//不满足minNumSplits时,追加空的数据分片信息
 			LOG.warn(String.format(
 				"With the given block size %d, the files %s cannot be split into %d blocks. Filling up with empty splits...",
 				blockSize, Arrays.toString(getFilePaths()), minNumSplits));
@@ -211,15 +213,16 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 		return new BlockInfo();
 	}
 
+	//解析元数据,获取BlockInfo信息
 	private BlockInfo createAndReadBlockInfo() throws IOException {
 		BlockInfo blockInfo = new BlockInfo();
-		if (this.splitLength > blockInfo.getInfoSize()) {
+		if (this.splitLength > blockInfo.getInfoSize()) {//文件大小一定比元数据信息多
 			// At first we go and read  the block info containing the recordCount, the accumulatedRecordCount
 			// and the firstRecordStart offset in the current block. This is written at the end of the block and
 			// is of fixed size, currently 3 * Long.SIZE.
 
 			// TODO: seek not supported by compressed streams. Will throw exception
-			this.stream.seek(this.splitStart + this.splitLength - blockInfo.getInfoSize());
+			this.stream.seek(this.splitStart + this.splitLength - blockInfo.getInfoSize());//获取元数据
 			blockInfo.read(new DataInputViewStreamWrapper(this.stream));
 		}
 		return blockInfo;
@@ -239,20 +242,20 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 			return null;
 		}
 
-		BlockInfo blockInfo = new BlockInfo();
-		long totalCount = 0;
+		BlockInfo blockInfo = new BlockInfo();//存储元数据信息
+		long totalCount = 0;//所有文件包含多少条数据
 		for (FileStatus file : files) {
 			// invalid file
-			if (file.getLen() < blockInfo.getInfoSize()) {
+			if (file.getLen() < blockInfo.getInfoSize()) {//文件肯定要比元数据信息大
 				continue;
 			}
 
 			FileSystem fs = file.getPath().getFileSystem();
-			try (FSDataInputStream fdis = fs.open(file.getPath(), blockInfo.getInfoSize())) {
+			try (FSDataInputStream fdis = fs.open(file.getPath(), blockInfo.getInfoSize())) {//获取元数据
 				fdis.seek(file.getLen() - blockInfo.getInfoSize());
 
 				blockInfo.read(new DataInputViewStreamWrapper(fdis));
-				totalCount += blockInfo.getAccumulatedRecordCount();
+				totalCount += blockInfo.getAccumulatedRecordCount();//通过读取元数据就可以得到所有条数据,因此速度很快
 			}
 		}
 
@@ -263,7 +266,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 
 	private static class SequentialStatistics extends FileBaseStatistics {
 
-		private final long numberOfRecords;
+		private final long numberOfRecords;//总条数
 
 		public SequentialStatistics(long fileModTime, long fileSize, float avgBytesPerRecord, long numberOfRecords) {
 			super(fileModTime, fileSize, avgBytesPerRecord);
@@ -276,19 +279,19 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 		}
 	}
 
+	//打开一个文件
 	@Override
 	public void open(FileInputSplit split) throws IOException {
 		super.open(split);
 
-		this.blockInfo = this.createAndReadBlockInfo();
+		this.blockInfo = this.createAndReadBlockInfo();//解析元数据,获取BlockInfo信息
 
 		// We set the size of the BlockBasedInput to splitLength as each split contains one block.
 		// After reading the block info, we seek in the file to the correct position.
 		
 		this.readRecords = 0;
-		this.stream.seek(this.splitStart + this.blockInfo.getFirstRecordStart());
-		this.blockBasedInput = new BlockBasedInput(this.stream,
-			(int) blockInfo.getFirstRecordStart(), this.splitLength);
+		this.stream.seek(this.splitStart + this.blockInfo.getFirstRecordStart());//定位到第一条数据位置
+		this.blockBasedInput = new BlockBasedInput(this.stream,(int) blockInfo.getFirstRecordStart(), this.splitLength);
 		this.dataInputStream = new DataInputViewStreamWrapper(blockBasedInput);
 	}
 
@@ -307,6 +310,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 		return record;
 	}
 
+	//把字节数组序列化成对象输出
 	protected abstract T deserialize(T reuse, DataInputView dataInput) throws IOException;
 
 	/**
@@ -314,9 +318,9 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 	 * at the end, and this method takes this into account when reading the data.
 	 */
 	protected class BlockBasedInput extends FilterInputStream {
-		private final int maxPayloadSize;
+		private final int maxPayloadSize;//剩余字节
 
-		private int blockPos;
+		private int blockPos;//数据块找文件的开始位置
 
 		public BlockBasedInput(FSDataInputStream in, int blockSize) {
 			super(in);
@@ -338,6 +342,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 			return this.in.read();
 		}
 
+		//获取当前数据位置
 		private long getCurrBlockPos() {
 			return this.blockPos;
 		}
@@ -360,7 +365,7 @@ public abstract class BinaryInputFormat<T> extends FileInputFormat<T>
 		public int read(byte[] b, int off, int len) throws IOException {
 			int totalRead = 0;
 			for (int remainingLength = len, offset = off; remainingLength > 0;) {
-				int blockLen = Math.min(remainingLength, this.maxPayloadSize - this.blockPos);
+				int blockLen = Math.min(remainingLength, this.maxPayloadSize - this.blockPos);//可以读取的数据信息
 				int read = this.in.read(b, offset, blockLen);
 				if (read < 0) {
 					return read;

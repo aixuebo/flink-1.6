@@ -31,7 +31,7 @@ public class AtomicDisposableReferenceCounter {
 	private boolean isDisposed;
 
 	/** Enter the disposed state when the reference count reaches this number. */
-	private final int disposeOnReferenceCount;
+	private final int disposeOnReferenceCount;//比该值小的时候,就可以销毁了
 
 	public AtomicDisposableReferenceCounter() {
 		this.disposeOnReferenceCount = 0;

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 /**
  * Response of the {@link ClusterConfigHandler}, represented as a list
  * of key-value pairs of the cluster {@link Configuration}.
+ * 获取集群的配置信息
  */
 public class ClusterConfigurationInfo extends ArrayList<ClusterConfigurationInfoEntry> implements ResponseBody {
 

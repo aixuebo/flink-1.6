@@ -31,10 +31,11 @@ import java.io.Serializable;
  * </ul>
  * This class is used by the {@link ContinuousFileMonitoringFunction} and the
  * {@link ContinuousFileReaderOperator} to perform continuous file processing.
+ * FileInputSplit信息的扩展,增加最后修改文件的时间戳 以及 checkpoint时候数据块的状态
  * */
 public class TimestampedFileInputSplit extends FileInputSplit implements Comparable<TimestampedFileInputSplit>{
 
-	/** The modification time of the file this split belongs to. */
+	/** The modification time of the file this split belongs to. 文件数据块的最后修改时间戳*/
 	private final long modificationTime;
 
 	/**
@@ -49,12 +50,12 @@ public class TimestampedFileInputSplit extends FileInputSplit implements Compara
 	 * the rest of the information of the {@link FileInputSplit}, as returned by the
 	 * underlying filesystem.
 	 *
-	 * @param modificationTime the modification file of the file this split belongs to
-	 * @param num    the number of this input split
-	 * @param file   the file name
-	 * @param start  the position of the first byte in the file to process
-	 * @param length the number of bytes in the file to process (-1 is flag for "read whole file")
-	 * @param hosts  the list of hosts containing the block, possibly {@code null}
+	 * @param modificationTime the modification file of the file this split belongs to 文件最后修改的时间戳
+	 * @param num    the number of this input split 第几个数据块
+	 * @param file   the file name 文件路径
+	 * @param start  the position of the first byte in the file to process 文件处理的开始位置
+	 * @param length the number of bytes in the file to process (-1 is flag for "read whole file") 待处理的文件长度
+	 * @param hosts  the list of hosts containing the block, possibly {@code null} 文件存储在哪里
 	 */
 	public TimestampedFileInputSplit(long modificationTime, int num, Path file, long start, long length, String[] hosts) {
 		super(num, file, start, length, hosts);

@@ -43,6 +43,7 @@ public class FieldFromTuple<OUT> implements Extractor<Tuple, OUT> {
 		this.fieldId = fieldId;
 	}
 
+	//从0开始计数,提取tuple中的某一个元素
 	@Override
 	public OUT extract(Tuple in) {
 		return in.getField(fieldId);

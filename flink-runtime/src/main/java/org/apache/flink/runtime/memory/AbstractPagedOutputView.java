@@ -32,18 +32,21 @@ import java.io.UTFDataFormatException;
  * implement the methods to collect the current page and provide the next memory page once the boundary is crossed.
  *
  * <p>The paging assumes that all memory segments are of the same size.
+ *
+ * 不断的向MemorySegment写入数据。写完一个后，申请下一个MemorySegment,继续写。
+ * 需要MemorySegment、每一个MemorySegment的size、头文件大小是固定的。
  */
 public abstract class AbstractPagedOutputView implements DataOutputView {
 
-	private MemorySegment currentSegment;			// the current memory segment to write to
+	private MemorySegment currentSegment;			// the current memory segment to write to 当前正在写入的currentSegment
 
-	protected final int segmentSize;				// the size of the memory segments
+	protected final int segmentSize;				// the size of the memory segments 每一个segments的size固定值
 
-	protected final int headerLength;				// the number of bytes to skip at the beginning of each segment
+	protected final int headerLength;				// the number of bytes to skip at the beginning of each segment 每一个segments的头文件大小固定值
 
-	private int positionInSegment;					// the offset in the current segment
+	private int positionInSegment;					// the offset in the current segment  当前写到哪个位置了
 
-	private byte[] utfBuffer;						// the reusable array for UTF encodings
+	private byte[] utfBuffer;						// the reusable array for UTF encodings 缓存数据
 
 
 	// --------------------------------------------------------------------------------------------
@@ -92,6 +95,8 @@ public abstract class AbstractPagedOutputView implements DataOutputView {
 	 * @return The next memory segment.
 	 *
 	 * @throws IOException
+	 * 	//参数表示当前已经写好的MemorySegment,以及写到了哪个位置。
+	 * 	//目标将该MemorySegment写入到磁盘，同时返回下一个MemorySegment去继续写内存
 	 */
 	protected abstract MemorySegment nextSegment(MemorySegment current, int positionInCurrent) throws IOException;
 
@@ -132,6 +137,7 @@ public abstract class AbstractPagedOutputView implements DataOutputView {
 	 *
 	 * @throws IOException Thrown, if the current segment could not be processed or a new segment could not
 	 *                     be obtained.
+	 * 切换下一个segment
 	 */
 	protected void advance() throws IOException {
 		this.currentSegment = nextSegment(this.currentSegment, this.positionInSegment);
@@ -177,14 +183,15 @@ public abstract class AbstractPagedOutputView implements DataOutputView {
 
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
-		int remaining = this.segmentSize - this.positionInSegment;
-		if (remaining >= len) {
+		int remaining = this.segmentSize - this.positionInSegment;//segment剩余空间
+		if (remaining >= len) {//说明足够存储len个字节
+			//存储数据
 			this.currentSegment.put(this.positionInSegment, b, off, len);
 			this.positionInSegment += len;
 		}
-		else {
+		else {//说明空间不足
 			if (remaining == 0) {
-				advance();
+				advance();//切换空间
 				remaining = this.segmentSize - this.positionInSegment;
 			}
 			while (true) {
@@ -389,6 +396,7 @@ public abstract class AbstractPagedOutputView implements DataOutputView {
 		}
 	}
 
+	//写DataInputView的数据到输出流中,写入numBytes个字节
 	@Override
 	public void write(DataInputView source, int numBytes) throws IOException {
 		while (numBytes > 0) {

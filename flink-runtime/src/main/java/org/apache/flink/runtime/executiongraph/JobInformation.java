@@ -31,6 +31,7 @@ import java.util.Collection;
 
 /**
  * Container class for job information which is stored in the {@link ExecutionGraph}.
+ * 描述job的基础信息
  */
 public class JobInformation implements Serializable {
 
@@ -43,7 +44,7 @@ public class JobInformation implements Serializable {
 	private final String jobName;
 
 	/** Serialized execution config because it can contain user code classes */
-	private final SerializedValue<ExecutionConfig> serializedExecutionConfig;
+	private final SerializedValue<ExecutionConfig> serializedExecutionConfig;//ExecutionConfig信息
 
 	/** Configuration of the job */
 	private final Configuration jobConfiguration;

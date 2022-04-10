@@ -34,23 +34,26 @@ public interface ResourceActions {
 	 *
 	 * @param instanceId identifying which resource to release
 	 * @param cause why the resource is released
+	 * 释放某个资源，比如当taskManager失联时,释放该taskManager,给出释放原因
 	 */
 	void releaseResource(InstanceID instanceId, Exception cause);
 
 	/**
 	 * Requests to allocate a resource with the given {@link ResourceProfile}.
 	 *
-	 * @param resourceProfile for the to be allocated resource
+	 * @param resourceProfile for the to be allocated resource 需要申请的资源
 	 * @throws ResourceManagerException if the resource cannot be allocated
+	 * //当taskmanager的资源不足时,申请新的资源
 	 */
 	void allocateResource(ResourceProfile resourceProfile) throws ResourceManagerException;
 
 	/**
 	 * Notifies that an allocation failure has occurred.
 	 *
-	 * @param jobId to which the allocation belonged
-	 * @param allocationId identifying the failed allocation
-	 * @param cause of the allocation failure
+	 * @param jobId to which the allocation belonged 标识哪个job请求资源失败了
+	 * @param allocationId identifying the failed allocation 请求的唯一id
+	 * @param cause of the allocation failure 给出失败原因
+	 * 发送一个通知,通知该job的某一个资源请求没有成功,给出原因
 	 */
 	void notifyAllocationFailure(JobID jobId, AllocationID allocationId, Exception cause);
 }

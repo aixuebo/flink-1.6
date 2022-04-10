@@ -24,8 +24,9 @@ import org.apache.flink.core.io.IOReadableWritable;
  * This is the default implementation of the {@link ChannelSelector} interface. It represents a simple round-robin
  * strategy, i.e. regardless of the record every attached exactly one output channel is selected at a time.
 
- * @param <T>
+ * @param <T> 必须支持可序列化
  *        the type of record which is sent through the attached output gate
+ * 轮训将record输出到某一个partition中
  */
 public class RoundRobinChannelSelector<T extends IOReadableWritable> implements ChannelSelector<T> {
 
@@ -44,7 +45,7 @@ public class RoundRobinChannelSelector<T extends IOReadableWritable> implements 
 	@Override
 	public int[] selectChannels(final T record, final int numberOfOutputChannels) {
 
-		int newChannel = ++this.nextChannelToSendTo[0];
+		int newChannel = ++this.nextChannelToSendTo[0];//每次更新数组的值+1
 		if (newChannel >= numberOfOutputChannels) {
 			this.nextChannelToSendTo[0] = 0;
 		}

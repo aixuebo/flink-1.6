@@ -21,6 +21,7 @@ package org.apache.flink.optimizer.dag;
 /**
  * Methods for operators / connections that provide estimated about data size and
  * characteristics.
+ * 估算输出的大小，用于评估如何优化任务无环图
  */
 public interface EstimateProvider {
 	
@@ -28,6 +29,7 @@ public interface EstimateProvider {
 	 * Gets the estimated output size from this node.
 	 * 
 	 * @return The estimated output size.
+	 * 估算输出结果字节数
 	 */
 	long getEstimatedOutputSize();
 
@@ -35,6 +37,7 @@ public interface EstimateProvider {
 	 * Gets the estimated number of records in the output of this node.
 	 * 
 	 * @return The estimated number of records.
+	 * 估算有多少天数据
 	 */
 	long getEstimatedNumRecords();
 	
@@ -42,6 +45,7 @@ public interface EstimateProvider {
 	 * Gets the estimated number of bytes per record.
 	 * 
 	 * @return The estimated number of bytes per record.
+	 * 估算平均每一条记录需要多少字节
 	 */
 	float getEstimatedAvgWidthPerOutputRecord();
 }

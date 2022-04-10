@@ -257,6 +257,7 @@ public class StreamTaskStateInitializerImpl implements StreamTaskStateInitialize
 
 		TaskInfo taskInfo = environment.getTaskInfo();
 
+		//获取该子任务的分组信息
 		final KeyGroupRange keyGroupRange = KeyGroupRangeAssignment.computeKeyGroupRangeForOperatorIndex(
 			taskInfo.getMaxNumberOfParallelSubtasks(),
 			taskInfo.getNumberOfParallelSubtasks(),

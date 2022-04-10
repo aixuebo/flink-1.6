@@ -36,6 +36,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * It describes the host where the TaskManager operates and its server port
  * for data exchange. This class also contains utilities to work with the
  * TaskManager's host name, which is used to localize work assignments.
+ *
+ * 描述Task节点的服务地址，该地址对外提供数据交换的功能。即对外提供的ip+端口+节点唯一ID
  */
 public class TaskManagerLocation implements Comparable<TaskManagerLocation>, java.io.Serializable {
 
@@ -46,20 +48,22 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 	// ------------------------------------------------------------------------
 
 	/** The ID of the resource in which the TaskManager is started. This can be for example
-	 * the YARN container ID, Mesos container ID, or any other unique identifier. */
-	private final ResourceID resourceID;
+	 * the YARN container ID, Mesos container ID, or any other unique identifier.
+	 * 该 TaskManager 的资源ID，比如是yarn的container ID
+	 **/
+	private final ResourceID resourceID;//该task节点的唯一ID
 
 	/** The network address that the TaskManager binds its sockets to */
-	private final InetAddress inetAddress;
+	private final InetAddress inetAddress;//该task节点对外暴露出的ip+端口
+
+	/** The port that the TaskManager receive data transport connection requests at */
+	private final int dataPort;//本节点服务对外提供的数据交互的端口
 
 	/** The fully qualified host name of the TaskManager */
-	private final String fqdnHostName;
+	private final String fqdnHostName;//该task节点对外暴露出的ip转换成host
 
 	/** The pure hostname, derived from the fully qualified host name. */
-	private final String hostName;
-	
-	/** The port that the TaskManager receive data transport connection requests at */
-	private final int dataPort;
+	private final String hostName;//该task节点对外暴露出的ip转换成host
 
 	/** The toString representation, eagerly constructed and cached to avoid repeated string building */  
 	private final String stringRepresentation;
@@ -67,11 +71,12 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 	/**
 	 * Constructs a new instance connection info object. The constructor will attempt to retrieve the instance's
 	 * host name and domain name through the operating system's lookup mechanisms.
-	 * 
+	 *
+	 * @param resourceID task节点的唯一uuid
 	 * @param inetAddress
-	 *        the network address the instance's task manager binds its sockets to
+	 *        the network address the instance's task manager binds its sockets to 本地节点服务的ip信息,用于暴露给外部
 	 * @param dataPort
-	 *        the port instance's task manager expects to receive transfer envelopes on
+	 *        the port instance's task manager expects to receive transfer envelopes on 本节点服务对外提供的数据交互的端口
 	 */
 	public TaskManagerLocation(ResourceID resourceID, InetAddress inetAddress, int dataPort) {
 		// -1 indicates a local instance connection info

@@ -30,8 +30,8 @@ import org.apache.flink.util.function.ThrowingConsumer;
  *
  * @param <K> The type of key the state is associated to
  * @param <N> The type of the namespace
- * @param <SV> The type of values kept internally in state without TTL
- * @param <TTLSV> The type of values kept internally in state with TTL
+ * @param <SV> The type of values kept internally in state without TTL 就是单纯的存储的value,比如是对象、list<T>、Map等
+ * @param <TTLSV> The type of values kept internally in state with TTL 对value进行ttl处理后的对象,比如TtlValue<Object>、TtlValue<List<T>> 等
  * @param <S> Type of originally wrapped state object
  */
 abstract class AbstractTtlState<K, N, SV, TTLSV, S extends InternalKvState<K, N, TTLSV>>

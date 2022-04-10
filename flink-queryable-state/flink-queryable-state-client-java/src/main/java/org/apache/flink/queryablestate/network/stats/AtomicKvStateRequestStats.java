@@ -22,31 +22,32 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Atomic {@link KvStateRequestStats} implementation.
+ * 统计对象
  */
 public class AtomicKvStateRequestStats implements KvStateRequestStats {
 
 	/**
-	 * Number of active connections.
+	 * Number of active connections.连接数
 	 */
 	private final AtomicLong numConnections = new AtomicLong();
 
 	/**
-	 * Total number of reported requests.
+	 * Total number of reported requests.请求数
 	 */
 	private final AtomicLong numRequests = new AtomicLong();
 
 	/**
-	 * Total number of successful requests (<= reported requests).
+	 * Total number of successful requests (<= reported requests). 请求成功数
 	 */
 	private final AtomicLong numSuccessful = new AtomicLong();
 
 	/**
-	 * Total duration of all successful requests.
+	 * Total duration of all successful requests.请求消耗总时长
 	 */
 	private final AtomicLong successfulDuration = new AtomicLong();
 
 	/**
-	 * Total number of failed requests (<= reported requests).
+	 * Total number of failed requests (<= reported requests).请求失败数
 	 */
 	private final AtomicLong numFailed = new AtomicLong();
 

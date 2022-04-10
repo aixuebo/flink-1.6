@@ -31,6 +31,7 @@ import java.io.IOException;
 /**
  * Stores elements by serializing them with their type serializer.
  * @param <T> type parameter
+ * 输出一个可序列化的对象
  */
 @PublicEvolving
 public class TypeSerializerOutputFormat<T> extends BinaryOutputFormat<T> implements InputTypeConfigurable {

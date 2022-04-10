@@ -34,7 +34,7 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
 public class CountTrigger<W extends Window> extends Trigger<Object, W> {
 	private static final long serialVersionUID = 1L;
 
-	private final long maxCount;
+	private final long maxCount;//超过一定数量后,就可以触发函数进行计算
 
 	private final ReducingStateDescriptor<Long> stateDesc =
 			new ReducingStateDescriptor<>("count", new Sum(), LongSerializer.INSTANCE);

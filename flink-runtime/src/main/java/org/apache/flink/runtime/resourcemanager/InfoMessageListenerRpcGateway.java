@@ -23,12 +23,14 @@ import org.apache.flink.runtime.rpc.RpcGateway;
 
 /**
  * A gateway to listen for info messages from {@link ResourceManager}
+ * resource master向某一个节点发送信息的内容，包含信息内容+时间
  */
 public interface InfoMessageListenerRpcGateway extends RpcGateway {
 
 	/**
 	 * Notifies when resource manager need to notify listener about InfoMessage
 	 * @param infoMessage
+	 * 该对象主要是各客户端实现，即当接收到resource manager的通知消息的时候，该如何处理
 	 */
 	void notifyInfoMessage(InfoMessage infoMessage);
 }

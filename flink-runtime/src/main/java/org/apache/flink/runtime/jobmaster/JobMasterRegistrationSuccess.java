@@ -26,6 +26,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Base class for responses from the ResourceManager to a registration attempt by a JobMaster.
+ * 表示ResourceManager成功注册了一个job
  */
 public class JobMasterRegistrationSuccess extends RegistrationResponse.Success {
 

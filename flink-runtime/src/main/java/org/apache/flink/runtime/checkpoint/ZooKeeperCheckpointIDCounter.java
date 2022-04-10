@@ -44,6 +44,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>The checkpoints IDs are required to be ascending (per job). In order to guarantee this in case
  * of job manager failures we use ZooKeeper to have a shared counter across job manager instances.
+ *
+ * 使用zookeeper为每一个checkpoint起一个自增ID
  */
 public class ZooKeeperCheckpointIDCounter implements CheckpointIDCounter {
 

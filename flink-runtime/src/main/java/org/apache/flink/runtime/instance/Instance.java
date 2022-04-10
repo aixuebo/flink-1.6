@@ -44,6 +44,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * An instance represents a {@link org.apache.flink.runtime.taskmanager.TaskManager}
  * registered at a JobManager and ready to receive work.
+ * 代表着一个TaskManager的实例对象 -- 在JobManager上拥有该TaskManager的实例对象
  */
 public class Instance implements SlotOwner {
 
@@ -52,31 +53,33 @@ public class Instance implements SlotOwner {
 	/** The lock on which to synchronize allocations and failure state changes */
 	private final Object instanceLock = new Object();
 
-	/** The instance gateway to communicate with the instance */
+	/** The instance gateway to communicate with the instance 如何与TaskManager进行交流 */
 	private final TaskManagerGateway taskManagerGateway;
 
-	/** The instance connection information for the data transfer. */
+	/** The instance connection information for the data transfer. 描述TaskManager的服务地址*/
 	private final TaskManagerLocation location;
 
-	/** A description of the resources of the task manager */
+	/** A description of the resources of the task managerTaskManager节点的资源情况 比如cpu、物理内存、JVM内存等 */
 	private final HardwareDescription resources;
 
-	/** The ID identifying the taskManager. */
+	/** The ID identifying the taskManager. taskManager在jobmanager上的实例ID*/
 	private final InstanceID instanceId;
 
-	/** The number of task slots available on the node */
+	/** The number of task slots available on the node 在taskmanager上提供了多少个slot*/
 	private final int numberOfSlots;
 
-	/** A list of available slot positions */
+	/** A list of available slot positions ,slot的位置序号 */
 	private final Queue<Integer> availableSlots;
 
-	/** Allocated slots on this taskManager */
+	/** Allocated slots on this taskManager 分配出去的slot对象 */
 	private final Set<Slot> allocatedSlots = new HashSet<Slot>();
 
 	/** A listener to be notified upon new slot availability */
 	private SlotAvailabilityListener slotAvailabilityListener;
 
-	/** Time when last heat beat has been received from the task manager running on this taskManager. */
+	/** Time when last heat beat has been received from the task manager running on this taskManager.
+	 * 更新接收心跳的最后时间
+	 **/
 	private volatile long lastReceivedHeartBeat = System.currentTimeMillis();
 
 	/** Flag marking the instance as alive or as dead. */
@@ -164,6 +167,7 @@ public class Instance implements SlotOwner {
 		 * releaseSlot must not own the instanceLock in order to avoid dead locks where a slot
 		 * owning the assignment group lock wants to give itself back to the instance which requires
 		 * the instance lock
+		 * 释放每一个slot对象
 		 */
 		final FlinkException cause = new FlinkException("Instance " + this + " has been marked as dead.");
 		for (Slot slot : slots) {
@@ -187,6 +191,8 @@ public class Instance implements SlotOwner {
 
 	/**
 	 * Updates the time of last received heart beat to the current system time.
+	 * 更新接收心跳的最后时间
+	 * 说明jobmanager此时接收到了taskmanager的心跳
 	 */
 	public void reportHeartBeat() {
 		this.lastReceivedHeartBeat = System.currentTimeMillis();

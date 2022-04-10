@@ -35,8 +35,8 @@ public interface StateSnapshotKeyGroupReader {
 
 	/**
 	 * Read the data for the specified key-group from the input.
-	 *
-	 * @param div        the input
+	 * 读取某一个partition分组下的StateSnapshot
+	 * @param div        the input  存储StateSnapshot的字节数组
 	 * @param keyGroupId the key-group to write
 	 * @throws IOException on write related problems
 	 */

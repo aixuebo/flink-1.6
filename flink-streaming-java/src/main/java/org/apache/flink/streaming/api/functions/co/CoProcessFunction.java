@@ -27,7 +27,7 @@ import org.apache.flink.util.OutputTag;
 
 /**
  * A function that processes elements of two streams and produces a single output one.
- *
+ * 一个函数,处理两条不同的流,产生相同的输出 CoProcessFunction<IN1, IN2, OUT>
  * <p>The function will be called for every element in the input streams and can produce
  * zero or more output elements. Contrary to the {@link CoFlatMapFunction}, this function can also
  * query the time (both event and processing) and set timers, through the provided {@link Context}.

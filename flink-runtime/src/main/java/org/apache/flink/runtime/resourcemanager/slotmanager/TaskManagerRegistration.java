@@ -26,16 +26,19 @@ import org.apache.flink.util.Preconditions;
 import java.util.Collection;
 import java.util.HashSet;
 
+//注册一个taskManager,即报告一个taskManager是谁,以及她有多少个slot
 public class TaskManagerRegistration {
 
-	private final TaskExecutorConnection taskManagerConnection;
+	private final TaskExecutorConnection taskManagerConnection;//如何连接该task manager,与该task manager的网关交互
 
-	private final HashSet<SlotID> slots;
+	private final HashSet<SlotID> slots;//该taskManager持有的slot集合
 
-	private int numberFreeSlots;
+	private int numberFreeSlots;//该taskManager持有的slots集合,有多少个是空闲的
 
-	/** Timestamp when the last time becoming idle. Otherwise Long.MAX_VALUE. */
-	private long idleSince;
+	/** Timestamp when the last time becoming idle. Otherwise Long.MAX_VALUE.
+	 * 如果该值是Long.MAX_VALUE. 说明slot有被使用
+	 **/
+	private long idleSince;//当所有的slots都是空闲时,设置时间戳
 
 	public TaskManagerRegistration(
 		TaskExecutorConnection taskManagerConnection,
@@ -48,43 +51,49 @@ public class TaskManagerRegistration {
 
 		this.numberFreeSlots = slots.size();
 
-		idleSince = System.currentTimeMillis();
+		idleSince = System.currentTimeMillis();//因为刚刚初始化一个taskManager,因此slot都是空闲的
 	}
 
 	public TaskExecutorConnection getTaskManagerConnection() {
 		return taskManagerConnection;
 	}
 
+	//本地节点,针对taskManager的唯一ID
 	public InstanceID getInstanceId() {
 		return taskManagerConnection.getInstanceID();
 	}
 
+	//该task manager上注册了多少个slot可以用
 	public int getNumberRegisteredSlots() {
 		return slots.size();
 	}
 
+	//空闲可用的slot数量
 	public int getNumberFreeSlots() {
 		return numberFreeSlots;
 	}
 
+	//释放一个slot --- 增加slot的待使用池
 	public void freeSlot() {
 		Preconditions.checkState(
 			numberFreeSlots < slots.size(),
 			"The number of free slots cannot exceed the number of registered slots. This indicates a bug.");
-		numberFreeSlots++;
+		numberFreeSlots++;//释放一个slot
 
-		if (numberFreeSlots == getNumberRegisteredSlots() && idleSince == Long.MAX_VALUE) {
+		//判断是否该task是空闲的
+		if (numberFreeSlots == getNumberRegisteredSlots() && idleSince == Long.MAX_VALUE) {//说明slot都是空闲的,因此设置时间戳
 			idleSince = System.currentTimeMillis();
 		}
 	}
 
+	//使用一个slot -- 减少slot
 	public void occupySlot() {
 		Preconditions.checkState(
 			numberFreeSlots > 0,
 			"There are no more free slots. This indicates a bug.");
 		numberFreeSlots--;
 
-		idleSince = Long.MAX_VALUE;
+		idleSince = Long.MAX_VALUE;//说明slot有被使用
 	}
 
 	public Iterable<SlotID> getSlots() {
@@ -95,14 +104,17 @@ public class TaskManagerRegistration {
 		return idleSince;
 	}
 
+	//true表示该taskmanager的所有slot都空闲
 	public boolean isIdle() {
 		return idleSince != Long.MAX_VALUE;
 	}
 
+	//设置idleSince为long最大值，说明该task manager上有slot已经被使用了
 	public void markUsed() {
 		idleSince = Long.MAX_VALUE;
 	}
 
+	//参数slot是否在该task manager上
 	public boolean containsSlot(SlotID slotId) {
 		return slots.contains(slotId);
 	}

@@ -31,8 +31,8 @@ import java.io.Serializable;
 public interface SessionWindowTimeGapExtractor<T> extends Serializable {
 	/**
 	 * Extracts the session time gap.
-	 * @param element The input element.
-	 * @return The session time gap in milliseconds.
+	 * @param element The input element. 元素内容
+	 * @return The session time gap in milliseconds. 元素内容中提取session的超时时长
 	 */
 	long extract(T element);
 }

@@ -52,6 +52,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * An input channel, which requests a remote partition queue.
+ * 代表请求远程服务器后,返回到本地节点的流通道对象。即持有该对象,response返回值转换成该对象
  */
 public class RemoteInputChannel extends InputChannel implements BufferRecycler, BufferListener {
 
@@ -76,7 +77,7 @@ public class RemoteInputChannel extends InputChannel implements BufferRecycler, 
 	 */
 	private final AtomicBoolean isReleased = new AtomicBoolean();
 
-	/** Client to establish a (possibly shared) TCP connection and request the partition. */
+	/** Client to establish a (possibly shared) TCP connection and request the partition.创建一个客户端,连接到服务器 */
 	private volatile PartitionRequestClient partitionRequestClient;
 
 	/**
@@ -504,6 +505,7 @@ public class RemoteInputChannel extends InputChannel implements BufferRecycler, 
 		}
 	}
 
+	//调用此方法,说明buffer内容被填充了,sequenceNumber是tcp的序号
 	public void onBuffer(Buffer buffer, int sequenceNumber, int backlog) throws IOException {
 		boolean recycleBuffer = true;
 
@@ -518,7 +520,7 @@ public class RemoteInputChannel extends InputChannel implements BufferRecycler, 
 					return;
 				}
 
-				if (expectedSequenceNumber != sequenceNumber) {
+				if (expectedSequenceNumber != sequenceNumber) {//校验序号是按照顺序获取的
 					onError(new BufferReorderingException(expectedSequenceNumber, sequenceNumber));
 					return;
 				}
@@ -528,7 +530,7 @@ public class RemoteInputChannel extends InputChannel implements BufferRecycler, 
 				recycleBuffer = false;
 			}
 
-			++expectedSequenceNumber;
+			++expectedSequenceNumber;//期待下一个序号+1
 
 			if (wasEmpty) {
 				notifyChannelNonEmpty();

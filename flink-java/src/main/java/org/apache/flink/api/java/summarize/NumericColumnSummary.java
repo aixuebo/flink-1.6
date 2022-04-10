@@ -31,24 +31,25 @@ import org.apache.flink.annotation.PublicEvolving;
  * Tian et al, International Conference on Data Engineering 2012.
  *
  * @param <T> the numeric type e.g. Integer, Double
+ * 汇总全局数据的统计信息
  */
 @PublicEvolving
 public class NumericColumnSummary<T> extends ColumnSummary implements java.io.Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private final long nonMissingCount; // count of elements that are NOT null, NaN, or Infinite
-	private final long nullCount;
-	private final long nanCount; // always zero for types like Short, Integer, Long
-	private final long infinityCount; // always zero for types like Short, Integer, Long
+	private final long nonMissingCount; // count of elements that are NOT null, NaN, or Infinite 非空的元素数量
+	private final long nullCount; // null的元素数量
+	private final long nanCount; // always zero for types like Short, Integer, Long //NaN的元素数量
+	private final long infinityCount; // always zero for types like Short, Integer, Long //infinity的元素数量
 
-	private final T min;
-	private final T max;
-	private final T sum;
+	private final T min;//最小值
+	private final T max;//最大值
+	private final T sum;//求和
 
-	private final Double mean;
-	private final Double variance;
-	private final Double standardDeviation;
+	private final Double mean;//均值
+	private final Double variance;//方差
+	private final Double standardDeviation;//标准差
 
 	public NumericColumnSummary(long nonMissingCount, long nullCount, long nanCount, long infinityCount, T min, T max, T sum, Double mean, Double variance, Double standardDeviation) {
 		this.nonMissingCount = nonMissingCount;

@@ -23,6 +23,12 @@ import org.apache.flink.annotation.Internal;
 /**
  * Interface for objects that can be managed by a {@link HeapPriorityQueue}. Such an object can only be contained in at
  * most one {@link HeapPriorityQueue} at a time.
+ * 表示一个对象，存在 内部堆实现的优先队列中。
+ *
+ * 堆内的对象有一个特性,可以通过索引快速定位到对象
+ *
+ *
+ * 查看readme
  */
 @Internal
 public interface HeapPriorityQueueElement {
@@ -31,11 +37,13 @@ public interface HeapPriorityQueueElement {
 	 * The index that indicates that a {@link HeapPriorityQueueElement} object is not contained in and managed by any
 	 * {@link HeapPriorityQueue}. We do not strictly enforce that internal indexes must be reset to this value when
 	 * elements are removed from a {@link HeapPriorityQueue}.
+	 * 表示 不包含的索引值
 	 */
-	int NOT_CONTAINED = Integer.MIN_VALUE;
+	int NOT_CONTAINED = Integer.MIN_VALUE;//没有实现堆内的索引查询元素功能
 
 	/**
 	 * Returns the current index of this object in the internal array of {@link HeapPriorityQueue}.
+	 * 获取在队列中 该元素的索引
 	 */
 	int getInternalIndex();
 
@@ -44,6 +52,7 @@ public interface HeapPriorityQueueElement {
 	 * {@link HeapPriorityQueue}.
 	 *
 	 * @param newIndex the new index in the timer heap.
+	 * 元素的索引位置
 	 */
 	void setInternalIndex(int newIndex);
 }

@@ -33,19 +33,20 @@ import java.util.Map;
 
 /**
  * Helper class for generating a JSON representation from a {@link StreamGraph}.
+ * 对图对象输出json形式字符串
  */
 @Internal
 public class JSONGenerator {
 
 	public static final String STEPS = "step_function";
-	public static final String ID = "id";
+	public static final String ID = "id";//操作的唯一ID
 	public static final String SIDE = "side";
 	public static final String SHIP_STRATEGY = "ship_strategy";
 	public static final String PREDECESSORS = "predecessors";
-	public static final String TYPE = "type";
-	public static final String PACT = "pact";
-	public static final String CONTENTS = "contents";
-	public static final String PARALLELISM = "parallelism";
+	public static final String TYPE = "type";//操作外面套的一层trnasform类型,比如one单输入类型
+	public static final String PACT = "pact";//条款,value是 Data Source表示数据源   Data Sink表示sink输出  Operator表示其他中间操作
+	public static final String CONTENTS = "contents";//具体操作名称,比如Map
+	public static final String PARALLELISM = "parallelism";//并行度
 
 	private StreamGraph streamGraph;
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -58,7 +59,7 @@ public class JSONGenerator {
 		ObjectNode json = mapper.createObjectNode();
 		ArrayNode nodes = mapper.createArrayNode();
 		json.put("nodes", nodes);
-		List<Integer> operatorIDs = new ArrayList<Integer>(streamGraph.getVertexIDs());
+		List<Integer> operatorIDs = new ArrayList<Integer>(streamGraph.getVertexIDs());//所有操作ID集合
 		Collections.sort(operatorIDs, new Comparator<Integer>() {
 			@Override
 			public int compare(Integer idOne, Integer idTwo) {
@@ -81,16 +82,16 @@ public class JSONGenerator {
 	private void visit(ArrayNode jsonArray, List<Integer> toVisit,
 			Map<Integer, Integer> edgeRemapings) {
 
-		Integer vertexID = toVisit.get(0);
-		StreamNode vertex = streamGraph.getStreamNode(vertexID);
+		Integer vertexID = toVisit.get(0);//某一个操作
+		StreamNode vertex = streamGraph.getStreamNode(vertexID);//某一个具体操作对象
 
 		if (streamGraph.getSourceIDs().contains(vertexID)
 				|| Collections.disjoint(vertex.getInEdges(), toVisit)) {
 
 			ObjectNode node = mapper.createObjectNode();
-			decorateNode(vertexID, node);
+			decorateNode(vertexID, node);//输出该操作对象,组成一个json{}信息
 
-			if (!streamGraph.getSourceIDs().contains(vertexID)) {
+			if (!streamGraph.getSourceIDs().contains(vertexID)) {//不是数据源
 				ArrayNode inputs = mapper.createArrayNode();
 				node.put(PREDECESSORS, inputs);
 
@@ -172,13 +173,15 @@ public class JSONGenerator {
 		input.put(SIDE, (inputArray.size() == 0) ? "first" : "second");
 	}
 
+	//输出该操作对象,组成一个json{}信息
 	private void decorateNode(Integer vertexID, ObjectNode node) {
 
-		StreamNode vertex = streamGraph.getStreamNode(vertexID);
+		StreamNode vertex = streamGraph.getStreamNode(vertexID);//操作对象
 
 		node.put(ID, vertexID);
 		node.put(TYPE, vertex.getOperatorName());
 
+		//条款,value是 Data Source表示数据源   Data Sink表示sink输出  Operator表示其他中间操作
 		if (streamGraph.getSourceIDs().contains(vertexID)) {
 			node.put(PACT, "Data Source");
 		} else if (streamGraph.getSinkIDs().contains(vertexID)) {
@@ -187,7 +190,7 @@ public class JSONGenerator {
 			node.put(PACT, "Operator");
 		}
 
-		StreamOperator<?> operator = streamGraph.getStreamNode(vertexID).getOperator();
+		StreamOperator<?> operator = streamGraph.getStreamNode(vertexID).getOperator();//具体操作
 
 		node.put(CONTENTS, vertex.getOperatorName());
 

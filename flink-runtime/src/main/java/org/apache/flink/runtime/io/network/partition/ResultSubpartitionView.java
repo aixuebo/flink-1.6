@@ -40,6 +40,7 @@ public interface ResultSubpartitionView {
 	 * <p><strong>Important</strong>: The consumer has to make sure that each
 	 * buffer instance will eventually be recycled with {@link Buffer#recycleBuffer()}
 	 * after it has been consumed.
+	 * 获取下一个返回的信息
 	 */
 	@Nullable
 	BufferAndBacklog getNextBuffer() throws IOException, InterruptedException;

@@ -49,6 +49,8 @@ public class CoreOptions {
 	 * Flink uses (transitively).
 	 *
 	 * <p>Exceptions to the rules are defined via {@link #ALWAYS_PARENT_FIRST_LOADER_PATTERNS}.
+	 *
+	 * 类加载器如何加载class
 	 */
 	public static final ConfigOption<String> CLASSLOADER_RESOLVE_ORDER = ConfigOptions
 		.key("classloader.resolve-order")
@@ -87,6 +89,8 @@ public class CoreOptions {
 	 *         This is done for convenience, to avoid duplication of annotations and multiple
 	 *         log bindings.</li>
 	 * </ul>
+	 *
+	 * 需要root类加载器加载  系统默认的
 	 */
 	public static final ConfigOption<String> ALWAYS_PARENT_FIRST_LOADER_PATTERNS = ConfigOptions
 		.key("classloader.parent-first-patterns.default")
@@ -97,6 +101,7 @@ public class CoreOptions {
 			" the fully qualified class name. This setting should generally not be modified. To add another pattern we" +
 			" recommend to use \"classloader.parent-first-patterns.additional\" instead.");
 
+	//需要root类加载器加载  用户自定义
 	public static final ConfigOption<String> ALWAYS_PARENT_FIRST_LOADER_PATTERNS_ADDITIONAL = ConfigOptions
 		.key("classloader.parent-first-patterns.additional")
 		.defaultValue("")
@@ -104,6 +109,7 @@ public class CoreOptions {
 			" resolved through the parent ClassLoader first. A pattern is a simple prefix that is checked against" +
 			" the fully qualified class name. These patterns are appended to \"" + ALWAYS_PARENT_FIRST_LOADER_PATTERNS.key() + "\".");
 
+	//按照分号拆分成数组 --- 需要root类加载器加载
 	public static String[] getParentFirstLoaderPatterns(Configuration config) {
 		String base = config.getString(ALWAYS_PARENT_FIRST_LOADER_PATTERNS);
 		String append = config.getString(ALWAYS_PARENT_FIRST_LOADER_PATTERNS_ADDITIONAL);
@@ -127,7 +133,7 @@ public class CoreOptions {
 	// ------------------------------------------------------------------------
 	//  process parameters
 	// ------------------------------------------------------------------------
-
+	//java运行环境参数
 	public static final ConfigOption<String> FLINK_JVM_OPTIONS = ConfigOptions
 		.key("env.java.opts")
 		.defaultValue("");
@@ -202,6 +208,7 @@ public class CoreOptions {
 	/**
 	 * The config parameter defining the directories for temporary files, separated by
 	 * ",", "|", or the system's {@link java.io.File#pathSeparator}.
+	 * 获取服务器临时目录集合
 	 */
 	@Documentation.OverrideDefault("'LOCAL_DIRS' on Yarn. '_FLINK_TMP_DIR' on Mesos. System.getProperty(\"java.io.tmpdir\") in standalone.")
 	public static final ConfigOption<String> TMP_DIRS =
@@ -233,6 +240,7 @@ public class CoreOptions {
 
 	/**
 	 * Specifies whether file output writers should overwrite existing files by default.
+	 * 默认文件是否覆盖
 	 */
 	public static final ConfigOption<Boolean> FILESYTEM_DEFAULT_OVERRIDE =
 		key("fs.overwrite-files")

@@ -112,9 +112,9 @@ public class MiniCluster implements JobExecutorService, AutoCloseableAsync {
 	private final Object lock = new Object();
 
 	/** The configuration for this mini cluster. */
-	private final MiniClusterConfiguration miniClusterConfiguration;
+	private final MiniClusterConfiguration miniClusterConfiguration;//任务配置信息
 
-	private final Time rpcTimeout;
+	private final Time rpcTimeout;//rpc超时时间，默认10s
 
 	private CompletableFuture<Void> terminationFuture;
 
@@ -716,7 +716,7 @@ public class MiniCluster implements JobExecutorService, AutoCloseableAsync {
 	 * @param askTimeout
 	 *            The default RPC timeout for asynchronous "ask" requests.
 	 * @param remoteEnabled
-	 *            True, if the RPC service should be reachable from other (remote) RPC services.
+	 *            True, if the RPC service should be reachable from other (remote) RPC services. true表示bindAddress地址是其他节点
 	 * @param bindAddress
 	 *            The address to bind the RPC service to. Only relevant when "remoteEnabled" is true.
 	 *

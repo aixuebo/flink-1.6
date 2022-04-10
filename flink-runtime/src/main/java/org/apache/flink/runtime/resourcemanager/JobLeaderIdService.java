@@ -47,6 +47,11 @@ import java.util.concurrent.TimeUnit;
  * job manager responsible for the job). The leader id will be exposed as a future via the
  * {@link #getLeaderId(JobID)}. The future will only be completed with an exception in case
  * the service will be stopped.
+ * 获取已经注册的job的leaderId
+ *
+ * 每一个job 对应一个job的leader的监听器,如果job的leader有变化,则监听器会处理变化,总之会返回一个job的leaderId节点
+ *
+ * 服务:提供一种能力，为每一个job找到对应的master节点，我们要一直知道每一个master的leader是谁
  */
 public class JobLeaderIdService {
 
@@ -57,13 +62,15 @@ public class JobLeaderIdService {
 
 	private final ScheduledExecutor scheduledExecutor;
 
-	private final Time jobTimeout;
+	private final Time jobTimeout;//job的超时时间，该时间内一定要获取到job的leader是谁
 
-	/** Map of currently monitored jobs. */
+	/** Map of currently monitored jobs.
+	 * 每一个job 对应一个job的leader的监听器,如果job的leader有变化,则监听器会处理变化,总之会返回一个job的leaderId节点
+	 **/
 	private final Map<JobID, JobLeaderIdListener> jobLeaderIdListeners;
 
 	/** Actions to call when the job leader changes. */
-	private JobLeaderIdActions jobLeaderIdActions;
+	private JobLeaderIdActions jobLeaderIdActions;//当job leader发生变更时，如何真正处理该变更逻辑 -- 统一收口
 
 	public JobLeaderIdService(
 			HighAvailabilityServices highAvailabilityServices,
@@ -141,6 +148,7 @@ public class JobLeaderIdService {
 	 *
 	 * @param jobId identifying the job to monitor
 	 * @throws Exception if the job could not be added to the service
+	 * 为job添加一个leader服务,并且对服务进行监听
 	 */
 	public void addJob(JobID jobId) throws Exception {
 		Preconditions.checkNotNull(jobLeaderIdActions);
@@ -148,7 +156,7 @@ public class JobLeaderIdService {
 		LOG.debug("Add job {} to job leader id monitoring.", jobId);
 
 		if (!jobLeaderIdListeners.containsKey(jobId)) {
-			LeaderRetrievalService leaderRetrievalService = highAvailabilityServices.getJobManagerLeaderRetriever(jobId);
+			LeaderRetrievalService leaderRetrievalService = highAvailabilityServices.getJobManagerLeaderRetriever(jobId);//获取高可用的job leader从节点实时变化对象
 
 			JobLeaderIdListener jobIdListener = new JobLeaderIdListener(jobId, jobLeaderIdActions, leaderRetrievalService);
 			jobLeaderIdListeners.put(jobId, jobIdListener);
@@ -181,6 +189,7 @@ public class JobLeaderIdService {
 		return jobLeaderIdListeners.containsKey(jobId);
 	}
 
+	//返回 job 的leader
 	public CompletableFuture<JobMasterId> getLeaderId(JobID jobId) throws Exception {
 		if (!jobLeaderIdListeners.containsKey(jobId)) {
 			addJob(jobId);
@@ -191,6 +200,7 @@ public class JobLeaderIdService {
 		return listener.getLeaderIdFuture().thenApply(JobMasterId::fromUuidOrNull);
 	}
 
+	//true表示当前job的超时任务的uuid就是参数
 	public boolean isValidTimeout(JobID jobId, UUID timeoutId) {
 		JobLeaderIdListener jobLeaderIdListener = jobLeaderIdListeners.get(jobId);
 
@@ -209,6 +219,15 @@ public class JobLeaderIdService {
 	 * Listener which stores the current leader id and exposes them as a future value when
 	 * requested. The returned future will always be completed properly except when stopping the
 	 * listener.
+	 * 监听，用于leader变化的时候，会收到通知
+	 *
+	 * 目标:每一个job 对应一个job的leader的监听器,如果job的leader有变化,则监听器会处理变化,总之会返回一个job的leaderId节点
+	 *
+	 *
+	 * 每一个job，都在zookeeper上生产一个path，记录着job的leader是谁。如果leader尚未选举成功，则是null，如果选举成功，则获取leader是谁。
+	 * 当leader从无到有,则更新leader是谁。
+	 * 当leader发生变化，也要更新leader是谁。
+	 * 设置超时任务，当超时范围内还没有收到leader是谁，则要发送通知。
 	 */
 	private final class JobLeaderIdListener implements LeaderRetrievalListener {
 		private final Object timeoutLock = new Object();
@@ -216,16 +235,16 @@ public class JobLeaderIdService {
 		private final JobLeaderIdActions listenerJobLeaderIdActions;
 		private final LeaderRetrievalService leaderRetrievalService;
 
-		private volatile CompletableFuture<UUID> leaderIdFuture;
+		private volatile CompletableFuture<UUID> leaderIdFuture;//同步leader是谁
 		private volatile boolean running = true;
 
 		/** Null if no timeout has been scheduled; otherwise non null. */
 		@Nullable
-		private  volatile ScheduledFuture<?> timeoutFuture;
+		private  volatile ScheduledFuture<?> timeoutFuture;//job的超时任务  //激活一个线程，当超时时间还没有接收到leader是谁，则要发出通知
 
 		/** Null if no timeout has been scheduled; otherwise non null. */
 		@Nullable
-		private volatile UUID timeoutId;
+		private volatile UUID timeoutId;//null说明没有调度任务在调度，非null说明有调度任务在调度，该uuid就是调度任务的uuid
 
 		private JobLeaderIdListener(
 				JobID jobId,
@@ -237,12 +256,13 @@ public class JobLeaderIdService {
 
 			leaderIdFuture = new CompletableFuture<>();
 
-			activateTimeout();
+			activateTimeout();//激活一个线程，当超时时间还没有接收到leader是谁，则要发出通知
 
 			// start the leader service we're listening to
-			leaderRetrievalService.start(this);
+			leaderRetrievalService.start(this);//开启zookeeper,用于监听某一个path是否发生变更
 		}
 
+		//leader是谁
 		public CompletableFuture<UUID> getLeaderIdFuture() {
 			return leaderIdFuture;
 		}
@@ -252,13 +272,15 @@ public class JobLeaderIdService {
 			return timeoutId;
 		}
 
+		//删除zookeeper的path监听
 		public void stop() throws Exception {
 			running = false;
-			leaderRetrievalService.stop();
-			cancelTimeout();
-			leaderIdFuture.completeExceptionally(new Exception("Job leader id service has been stopped."));
+			leaderRetrievalService.stop();//取消监听job的leader任务
+			cancelTimeout();//取消定时任务
+			leaderIdFuture.completeExceptionally(new Exception("Job leader id service has been stopped."));//同步leader是谁--变成异常对象
 		}
 
+		//当leader变化的时候，会接收到新的leader信息
 		@Override
 		public void notifyLeaderAddress(String leaderAddress, UUID leaderSessionId) {
 			if (running) {
@@ -266,7 +288,7 @@ public class JobLeaderIdService {
 
 				UUID previousJobLeaderId = null;
 
-				if (leaderIdFuture.isDone()) {
+				if (leaderIdFuture.isDone()) {//说明leader已经存在了，则获取原来存在的leader，然后对比是否leader发生变化
 					try {
 						previousJobLeaderId = leaderIdFuture.getNow(null);
 					} catch (CompletionException e) {
@@ -279,20 +301,20 @@ public class JobLeaderIdService {
 					leaderIdFuture.complete(leaderSessionId);
 				}
 
-				if (previousJobLeaderId != null && !previousJobLeaderId.equals(leaderSessionId)) {
+				if (previousJobLeaderId != null && !previousJobLeaderId.equals(leaderSessionId)) {//说明leader发生了变化
 					// we had a previous job leader, so notify about his lost leadership
 					listenerJobLeaderIdActions.jobLeaderLostLeadership(jobId, new JobMasterId(previousJobLeaderId));
 
-					if (null == leaderSessionId) {
+					if (null == leaderSessionId) {//leader尚未发现是谁，因此启动leader超时通知任务
 						// No current leader active ==> Set a timeout for the job
 						activateTimeout();
 
 						// check if we got stopped asynchronously
 						if (!running) {
-							cancelTimeout();
+							cancelTimeout();//已经停止运行了，因此要取消超时任务提示
 						}
 					}
-				} else if (null != leaderSessionId) {
+				} else if (null != leaderSessionId) {//取消上一次设置的job超时任务，说明在超时时间内，获取到了leader，因此要取消超时通知任务
 					// Cancel timeout because we've found an active leader for it
 					cancelTimeout();
 				}
@@ -312,6 +334,7 @@ public class JobLeaderIdService {
 			}
 		}
 
+		//激活一个线程，当超时时间还没有接收到leader是谁，则要发出通知
 		private void activateTimeout() {
 			synchronized (timeoutLock) {
 				cancelTimeout();
@@ -319,15 +342,16 @@ public class JobLeaderIdService {
 				final UUID newTimeoutId = UUID.randomUUID();
 
 				timeoutId = newTimeoutId;
-				timeoutFuture = scheduledExecutor.schedule(new Runnable() {
+				timeoutFuture = scheduledExecutor.schedule(new Runnable() {//启动一个线程
 					@Override
 					public void run() {
-						listenerJobLeaderIdActions.notifyJobTimeout(jobId, newTimeoutId);
+						listenerJobLeaderIdActions.notifyJobTimeout(jobId, newTimeoutId);//通知job超时了
 					}
-				}, jobTimeout.toMilliseconds(), TimeUnit.MILLISECONDS);
+				}, jobTimeout.toMilliseconds(), TimeUnit.MILLISECONDS);//设置job超时时间,如果job超时,则执行该线程任务
 			}
 		}
 
+		//取消上一次设置的job超时任务，说明在超时时间内，获取到了leader，因此要取消超时通知任务
 		private void cancelTimeout() {
 			synchronized (timeoutLock) {
 				if (timeoutFuture != null) {

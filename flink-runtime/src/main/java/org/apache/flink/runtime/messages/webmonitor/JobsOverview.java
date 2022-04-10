@@ -28,6 +28,7 @@ import java.util.Collection;
 
 /**
  * An overview of how many jobs are in which status.
+ * job根据状态,获取统计值
  */
 public class JobsOverview implements InfoMessage {
 
@@ -39,16 +40,16 @@ public class JobsOverview implements InfoMessage {
 	public static final String FIELD_NAME_JOBS_FAILED = "jobs-failed";
 
 	@JsonProperty(FIELD_NAME_JOBS_RUNNING)
-	private final int numJobsRunningOrPending;
+	private final int numJobsRunningOrPending;//运行中+等待的job数量
 
 	@JsonProperty(FIELD_NAME_JOBS_FINISHED)
-	private final int numJobsFinished;
+	private final int numJobsFinished;//已完成的job数量
 
 	@JsonProperty(FIELD_NAME_JOBS_CANCELLED)
-	private final int numJobsCancelled;
+	private final int numJobsCancelled;//取消的job数量
 
 	@JsonProperty(FIELD_NAME_JOBS_FAILED)
-	private final int numJobsFailed;
+	private final int numJobsFailed;//失败的job数量
 
 	@JsonCreator
 	public JobsOverview(

@@ -37,11 +37,11 @@ import java.util.concurrent.ConcurrentMap;
 public class KvStateEntry<K, N, V> {
 
 	private final InternalKvState<K, N, V> state;
-	private final KvStateInfo<K, N, V> stateInfo;
+	private final KvStateInfo<K, N, V> stateInfo;//stage的元数据
 
-	private final boolean areSerializersStateless;
+	private final boolean areSerializersStateless;//true表示线程安全的stage的元数据
 
-	private final ConcurrentMap<Thread, KvStateInfo<K, N, V>> serializerCache;
+	private final ConcurrentMap<Thread, KvStateInfo<K, N, V>> serializerCache;//线程安全的获取stage的元数据
 
 	public KvStateEntry(final InternalKvState<K, N, V> state) {
 		this.state = Preconditions.checkNotNull(state);

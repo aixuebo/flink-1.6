@@ -47,8 +47,12 @@ import javax.annotation.Nullable;
  * timestamps {@code x}, where {@code x} is lower or equal to {@code t}, will occur any more.
  *
  * @param <T> The type of the elements to which this assigner assigns timestamps.
+ * 周期性的生成 watermark：系统会周期性的将 watermark 插入到流中
+ * 默认周期是200毫秒，可以使用 ExecutionConfig.setAutoWatermarkInterval() 方法进行设置
  *
  * @see org.apache.flink.streaming.api.watermark.Watermark
+ *
+ * 目的是提取时间戳 并且 周期性的分配 Watermark
  */
 public interface AssignerWithPeriodicWatermarks<T> extends TimestampAssigner<T> {
 
@@ -72,6 +76,7 @@ public interface AssignerWithPeriodicWatermarks<T> extends TimestampAssigner<T> 
 	 * @see ExecutionConfig#getAutoWatermarkInterval()
 	 *
 	 * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
+	 * 产生新的Watermark。
 	 */
 	@Nullable
 	Watermark getCurrentWatermark();

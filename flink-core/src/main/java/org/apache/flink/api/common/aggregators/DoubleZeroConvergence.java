@@ -24,6 +24,7 @@ import org.apache.flink.types.DoubleValue;
 /**
  * A {@link ConvergenceCriterion} over an {@link Aggregator} that defines convergence as reached once the aggregator
  * holds the value zero. The aggregated data type is a {@link DoubleValue}.
+ * 判断如果聚合值是0,则完成收敛
  */
 @SuppressWarnings("serial")
 @PublicEvolving
@@ -31,8 +32,8 @@ public class DoubleZeroConvergence implements ConvergenceCriterion<DoubleValue> 
 
 	/**
 	 * Returns true, if the aggregator value is zero, false otherwise.
-	 * 
-	 * @param iteration The number of the iteration superstep. Ignored in this case.
+	 * 判断如果聚合值是0,则完成收敛
+	 * @param iteration The number of the iteration superstep. Ignored in this case.算法迭代了多少次
 	 * @param value The aggregator value, which is compared to zero.
 	 * @return True, if the aggregator value is zero, false otherwise.
 	 */

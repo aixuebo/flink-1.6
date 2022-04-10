@@ -30,14 +30,15 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  *            Type of the key
  * @param <T>
  *            Type of the data
+ * 自定义分区，先将元素转换成key，在判断key应该归属哪个分区
  */
 @Internal
 public class CustomPartitionerWrapper<K, T> extends StreamPartitioner<T> {
 	private static final long serialVersionUID = 1L;
 
 	private final int[] returnArray = new int[1];
-	Partitioner<K> partitioner;
-	KeySelector<T, K> keySelector;
+	Partitioner<K> partitioner;//key应该分配到哪个分区
+	KeySelector<T, K> keySelector;//如何转换成Key
 
 	public CustomPartitionerWrapper(Partitioner<K> partitioner, KeySelector<T, K> keySelector) {
 		this.partitioner = partitioner;
@@ -54,8 +55,7 @@ public class CustomPartitionerWrapper<K, T> extends StreamPartitioner<T> {
 			throw new RuntimeException("Could not extract key from " + record.getInstance(), e);
 		}
 
-		returnArray[0] = partitioner.partition(key,
-				numberOfOutputChannels);
+		returnArray[0] = partitioner.partition(key,numberOfOutputChannels);
 
 		return returnArray;
 	}

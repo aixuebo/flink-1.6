@@ -34,12 +34,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>The connection index is assigned by the {@link IntermediateResult} and ensures that it is
  * safe to multiplex multiple data transfers over the same physical TCP connection.
+ * 表示一个连接--可以连接到远程的TaskManager节点
  */
 public class ConnectionID implements Serializable {
 
 	private static final long serialVersionUID = -8068626194818666857L;
 
-	private final InetSocketAddress address;
+	private final InetSocketAddress address;//远程要连接的TaskManager地址
 
 	private final int connectionIndex;
 

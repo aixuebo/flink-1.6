@@ -26,13 +26,15 @@ import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 /**
  * Function that enables selection by maximal value of a field.
  * @param <T>
+ * reduce操作,返回最大的元素。---提供了参与比较的字段顺序
+ * 要求输入的参数是Tuple
  */
 @Internal
 public class SelectByMaxFunction<T extends Tuple> implements ReduceFunction<T> {
 	private static final long serialVersionUID = 1L;
 
 	// Fields which are used as KEYS
-	private int[] fields;
+	private int[] fields;//存储如何比较tuple,比如[6,2,5] 表示先比较tuple的第6个位置、如果相同再比较第2个位置...
 
 	/**
 	 * Constructor which is overwriting the default constructor.
@@ -79,7 +81,7 @@ public class SelectByMaxFunction<T extends Tuple> implements ReduceFunction<T> {
 			int position = this.fields[index];
 
 			// Get both values - both implement comparable
-			Comparable comparable1 = value1.getFieldNotNull(position);
+			Comparable comparable1 = value1.getFieldNotNull(position);//返回位置对应的数据,该数据一定是可以比较的类型数据
 			Comparable comparable2 = value2.getFieldNotNull(position);
 
 			// Compare values

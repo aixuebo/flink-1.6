@@ -23,18 +23,20 @@ import org.apache.flink.api.java.tuple.Tuple;
 
 /**
  * Aggregate tuples using an array of aggregators, one for each "column" or position within the Tuple.
+ * tuple可以存储多个元素类型,比如Tuple<double,String> 表示分别为2个元素做统计。即输出结果是double和String
  */
 @Internal
 public class TupleSummaryAggregator<R extends Tuple> implements Aggregator<Tuple, R> {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Aggregator[] columnAggregators;
+	private final Aggregator[] columnAggregators;//参与的聚合器
 
 	public TupleSummaryAggregator(Aggregator[] columnAggregators) {
 		this.columnAggregators = columnAggregators;
 	}
 
+	//根据tuple的位置,添加聚合器计算
 	@Override
 	@SuppressWarnings("unchecked")
 	public void aggregate(Tuple value) {

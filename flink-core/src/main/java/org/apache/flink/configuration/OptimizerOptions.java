@@ -24,6 +24,7 @@ import static org.apache.flink.configuration.ConfigOptions.key;
 
 /**
  * Configuration options for the optimizer.
+ * 设置最大抽样数、最小抽样数、每条数据最大字节数
  */
 @PublicEvolving
 public class OptimizerOptions {
@@ -54,6 +55,7 @@ public class OptimizerOptions {
 	 * The maximal length of a line sample that the compiler takes for delimited inputs. If the length of a single
 	 * sample exceeds this value (possible because of misconfiguration of the parser), the sampling aborts. This value
 	 * can be overridden for a specific input with the input format’s parameters.
+	 * 默认2M
 	 */
 	public static final ConfigOption<Integer> DELIMITED_FORMAT_MAX_SAMPLE_LEN =
 		key("compiler.delimited-informat.max-sample-len")

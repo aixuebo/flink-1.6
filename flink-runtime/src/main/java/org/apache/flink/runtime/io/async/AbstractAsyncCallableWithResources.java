@@ -26,6 +26,9 @@ import java.io.IOException;
  * This abstract class encapsulates the lifecycle and execution strategy for asynchronous operations that use resources.
  *
  * @param <V> return type of the asynchronous call.
+ * 描述一个任务call 。子类实现call的真正调用逻辑、申请资源、释放资源、stop操作真正逻辑
+ *
+ * call()方法规定了异步调用的模板。
  */
 public abstract class AbstractAsyncCallableWithResources<V> implements StoppableCallbackCallable<V> {
 

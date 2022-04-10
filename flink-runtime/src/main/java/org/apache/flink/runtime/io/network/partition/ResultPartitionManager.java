@@ -36,16 +36,20 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * The result partition manager keeps track of all currently produced/consumed partitions of a
  * task manager.
+ * 管理中间结果，即每一个进程+临时结果id组成的中间文件
  */
 public class ResultPartitionManager implements ResultPartitionProvider {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ResultPartitionManager.class);
 
+	//前两个组成tuple作为key,value是结果对象
+	//即进程id+分区id --> 分区对象
 	public final Table<ExecutionAttemptID, IntermediateResultPartitionID, ResultPartition>
 			registeredPartitions = HashBasedTable.create();
 
 	private boolean isShutdown;
 
+	//注册一个分区对象
 	public void registerResultPartition(ResultPartition partition) throws IOException {
 		synchronized (registeredPartitions) {
 			checkState(!isShutdown, "Result partition manager already shut down.");
@@ -63,6 +67,7 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 		}
 	}
 
+	//读取某一个分区的子分区内容
 	@Override
 	public ResultSubpartitionView createSubpartitionView(
 			ResultPartitionID partitionId,
@@ -83,19 +88,23 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 		}
 	}
 
+	//删除该executionId进程下所有结果文件
 	public void releasePartitionsProducedBy(ExecutionAttemptID executionId) {
 		releasePartitionsProducedBy(executionId, null);
 	}
 
+	//删除该executionId进程下所有结果文件
 	public void releasePartitionsProducedBy(ExecutionAttemptID executionId, Throwable cause) {
 		synchronized (registeredPartitions) {
 			final Map<IntermediateResultPartitionID, ResultPartition> partitions =
 					registeredPartitions.row(executionId);
 
+			//删除executionId进程下每一个结果文件
 			for (ResultPartition partition : partitions.values()) {
 				partition.release(cause);
 			}
 
+			//清理内存中该executionId进程下所有的结果
 			for (IntermediateResultPartitionID partitionId : ImmutableList
 					.copyOf(partitions.keySet())) {
 
@@ -128,6 +137,7 @@ public class ResultPartitionManager implements ResultPartitionProvider {
 	// Notifications
 	// ------------------------------------------------------------------------
 
+	//当partition被消费完成后,接收通知,清理该分区数据
 	void onConsumedPartition(ResultPartition partition) {
 		final ResultPartition previous;
 

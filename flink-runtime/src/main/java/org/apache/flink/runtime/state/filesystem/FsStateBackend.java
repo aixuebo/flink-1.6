@@ -94,7 +94,7 @@ public class FsStateBackend extends AbstractFileStateBackend implements Configur
 	private static final long serialVersionUID = -8191916350224044011L;
 
 	/** Maximum size of state that is stored with the metadata, rather than in files (1 MiByte). */
-	private static final int MAX_FILE_STATE_THRESHOLD = 1024 * 1024;
+	private static final int MAX_FILE_STATE_THRESHOLD = 1024 * 1024;//存储元数据最大不允许超过1M
 
 	// ------------------------------------------------------------------------
 
@@ -121,6 +121,8 @@ public class FsStateBackend extends AbstractFileStateBackend implements Configur
 	 *
 	 * @param checkpointDataUri The URI describing the filesystem (scheme and optionally authority),
 	 *                          and the path to the checkpoint data directory.
+	 *
+	 * 使用path存储checkpoint的数据
 	 */
 	public FsStateBackend(String checkpointDataUri) {
 		this(new Path(checkpointDataUri));
@@ -305,14 +307,14 @@ public class FsStateBackend extends AbstractFileStateBackend implements Configur
 	 * @param fileStateSizeThreshold     State below this size will be stored as part of the metadata,
 	 *                                   rather than in files. If -1, the value configured in the
 	 *                                   runtime configuration will be used, or the default value (1KB)
-	 *                                   if nothing is configured.
+	 *                                   if nothing is configured.存储元数据的文件大小,最多是1M
 	 * @param asynchronousSnapshots      Flag to switch between synchronous and asynchronous
 	 *                                   snapshot mode. If UNDEFINED, the value configured in the
-	 *                                   runtime configuration will be used.
+	 *                                   runtime configuration will be used. 异步还是同步存储
 	 */
 	public FsStateBackend(
 			URI checkpointDirectory,
-			@Nullable URI defaultSavepointDirectory,
+			@Nullable URI defaultSavepointDirectory,//可以是null
 			int fileStateSizeThreshold,
 			TernaryBoolean asynchronousSnapshots) {
 
@@ -412,6 +414,7 @@ public class FsStateBackend extends AbstractFileStateBackend implements Configur
 	 *
 	 * <p>If not explicitly configured, this is the default value of
 	 * {@link CheckpointingOptions#ASYNC_SNAPSHOTS}.
+	 * 是否使用异步
 	 */
 	public boolean isUsingAsynchronousSnapshots() {
 		return asynchronousSnapshots.getOrDefault(CheckpointingOptions.ASYNC_SNAPSHOTS.defaultValue());

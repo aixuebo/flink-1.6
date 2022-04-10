@@ -28,6 +28,7 @@ import java.util.List;
 
 /**
  * Gives the URLClassLoader a nicer name for debugging purposes.
+ * 定义类加载器方式
  */
 public class FlinkUserCodeClassLoaders {
 
@@ -74,6 +75,7 @@ public class FlinkUserCodeClassLoaders {
 
 	/**
 	 * Regular URLClassLoader that first loads from the parent and only after that form the URLs.
+	 * 正常的类加载器,由root开始先加载
 	 */
 	static class ParentFirstClassLoader extends URLClassLoader {
 
@@ -91,6 +93,8 @@ public class FlinkUserCodeClassLoaders {
 	 *
 	 * <p>{@link #getResourceAsStream(String)} uses {@link #getResource(String)} internally so we
 	 * don't override that.
+	 *
+	 * 优先在用户层加载jar包
 	 */
 	static final class ChildFirstClassLoader extends URLClassLoader {
 
@@ -99,7 +103,7 @@ public class FlinkUserCodeClassLoaders {
 		 * for Flink classes, for example, to avoid loading Flink classes that cross the
 		 * user-code/system-code barrier in the user-code ClassLoader.
 		 */
-		private final String[] alwaysParentFirstPatterns;
+		private final String[] alwaysParentFirstPatterns;//需要去父类加载jar ，即他是flink需要的jar  只是全路径的开始部分即可,比如org.apache.flink.runtime,此时runtime下所有的包都由flink加载器加载
 
 		public ChildFirstClassLoader(URL[] urls, ClassLoader parent, String[] alwaysParentFirstPatterns) {
 			super(urls, parent);

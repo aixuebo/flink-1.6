@@ -31,6 +31,7 @@ import java.io.IOException;
 /**
  * Reads elements by deserializing them with a given type serializer.
  * @param <T>
+ * 读取一个可序列化的对象
  */
 @PublicEvolving
 public class TypeSerializerInputFormat<T> extends BinaryInputFormat<T> implements ResultTypeQueryable<T> {

@@ -24,6 +24,7 @@ import org.apache.flink.configuration.TaskManagerOptions;
 
 /**
  * Description of the cluster to start by the {@link ClusterDescriptor}.
+ * 准备向集群申请确定的资源信息:jobmanager、taskmanager的内存、需要多少个taskmanager、每一个taskmanager需要多少个slot
  */
 public final class ClusterSpecification {
 	private final int masterMemoryMB;

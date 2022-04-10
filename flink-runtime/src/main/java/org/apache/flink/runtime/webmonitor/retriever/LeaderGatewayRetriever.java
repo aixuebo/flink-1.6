@@ -91,6 +91,7 @@ public abstract class LeaderGatewayRetriever<T extends RpcGateway> extends Leade
 		}
 	}
 
+	//收到信的leader信息
 	@Override
 	public void notifyNewLeaderAddress(CompletableFuture<Tuple2<String, UUID>> newLeaderAddressFuture) {
 		final CompletableFuture<T> newGatewayFuture = createGateway(newLeaderAddressFuture);

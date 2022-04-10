@@ -26,6 +26,8 @@ package org.apache.flink.streaming.api.operators;
  */
 public interface KeyContext {
 
+	//KeySelector,key选择器,用于keyBy,输入元素 转换成--> 输出key
+	//将转换后的key,调用该函数,即表示该行数据,转换成什么key了
 	void setCurrentKey(Object key);
 
 	Object getCurrentKey();

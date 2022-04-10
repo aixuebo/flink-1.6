@@ -31,6 +31,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Factory for {@link HeapPriorityQueueSet}.
+ * 工厂方法
  */
 public class HeapPriorityQueueSetFactory implements PriorityQueueSetFactory {
 
@@ -41,7 +42,7 @@ public class HeapPriorityQueueSetFactory implements PriorityQueueSetFactory {
 	private final int totalKeyGroups;
 
 	@Nonnegative
-	private final int minimumCapacity;
+	private final int minimumCapacity;//
 
 	public HeapPriorityQueueSetFactory(
 		@Nonnull KeyGroupRange keyGroupRange,

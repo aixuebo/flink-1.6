@@ -36,6 +36,8 @@ public interface CheckpointStorage {
 	 *
 	 * <p>Some state backends may not support highly-available durable storage, with default settings,
 	 * which makes them suitable for zero-config prototyping, but not for actual production setups.
+	 *
+	 * 是否支持高可用,即true表示数据高可用,可以支持序列化与反序列化
 	 */
 	boolean supportsHighlyAvailableStorage();
 

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Simple manager that keeps track of which TaskManager are available and alive.
+ * 简单的管咯TaskManager的有效可用/死
  */
 public class InstanceManager {
 
@@ -46,22 +47,28 @@ public class InstanceManager {
 	/** Global lock */
 	private final Object lock = new Object();
 
-	/** Set of hosts known to run a task manager that are thus able to execute tasks (by ID). */
+	/** Set of hosts known to run a task manager that are thus able to execute tasks (by ID).
+	 *  ID与Instance映射
+	 **/
 	private final Map<InstanceID, Instance> registeredHostsById;
 
-	/** Set of hosts known to run a task manager that are thus able to execute tasks (by ResourceID). */
+	/** Set of hosts known to run a task manager that are thus able to execute tasks (by ResourceID).
+	 * 通过ResourceID与Instance映射
+	 **/
 	private final Map<ResourceID, Instance> registeredHostsByResource;
 
 	/** Set of hosts that were present once and have died */
 	private final Set<ResourceID> deadHosts;
 
-	/** Listeners that want to be notified about availability and disappearance of instances */
+	/** Listeners that want to be notified about availability and disappearance of instances
+	 * 当 Instance 可用/死 时,通知下游做处理
+	 **/
 	private final List<InstanceListener> instanceListeners = new ArrayList<>();
 
 	/** The total number of task slots that the system has */
 	private int totalNumberOfAliveTaskSlots;
 
-	/** Flag marking the system as shut down */
+	/** Flag marking the system as shut down 是否已经shutdown*/
 	private volatile boolean isShutdown;
 
 	// ------------------------------------------------------------------------
@@ -95,6 +102,7 @@ public class InstanceManager {
 		}
 	}
 
+	//说明jobmanager此时接收到了taskmanager的心跳
 	public boolean reportHeartBeat(InstanceID instanceId) {
 		if (instanceId == null) {
 			throw new IllegalArgumentException("InstanceID may not be null.");
@@ -250,6 +258,7 @@ public class InstanceManager {
 		return registeredHostsByResource.containsKey(resourceId);
 	}
 
+	//持有多少个taskmanager
 	public int getNumberOfRegisteredTaskManagers() {
 		return this.registeredHostsById.size();
 	}
@@ -257,7 +266,8 @@ public class InstanceManager {
 	public int getTotalNumberOfSlots() {
 		return this.totalNumberOfAliveTaskSlots;
 	}
-	
+
+	//持有多少个slot
 	public int getNumberOfAvailableSlots() {
 		synchronized (this.lock) {
 			int numSlots = 0;
@@ -270,6 +280,7 @@ public class InstanceManager {
 		}
 	}
 
+	//返回所有的taskmanager实例
 	public Collection<Instance> getAllRegisteredInstances() {
 		synchronized (this.lock) {
 			// return a copy (rather than a Collections.unmodifiable(...) wrapper), such that
@@ -287,7 +298,7 @@ public class InstanceManager {
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+    //追加监听--通知下游
 	public void addInstanceListener(InstanceListener listener) {
 		synchronized (this.instanceListeners) {
 			this.instanceListeners.add(listener);
@@ -300,6 +311,7 @@ public class InstanceManager {
 		}
 	}
 
+	//真实的通知下游
 	private void notifyNewInstance(Instance instance) {
 		synchronized (this.instanceListeners) {
 			for (InstanceListener listener : this.instanceListeners) {
@@ -313,6 +325,7 @@ public class InstanceManager {
 		}
 	}
 
+	//真实的通知下游
 	private void notifyDeadInstance(Instance instance) {
 		synchronized (this.instanceListeners) {
 			for (InstanceListener listener : this.instanceListeners) {

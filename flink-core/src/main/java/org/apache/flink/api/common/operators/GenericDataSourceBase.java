@@ -40,13 +40,14 @@ import org.apache.flink.util.Visitor;
  *
  * @param <OUT> The output type of the data source
  * @param <T> The type of input format invoked by instances of this data source.
+ * 数据源操作,读取一个InputFormat,返回元素对象
  */
 @Internal
 public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends Operator<OUT> {
 
-	private static final String DEFAULT_NAME = "<Unnamed Generic Data Source>";
+	private static final String DEFAULT_NAME = "<Unnamed Generic Data Source>";//默认名称name
 
-	protected final UserCodeWrapper<? extends T> formatWrapper;
+	protected final UserCodeWrapper<? extends T> formatWrapper;//InputFormat如何读取数据,对InputFormat进行校验是否可以被序列化所有属性
 
 	protected String statisticsKey;
 
@@ -55,8 +56,8 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	/**
 	 * Creates a new instance for the given file using the given input format.
 	 *
-	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
-	 * @param operatorInfo The type information for the operator.
+	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.如何读取数据
+	 * @param operatorInfo The type information for the operator.输出类型
 	 * @param name The given name for the Pact, used in plans, logs and progress messages.
 	 */
 	public GenericDataSourceBase(T format, OperatorInformation<OUT> operatorInfo, String name) {
@@ -206,7 +207,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	}
 
 	// --------------------------------------------------------------------------------------------
-	
+	//因为是数据源,所以没有输入,只有输出
 	protected List<OUT> executeOnCollections(RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		@SuppressWarnings("unchecked")
 		InputFormat<OUT, InputSplit> inputFormat = (InputFormat<OUT, InputSplit>) this.formatWrapper.getUserCodeObject();
@@ -221,17 +222,17 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 
 		List<OUT> result = new ArrayList<OUT>();
 		
-		// splits
+		// splits 获取所有数据块
 		InputSplit[] splits = inputFormat.createInputSplits(1);
-		TypeSerializer<OUT> serializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
+		TypeSerializer<OUT> serializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);//输出类型
 		
-		for (InputSplit split : splits) {
+		for (InputSplit split : splits) {//处理每一个数据块
 			inputFormat.open(split);
 			
 			while (!inputFormat.reachedEnd()) {
-				OUT next = inputFormat.nextRecord(serializer.createInstance());
+				OUT next = inputFormat.nextRecord(serializer.createInstance());//返回一行数据
 				if (next != null) {
-					result.add(serializer.copy(next));
+					result.add(serializer.copy(next));//内存能装下吗
 				}
 			}
 			

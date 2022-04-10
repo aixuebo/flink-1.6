@@ -30,6 +30,7 @@ import java.util.Collections;
 /**
  * Internal window function for wrapping a {@link WindowFunction} that takes an {@code Iterable}
  * when the window state is a single value.
+ * 对WindowFunction窗口函数进行进一步的包装,当window的结果是一个值的时,将其转换成List,因为WindowFunction需要的是List
  */
 public final class InternalSingleValueWindowFunction<IN, OUT, KEY, W extends Window>
 		extends WrappingFunction<WindowFunction<IN, OUT, KEY, W>>

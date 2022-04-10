@@ -44,6 +44,8 @@ import java.net.InetSocketAddress;
 
 import static org.apache.flink.util.Preconditions.checkState;
 
+//NettyClient 根据配置信息,初始化tcp协议信息,使用nio还是epoll方式发送请求。
+//每一个连接,请求ip,调用protocol.getClientChannelHandlers()方法执行
 class NettyClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(NettyClient.class);
@@ -167,7 +169,7 @@ class NettyClient {
 	// ------------------------------------------------------------------------
 	// Client connections
 	// ------------------------------------------------------------------------
-
+    //连接taskmanager服务器
 	ChannelFuture connect(final InetSocketAddress serverSocketAddress) {
 		checkState(bootstrap != null, "Client has not been initialized yet.");
 
@@ -187,12 +189,12 @@ class NettyClient {
 
 					channel.pipeline().addLast("ssl", new SslHandler(sslEngine));
 				}
-				channel.pipeline().addLast(protocol.getClientChannelHandlers());
+				channel.pipeline().addLast(protocol.getClientChannelHandlers());//每一次连接后，接下来要处理的业务核心流程
 			}
 		});
 
 		try {
-			return bootstrap.connect(serverSocketAddress);
+			return bootstrap.connect(serverSocketAddress);//连接服务
 		}
 		catch (ChannelException e) {
 			if ((e.getCause() instanceof java.net.SocketException &&

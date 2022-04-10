@@ -60,21 +60,22 @@ public class MapOperatorBase<IN, OUT, FT extends MapFunction<IN, OUT>> extends S
 	protected List<OUT> executeOnCollections(List<IN> inputData, RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		MapFunction<IN, OUT> function = this.userFunction.getUserCodeObject();
 		
-		FunctionUtils.setFunctionRuntimeContext(function, ctx);
-		FunctionUtils.openFunction(function, this.parameters);
+		FunctionUtils.setFunctionRuntimeContext(function, ctx);//设置环境上下文
+		FunctionUtils.openFunction(function, this.parameters);//处理open方法
 		
 		ArrayList<OUT> result = new ArrayList<OUT>(inputData.size());
 
 		TypeSerializer<IN> inSerializer = getOperatorInfo().getInputType().createSerializer(executionConfig);
 		TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);
 
+		//循环处理每一个元素
 		for (IN element : inputData) {
 			IN inCopy = inSerializer.copy(element);
 			OUT out = function.map(inCopy);
 			result.add(outSerializer.copy(out));
 		}
 
-		FunctionUtils.closeFunction(function);
+		FunctionUtils.closeFunction(function);//处理close方法
 		
 		return result;
 	}

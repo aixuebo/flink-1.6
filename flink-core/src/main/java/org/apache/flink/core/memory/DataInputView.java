@@ -28,6 +28,7 @@ import java.io.IOException;
  * This interface defines a view over some memory that can be used to sequentially read the contents of the memory.
  * The view is typically backed by one or more {@link org.apache.flink.core.memory.MemorySegment}.
  * 如何读取数据
+ * 如何读取二进制数据源，将字节数组转换成 boolean、int、string等形式
  */
 @Public
 public interface DataInputView extends DataInput {
@@ -55,6 +56,7 @@ public interface DataInputView extends DataInput {
 	 * @param len byte length to read
 	 * @return the number of actually read bytes of -1 if there is no more data left
 	 * @throws IOException
+	 * 读取字节数组到参数中
 	 */
 	int read(byte[] b, int off, int len) throws IOException;
 
@@ -65,6 +67,7 @@ public interface DataInputView extends DataInput {
 	 * @param b byte array to store the data to
 	 * @return the number of read bytes or -1 if there is no more data left
 	 * @throws IOException
+	 * 读取字节数组到参数中
 	 */
 	int read(byte[] b) throws IOException;
 }

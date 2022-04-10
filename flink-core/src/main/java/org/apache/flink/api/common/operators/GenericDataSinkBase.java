@@ -43,13 +43,14 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * Operator for nodes that act as data sinks, storing the data they receive.
  * The way the data is stored is handled by the {@link org.apache.flink.api.common.io.OutputFormat}.
+ * 将结果输出，因此无返回值类型，因此返回值是Nothing
  */
 @Internal
 public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 
-	protected final UserCodeWrapper<? extends OutputFormat<IN>> formatWrapper;
+	protected final UserCodeWrapper<? extends OutputFormat<IN>> formatWrapper;//如何输出数据到磁盘
 
-	protected Operator<IN> input = null;
+	protected Operator<IN> input = null;//获取输入的类型
 
 	private Ordering localOrdering;
 
@@ -227,9 +228,9 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	@SuppressWarnings("unchecked")
 	protected void executeOnCollections(List<IN> inputData, RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		OutputFormat<IN> format = this.formatWrapper.getUserCodeObject();
-		TypeInformation<IN> inputType = getInput().getOperatorInfo().getOutputType();
+		TypeInformation<IN> inputType = getInput().getOperatorInfo().getOutputType();//输入类型 ，就是输入的操作经过转换后的输出类型
 
-		if (this.localOrdering != null) {
+		if (this.localOrdering != null) {//是否要排序
 			int[] sortColumns = this.localOrdering.getFieldPositions();
 			boolean[] sortOrderings = this.localOrdering.getFieldSortDirections();
 
@@ -242,6 +243,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 				throw new UnsupportedOperationException("Local output sorting does not support type "+inputType+" yet.");
 			}
 
+			//对数据集合先排序，然后再存储数据
 			Collections.sort(inputData, new Comparator<IN>() {
 				@Override
 				public int compare(IN o1, IN o2) {
@@ -260,7 +262,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 		}
 		format.open(0, 1);
 		for (IN element : inputData) {
-			format.writeRecord(element);
+			format.writeRecord(element);//直接输出
 		}
 		
 		format.close();

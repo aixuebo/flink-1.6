@@ -51,7 +51,7 @@ public class FeedbackTransformation<T> extends StreamTransformation<T> {
 
 	private final List<StreamTransformation<T>> feedbackEdges;
 
-	private final Long waitTime;
+	private final Long waitTime;//waitTime时间内,可以向上反馈信息
 
 	/**
 	 * Creates a new {@code FeedbackTransformation} from the given input.

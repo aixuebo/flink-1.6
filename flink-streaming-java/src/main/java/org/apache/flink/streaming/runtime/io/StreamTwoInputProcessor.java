@@ -127,10 +127,10 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 
 	@SuppressWarnings("unchecked")
 	public StreamTwoInputProcessor(
-			Collection<InputGate> inputGates1,
-			Collection<InputGate> inputGates2,
-			TypeSerializer<IN1> inputSerializer1,
-			TypeSerializer<IN2> inputSerializer2,
+			Collection<InputGate> inputGates1,//第1个流的数据源
+			Collection<InputGate> inputGates2,//第2个流的数据源
+			TypeSerializer<IN1> inputSerializer1,//第1个流的数据序列化对象
+			TypeSerializer<IN2> inputSerializer2,//第2个流的数据序列化对象
 			TwoInputStreamTask<IN1, IN2, ?> checkpointedTask,
 			CheckpointingMode checkpointMode,
 			Object lock,
@@ -261,8 +261,8 @@ public class StreamTwoInputProcessor<IN1, IN2> {
 							StreamRecord<IN2> record = recordOrWatermark.asRecord();
 							synchronized (lock) {
 								numRecordsIn.inc();
-								streamOperator.setKeyContextElement2(record);
-								streamOperator.processElement2(record);
+								streamOperator.setKeyContextElement2(record);//设置当前上下文的key是什么值
+								streamOperator.processElement2(record);//处理当前元素
 							}
 							return true;
 						}

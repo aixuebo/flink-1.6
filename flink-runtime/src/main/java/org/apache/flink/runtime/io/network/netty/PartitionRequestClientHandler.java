@@ -54,18 +54,22 @@ import java.util.concurrent.atomic.AtomicReference;
  * producer.
  *
  * <p>It is used in the old network mode.
+ * 属于read时的拦截器，读取服务端返回的response信息NettyMessage
+ *
+ * 我们以客户端获取到响应之后回调该处理器的channelRead方法为入口来进行分析：
  */
 class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter implements NetworkClientHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PartitionRequestClientHandler.class);
 
+	//存储每一个服务器返回的文件流  key是本地持有channelID  value是channelID对应的RemoteInputChannel对象
 	private final ConcurrentMap<InputChannelID, RemoteInputChannel> inputChannels = new ConcurrentHashMap<InputChannelID, RemoteInputChannel>();
 
 	private final AtomicReference<Throwable> channelError = new AtomicReference<Throwable>();
 
 	private final BufferListenerTask bufferListener = new BufferListenerTask();
 
-	private final Queue<Object> stagedMessages = new ArrayDeque<Object>();
+	private final Queue<Object> stagedMessages = new ArrayDeque<Object>();//缓存尚未解码成NettyMessage的消息
 
 	private final StagedMessagesHandlerTask stagedMessagesHandler = new StagedMessagesHandlerTask();
 
@@ -81,6 +85,7 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 	// Input channel/receiver registration
 	// ------------------------------------------------------------------------
 
+	//未来该RemoteInputChannel会被response返回
 	@Override
 	public void addInputChannel(RemoteInputChannel listener) throws IOException {
 		checkError();
@@ -93,6 +98,7 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 		inputChannels.remove(listener.getInputChannelId());
 	}
 
+	//通知服务端 渠道id已经被取消
 	@Override
 	public void cancelRequestFor(InputChannelID inputChannelId) {
 		if (inputChannelId == null || ctx == null) {
@@ -176,11 +182,12 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		try {
+			//当没有待解析的原始消息时，直接解码消息，否则将消息加入到stagedMessages队列中，等待排队处理
 			if (!bufferListener.hasStagedBufferOrEvent() && stagedMessages.isEmpty()) {
-				decodeMsg(msg, false);
+				decodeMsg(msg, false);//直接解码
 			}
 			else {
-				stagedMessages.add(msg);
+				stagedMessages.add(msg);//尚未解码成NettyMessage的消息
 			}
 		}
 		catch (Throwable t) {
@@ -233,18 +240,20 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 		super.channelReadComplete(ctx);
 	}
 
+	//因为已经经过解码器,因此到ClientHandler时,一定是NettyMessage对象
+	//该方法就是从NettyMessage对象中进一步解析数据
 	private boolean decodeMsg(Object msg, boolean isStagedBuffer) throws Throwable {
 		final Class<?> msgClazz = msg.getClass();
 
 		// ---- Buffer --------------------------------------------------------
-		if (msgClazz == NettyMessage.BufferResponse.class) {
+		if (msgClazz == NettyMessage.BufferResponse.class) {//说明是服务器返回的内容
 			NettyMessage.BufferResponse bufferOrEvent = (NettyMessage.BufferResponse) msg;
 
-			RemoteInputChannel inputChannel = inputChannels.get(bufferOrEvent.receiverId);
-			if (inputChannel == null) {
+			RemoteInputChannel inputChannel = inputChannels.get(bufferOrEvent.receiverId);//找到接收返回值的流
+			if (inputChannel == null) {//说明本地已经不需要该流了
 				bufferOrEvent.releaseBuffer();
 
-				cancelRequestFor(bufferOrEvent.receiverId);
+				cancelRequestFor(bufferOrEvent.receiverId);//通知服务器也删除该流
 
 				return true;
 			}
@@ -252,7 +261,7 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 			return decodeBufferOrEvent(inputChannel, bufferOrEvent, isStagedBuffer);
 		}
 		// ---- Error ---------------------------------------------------------
-		else if (msgClazz == NettyMessage.ErrorResponse.class) {
+		else if (msgClazz == NettyMessage.ErrorResponse.class) {//说明执行过程中出现问题了
 			NettyMessage.ErrorResponse error = (NettyMessage.ErrorResponse) msg;
 
 			SocketAddress remoteAddr = ctx.channel().remoteAddress();
@@ -284,6 +293,14 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 		return true;
 	}
 
+	/**
+	 *
+	 * @param inputChannel 本地要持有response的信息流
+	 * @param bufferOrEvent 真实的response返回的数据对象
+	 * @param isStagedBuffer
+	 * @return 将数据内容bufferOrEvent 填充到RemoteInputChannel中
+	 * @throws Throwable
+	 */
 	private boolean decodeBufferOrEvent(RemoteInputChannel inputChannel, NettyMessage.BufferResponse bufferOrEvent, boolean isStagedBuffer) throws Throwable {
 		boolean releaseNettyBuffer = true;
 
@@ -309,10 +326,10 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 				}
 
 				while (true) {
-					Buffer buffer = bufferProvider.requestBuffer();
+					Buffer buffer = bufferProvider.requestBuffer();//不断的获取buffer容器,用于接收response内容
 
 					if (buffer != null) {
-						nettyBuffer.readBytes(buffer.asByteBuf(), receivedSize);
+						nettyBuffer.readBytes(buffer.asByteBuf(), receivedSize);//将数据填充到buffer里
 
 						inputChannel.onBuffer(buffer, bufferOrEvent.sequenceNumber, -1);
 
@@ -373,12 +390,14 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 	 * <p>After a buffer becomes available again, the buffer is handed over by
 	 * the thread calling {@link #notifyBufferAvailable(Buffer)} to the network I/O
 	 * thread, which then continues the processing of the staged buffer.
+	 *
+	 * 当BufferProvider没有buffer能提供时,需要监听什么时候可以提供buffer
 	 */
 	private class BufferListenerTask implements BufferListener, Runnable {
 
-		private final AtomicReference<Buffer> availableBuffer = new AtomicReference<Buffer>();
+		private final AtomicReference<Buffer> availableBuffer = new AtomicReference<Buffer>();//可用的buffer
 
-		private NettyMessage.BufferResponse stagedBufferResponse;
+		private NettyMessage.BufferResponse stagedBufferResponse;//服务器返回的对象
 
 		private boolean waitForBuffer(BufferProvider bufferProvider, NettyMessage.BufferResponse bufferResponse) {
 
@@ -416,6 +435,7 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 		}
 
 		// Called by the recycling thread (not network I/O thread)
+		//说明有buffer可用了
 		@Override
 		public boolean notifyBufferAvailable(Buffer buffer) {
 			boolean success = false;
@@ -457,12 +477,12 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 			Buffer buffer = null;
 
 			try {
-				if ((buffer = availableBuffer.getAndSet(null)) == null) {
+				if ((buffer = availableBuffer.getAndSet(null)) == null) {//获取可用的buffer
 					throw new IllegalStateException("Running buffer availability task w/o a buffer.");
 				}
 
 				ByteBuf nettyBuffer = stagedBufferResponse.getNettyBuffer();
-				nettyBuffer.readBytes(buffer.asByteBuf(), nettyBuffer.readableBytes());
+				nettyBuffer.readBytes(buffer.asByteBuf(), nettyBuffer.readableBytes());//将数据读取到可用的buffer中
 				stagedBufferResponse.releaseBuffer();
 
 				RemoteInputChannel inputChannel = inputChannels.get(stagedBufferResponse.receiverId);
@@ -505,7 +525,7 @@ class PartitionRequestClientHandler extends ChannelInboundHandlerAdapter impleme
 		public void run() {
 			try {
 				Object msg;
-				while ((msg = stagedMessages.poll()) != null) {
+				while ((msg = stagedMessages.poll()) != null) {//不断去解码数据
 					if (!decodeMsg(msg, true)) {
 						return;
 					}

@@ -36,6 +36,9 @@ import java.util.List;
  * connected to downstream operations.
  *
  * @param <T> The type of the elements that result from this {@code SplitTransformation}
+ * 将一个流 拆分成 多个流。
+ *
+ * 相当于map操作,为每一个流 追加tag信息
  */
 @Internal
 public class SplitTransformation<T> extends StreamTransformation<T> {
@@ -52,7 +55,7 @@ public class SplitTransformation<T> extends StreamTransformation<T> {
 	 */
 	public SplitTransformation(StreamTransformation<T> input,
 			OutputSelector<T> outputSelector) {
-		super("Split", input.getOutputType(), input.getParallelism());
+		super("Split", input.getOutputType(), input.getParallelism());//因为流类型依然没有变化，所以输出流的数据类型依然与IN是相同的
 		this.input = input;
 		this.outputSelector = outputSelector;
 	}

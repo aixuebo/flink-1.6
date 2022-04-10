@@ -33,14 +33,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Represent a field definition for {@link PojoTypeInfo} type of objects.
+ * 代表pojo对象的一个属性
  */
 @Internal
 public class PojoField implements Serializable {
 
 	private static final long serialVersionUID = 1975295846436559363L;
 
-	private transient Field field;
-	private final TypeInformation<?> type;
+	private transient Field field;//属性对象
+	private final TypeInformation<?> type;//属性类型
 
 	public PojoField(Field field, TypeInformation<?> type) {
 		this.field = checkNotNull(field);

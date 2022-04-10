@@ -33,8 +33,8 @@ public class ComparableAggregator<T> extends AggregationFunction<T> {
 	private static final long serialVersionUID = 1L;
 
 	private Comparator comparator;
-	private boolean byAggregate;
-	private boolean first;
+	private boolean byAggregate;//是否minBy操作,即是最小值，还是保留最小的记录
+	private boolean first;//当出现相同的元素时，排序顺序保留的是第几次出现的内容,是第一次，还是最后一次
 	private final FieldAccessor<T, Object> fieldAccessor;
 
 	private ComparableAggregator(AggregationType aggregationType, FieldAccessor<T, Object> fieldAccessor, boolean first) {
@@ -78,15 +78,17 @@ public class ComparableAggregator<T> extends AggregationFunction<T> {
 		if (byAggregate) {
 			// if they are the same we choose based on whether we want to first or last
 			// element with the min/max.
-			if (c == 0) {
-				return first ? value1 : value2;
+			if (c == 0) { //byAggregate时,c=0表示遇到相同的数据
+				return first ? value1 : value2; //直接返回value1或者value2整条数据
 			}
 
-			return c == 1 ? value1 : value2;
+			return c == 1 ? value1 : value2;//直接返回value1或者value2整条数据
 
 		} else {
-			if (c == 0) {
-				value1 = fieldAccessor.set(value1, o2);
+
+			//不需要关注first,因为无论第几次出现,最终最小值或者最大值都是固定值,既然没有用minBy方法,说明业务上也不关注第几次出现
+			if (c == 0) { //说明是false,c只有1和0,即1表示min或者max,0表示非min或者非max,因此需要替换
+				value1 = fieldAccessor.set(value1, o2);//返回的永远是value1,只是对value1的内容进行替换,替换成最小值或者最大值
 			}
 			return value1;
 		}

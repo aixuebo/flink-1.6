@@ -99,18 +99,18 @@ public abstract class AbstractHandler<T extends RestfulGateway, R extends Reques
 				throw new RestHandlerException("Bad request received.", HttpResponseStatus.BAD_REQUEST);
 			}
 
-			final ByteBuf msgContent = ((FullHttpRequest) httpRequest).content();
+			final ByteBuf msgContent = ((FullHttpRequest) httpRequest).content();//请求内容
 
-			uploadedFiles = FileUploadHandler.getMultipartFileUploads(ctx);
+			uploadedFiles = FileUploadHandler.getMultipartFileUploads(ctx);//请求的文件路径集合
 
-			if (!untypedResponseMessageHeaders.acceptsFileUploads() && !uploadedFiles.getUploadedFiles().isEmpty()) {
+			if (!untypedResponseMessageHeaders.acceptsFileUploads() && !uploadedFiles.getUploadedFiles().isEmpty()) {//不允许上传文件
 				throw new RestHandlerException("File uploads not allowed.", HttpResponseStatus.BAD_REQUEST);
 			}
 
 			R request;
 			if (msgContent.capacity() == 0) {
 				try {
-					request = MAPPER.readValue("{}", untypedResponseMessageHeaders.getRequestClass());
+					request = MAPPER.readValue("{}", untypedResponseMessageHeaders.getRequestClass());//反序列化成request对象
 				} catch (JsonParseException | JsonMappingException je) {
 					log.error("Request did not conform to expected format.", je);
 					throw new RestHandlerException("Bad request received.", HttpResponseStatus.BAD_REQUEST, je);
@@ -118,7 +118,7 @@ public abstract class AbstractHandler<T extends RestfulGateway, R extends Reques
 			} else {
 				try {
 					ByteBufInputStream in = new ByteBufInputStream(msgContent);
-					request = MAPPER.readValue(in, untypedResponseMessageHeaders.getRequestClass());
+					request = MAPPER.readValue(in, untypedResponseMessageHeaders.getRequestClass());//反序列化成request对象
 				} catch (JsonParseException | JsonMappingException je) {
 					log.error("Failed to read request.", je);
 					throw new RestHandlerException(

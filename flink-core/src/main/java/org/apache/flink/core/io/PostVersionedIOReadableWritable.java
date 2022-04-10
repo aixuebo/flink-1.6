@@ -32,6 +32,9 @@ import java.util.Arrays;
  * A {@link VersionedIOReadableWritable} which allows to differentiate whether the previous
  * data was versioned with a {@link VersionedIOReadableWritable}. This can be used if previously
  * written data was not versioned, and is to be migrated to a versioned format.
+ *
+ * 优先写入魔数据 + 版本数据 --- 子类实现写入具体对象的序列化数据。
+ * 因此保证了继承该类的子类,不仅有对象序列化数据，还有魔+版本数据
  */
 @Internal
 public abstract class PostVersionedIOReadableWritable extends VersionedIOReadableWritable {
@@ -49,8 +52,8 @@ public abstract class PostVersionedIOReadableWritable extends VersionedIOReadabl
 
 	@Override
 	public void write(DataOutputView out) throws IOException {
-		out.write(VERSIONED_IDENTIFIER);
-		super.write(out);
+		out.write(VERSIONED_IDENTIFIER);//写魔数据
+		super.write(out);//写版本号数据
 	}
 
 	/**
@@ -81,6 +84,7 @@ public abstract class PostVersionedIOReadableWritable extends VersionedIOReadabl
 	/**
 	 * We do not support reading from a {@link DataInputView}, because it does not
 	 * support pushing back already read bytes.
+	 * 读取具体的内容
 	 */
 	@Override
 	public final void read(DataInputView in) throws IOException {

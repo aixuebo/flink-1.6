@@ -186,7 +186,7 @@ public class SingleInputGate implements InputGate {
 	public SingleInputGate(
 		String owningTaskName,
 		JobID jobId,
-		IntermediateDataSetID consumedResultId,
+		IntermediateDataSetID consumedResultId,//中间结果id
 		final ResultPartitionType consumedPartitionType,
 		int consumedSubpartitionIndex,
 		int numberOfInputChannels,
@@ -244,6 +244,7 @@ public class SingleInputGate implements InputGate {
 		return bufferPool;
 	}
 
+	//每一个MemorySegment占用内存大小
 	@Override
 	public int getPageSize() {
 		if (bufferPool != null) {

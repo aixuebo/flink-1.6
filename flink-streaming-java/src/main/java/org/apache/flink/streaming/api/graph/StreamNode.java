@@ -36,6 +36,7 @@ import java.util.List;
 
 /**
  * Class representing the operators in the streaming programs, with all their properties.
+ * 代表一个操作,比如map、keyby等操作
  */
 @Internal
 public class StreamNode implements Serializable {
@@ -44,7 +45,7 @@ public class StreamNode implements Serializable {
 
 	private transient StreamExecutionEnvironment env;
 
-	private final int id;
+	private final int id;//操作的唯一id
 	private Integer parallelism = null;
 	/**
 	 * Maximum parallelism for this stream node. The maximum parallelism is the upper limit for
@@ -57,25 +58,30 @@ public class StreamNode implements Serializable {
 	private final String operatorName;
 	private String slotSharingGroup;
 	private @Nullable String coLocationGroup;
+
+	//操作如果涉及shuffle,比如keyby,则需要将元素转换成key
 	private KeySelector<?, ?> statePartitioner1;
 	private KeySelector<?, ?> statePartitioner2;
 	private TypeSerializer<?> stateKeySerializer;
 
-	private transient StreamOperator<?> operator;
+	private transient StreamOperator<?> operator;//具体操作
 	private List<OutputSelector<?>> outputSelectors;
-	private TypeSerializer<?> typeSerializerIn1;
-	private TypeSerializer<?> typeSerializerIn2;
-	private TypeSerializer<?> typeSerializerOut;
 
+	//操作的输入和输出
+	private TypeSerializer<?> typeSerializerIn1;//第一个输入类型的序列化方式
+	private TypeSerializer<?> typeSerializerIn2;
+	private TypeSerializer<?> typeSerializerOut;//输出类型序列化方式
+
+	//操作的上游和下游操作
 	private List<StreamEdge> inEdges = new ArrayList<StreamEdge>();
 	private List<StreamEdge> outEdges = new ArrayList<StreamEdge>();
 
-	private final Class<? extends AbstractInvokable> jobVertexClass;
+	private final Class<? extends AbstractInvokable> jobVertexClass;//如何处理执行该操作
 
 	private InputFormat<?, ?> inputFormat;
 
 	private String transformationUID;
-	private String userHash;
+	private String userHash;//即用为为每一个操作自定义名称，用于在监控页面看到自己的操作执行内容
 
 	public StreamNode(StreamExecutionEnvironment env,
 		Integer id,
@@ -145,7 +151,7 @@ public class StreamNode implements Serializable {
 	}
 
 	public int getParallelism() {
-		if (parallelism == ExecutionConfig.PARALLELISM_DEFAULT) {
+		if (parallelism == ExecutionConfig.PARALLELISM_DEFAULT) {//说明没有单独设置并行度
 			return env.getParallelism();
 		} else {
 			return parallelism;

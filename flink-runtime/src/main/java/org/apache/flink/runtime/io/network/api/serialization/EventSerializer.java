@@ -49,15 +49,15 @@ public class EventSerializer {
 	//  Constants
 	// ------------------------------------------------------------------------
 
-	private static final int END_OF_PARTITION_EVENT = 0;
+	private static final int END_OF_PARTITION_EVENT = 0;//EndOfPartitionEvent
 
-	private static final int CHECKPOINT_BARRIER_EVENT = 1;
+	private static final int CHECKPOINT_BARRIER_EVENT = 1;//CheckpointBarrier
 
-	private static final int END_OF_SUPERSTEP_EVENT = 2;
+	private static final int END_OF_SUPERSTEP_EVENT = 2;//EndOfSuperstepEvent
 
-	private static final int OTHER_EVENT = 3;
+	private static final int OTHER_EVENT = 3;//其他数据类型
 
-	private static final int CANCEL_CHECKPOINT_MARKER_EVENT = 4;
+	private static final int CANCEL_CHECKPOINT_MARKER_EVENT = 4;//CancelCheckpointMarker
 
 	private static final int CHECKPOINT_TYPE_CHECKPOINT = 0;
 
@@ -66,7 +66,7 @@ public class EventSerializer {
 	// ------------------------------------------------------------------------
 	//  Serialization Logic
 	// ------------------------------------------------------------------------
-
+    //将事件对象序列化
 	public static ByteBuffer toSerializedEvent(AbstractEvent event) throws IOException {
 		final Class<?> eventClass = event.getClass();
 		if (eventClass == EndOfPartitionEvent.class) {
@@ -86,7 +86,7 @@ public class EventSerializer {
 			buf.putLong(4, marker.getCheckpointId());
 			return buf;
 		}
-		else {
+		else {//其他类型，存储对应的事件class的全路径
 			try {
 				final DataOutputSerializer serializer = new DataOutputSerializer(128);
 				serializer.writeInt(OTHER_EVENT);
@@ -108,6 +108,7 @@ public class EventSerializer {
 	 * @param buffer the buffer to peak into
 	 * @param eventClass the expected class of the event type
 	 * @return whether the event class of the <tt>buffer</tt> matches the given <tt>eventClass</tt>
+	 * 判断buffer是否是事件对象，以及对象是否是参数class --- 注意 此时不支持other类型
 	 */
 	private static boolean isEvent(ByteBuffer buffer, Class<?> eventClass) throws IOException {
 		if (buffer.remaining() < 4) {
@@ -140,6 +141,7 @@ public class EventSerializer {
 		}
 	}
 
+	//根据事件类型,创建具体的事件对象
 	public static AbstractEvent fromSerializedEvent(ByteBuffer buffer, ClassLoader classLoader) throws IOException {
 		if (buffer.remaining() < 4) {
 			throw new IOException("Incomplete event");
@@ -182,7 +184,7 @@ public class EventSerializer {
 					}
 
 					final AbstractEvent event = InstantiationUtil.instantiate(clazz, AbstractEvent.class);
-					event.read(deserializer);
+					event.read(deserializer);//反序列化成对象
 
 					return event;
 				}

@@ -23,6 +23,7 @@ import org.apache.flink.runtime.util.EvictingBoundedList;
 
 import java.io.Serializable;
 
+//归档
 public class ArchivedExecutionVertex implements AccessExecutionVertex, Serializable {
 
 	private static final long serialVersionUID = -6708241535015028576L;

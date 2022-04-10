@@ -30,6 +30,7 @@ import java.util.Objects;
 
 /**
  * Cluster overview message including the current Flink version and commit id.
+ * 获取集群的任务大盘情况
  */
 public class ClusterOverviewWithVersion extends ClusterOverview implements ResponseBody {
 

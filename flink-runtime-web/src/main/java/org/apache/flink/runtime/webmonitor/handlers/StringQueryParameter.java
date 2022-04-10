@@ -22,6 +22,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 
 /**
  * Abstract super class for {@link String} query parameters.
+ * 参数值是参数值是list<String>
  */
 public abstract class StringQueryParameter extends MessageQueryParameter<String> {
 

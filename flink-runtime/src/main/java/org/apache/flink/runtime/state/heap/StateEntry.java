@@ -24,6 +24,8 @@ package org.apache.flink.runtime.state.heap;
  * @param <K> type of key.
  * @param <N> type of namespace.
  * @param <S> type of state.
+ * 三元组:因为存储快照,有时候是需要group分组后,针对每一个key有一个对象存储数据的。
+ * 因此key+State(存储key的对象,比如list、map等)是必须的，同时key还有命名空间,所以是三元组
  */
 public interface StateEntry<K, N, S> {
 

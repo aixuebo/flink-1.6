@@ -49,11 +49,15 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 	 */
 	public static enum OutputDirectoryMode {
 		
-		/** A directory is always created, regardless of number of write tasks. */
+		/** A directory is always created, regardless of number of write tasks.
+		 * 路径/taskNumber，即参数给的路径是目录
+		 **/
 		ALWAYS,	
 		
 		/** A directory is only created for parallel output tasks, i.e., number of output tasks &gt; 1.
-		 * If number of output tasks = 1, the output is written to a single file. */
+		 * If number of output tasks = 1, the output is written to a single file.
+		 * 第一个任务,输出文件,后面的任务都输出 路径/taskNumber
+		 **/
 		PARONLY
 	}
 	
@@ -114,10 +118,14 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 	/** The stream to which the data is written; */
 	protected transient FSDataOutputStream stream;
 	
-	/** The path that is actually written to (may a a file in a the directory defined by {@code outputFilePath} ) */
+	/** The path that is actually written to (may a a file in a the directory defined by {@code outputFilePath} )
+	 * 真实的输出路径
+	 **/
 	private transient Path actualFilePath;
 	
-	/** Flag indicating whether this format actually created a file, which should be removed on cleanup. */
+	/** Flag indicating whether this format actually created a file, which should be removed on cleanup.
+	 * true说明文件已经创建成功
+	 **/
 	private transient boolean fileCreated;
 
 	// --------------------------------------------------------------------------------------------
@@ -218,9 +226,9 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 		final FileSystem fs = p.getFileSystem();
 
 		// if this is a local file system, we need to initialize the local output directory here
-		if (!fs.isDistributedFS()) {
+		if (!fs.isDistributedFS()) {//说明不是分布式系统
 			
-			if (numTasks == 1 && outputDirectoryMode == OutputDirectoryMode.PARONLY) {
+			if (numTasks == 1 && outputDirectoryMode == OutputDirectoryMode.PARONLY) {//只有任务是1的时候,才创建文件,其余的都是创建目录
 				// output should go to a single file
 				
 				// prepare local output path. checks for write mode and removes existing files in case of OVERWRITE mode
@@ -242,6 +250,7 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 
 
 		// Suffix the path with the parallel instance index, if needed
+		//追加后缀 路径/taskNumber
 		this.actualFilePath = (numTasks > 1 || outputDirectoryMode == OutputDirectoryMode.ALWAYS) ? p.suffix("/" + getDirectoryFileName(taskNumber)) : p;
 
 		// create output file
@@ -251,6 +260,7 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 		this.fileCreated = true;
 	}
 
+	//任务id组成的字符串
 	protected String getDirectoryFileName(int taskNumber) {
 		return Integer.toString(taskNumber + 1);
 	}
@@ -268,6 +278,7 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 	 * Initialization of the distributed file system if it is used.
 	 *
 	 * @param parallelism The task parallelism.
+	 * 初始化
 	 */
 	@Override
 	public void initializeGlobal(int parallelism) throws IOException {
@@ -298,7 +309,8 @@ public abstract class FileOutputFormat<IT> extends RichOutputFormat<IT> implemen
 			}
 		}
 	}
-	
+
+	//任务失败的时候如何处理
 	@Override
 	public void tryCleanupOnError() {
 		if (this.fileCreated) {

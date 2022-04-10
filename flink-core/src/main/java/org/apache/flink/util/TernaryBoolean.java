@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
  *
  * <p>A ternary boolean can for example be used to configuration switches that
  * may be not configured (undefined), in which case a default value should be assumed.
+ * 定义boolean类型的值
  */
 @PublicEvolving
 public enum TernaryBoolean {
@@ -48,6 +49,7 @@ public enum TernaryBoolean {
 	 * the method returns the given default.
 	 *
 	 * @param defaultValue The value to be returned in case this ternary value is 'undefined'.
+	 * 是否是true
 	 */
 	public boolean getOrDefault(boolean defaultValue) {
 		return this == UNDEFINED ? defaultValue : (this == TRUE);

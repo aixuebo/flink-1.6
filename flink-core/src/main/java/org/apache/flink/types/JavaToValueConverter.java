@@ -20,6 +20,7 @@ package org.apache.flink.types;
 
 import org.apache.flink.annotation.PublicEvolving;
 
+//java与封装的java对象相互转换
 @PublicEvolving
 public class JavaToValueConverter {
 

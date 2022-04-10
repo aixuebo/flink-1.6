@@ -21,6 +21,7 @@ package org.apache.flink.runtime.state;
 import org.apache.flink.util.MathUtils;
 import org.apache.flink.util.Preconditions;
 
+//分配一个key到哪个key组下
 public final class KeyGroupRangeAssignment {
 
 	/**
@@ -54,6 +55,7 @@ public final class KeyGroupRangeAssignment {
 	 * @param key the key to assign
 	 * @param maxParallelism the maximum supported parallelism, aka the number of key-groups.
 	 * @return the key-group to which the given key is assigned
+	 * 对key进行hash,然后取模,划分分桶
 	 */
 	public static int assignToKeyGroup(Object key, int maxParallelism) {
 		return computeKeyGroupForKeyHash(key.hashCode(), maxParallelism);
@@ -65,6 +67,7 @@ public final class KeyGroupRangeAssignment {
 	 * @param keyHash the hash of the key to assign
 	 * @param maxParallelism the maximum supported parallelism, aka the number of key-groups.
 	 * @return the key-group to which the given key is assigned
+	 * hash值归属在哪个分桶内
 	 */
 	public static int computeKeyGroupForKeyHash(int keyHash, int maxParallelism) {
 		return MathUtils.murmurHash(keyHash) % maxParallelism;
@@ -77,10 +80,17 @@ public final class KeyGroupRangeAssignment {
 	 * IMPORTANT: maxParallelism must be <= Short.MAX_VALUE to avoid rounding problems in this method. If we ever want
 	 * to go beyond this boundary, this method must perform arithmetic on long values.
 	 *
-	 * @param maxParallelism Maximal parallelism that the job was initially created with.
-	 * @param parallelism    The current parallelism under which the job runs. Must be <= maxParallelism.
-	 * @param operatorIndex  Id of a key-group. 0 <= keyGroupID < maxParallelism.
+	 * @param maxParallelism Maximal parallelism that the job was initially created with.最大并行度任务
+	 * @param parallelism    The current parallelism under which the job runs. Must be <= maxParallelism.该任务的并行度
+	 * @param operatorIndex  Id of a key-group. 0 <= keyGroupID < maxParallelism. 该任务是第几个子任务
 	 * @return the computed key-group range for the operator.
+	 *
+	 * 比如
+	 * maxParallelism=10 parallelism=2 则会拆分成2个子任务,分别执行[0,4] [5,9]
+	 * maxParallelism=10 parallelism=3 则会拆分成3个子任务,分别执行[0,3] [4,6] [7,9] 相当于10/3,每个容器容纳3个，但由于多出来一个,所以放到第一个容器里是4个
+	 * maxParallelism=10 parallelism=9 则会拆分成9个子任务,分别执行[0,1] [2,2] [3,3] ... [9,9] 相当于10/9,每个容器容纳1个，但由于多出来一个,所以放到第一个容器里是2个
+	 *
+	 * 通过operatorIndex是第几个子任务,获取哪一部分的数组
 	 */
 	public static KeyGroupRange computeKeyGroupRangeForOperatorIndex(
 		int maxParallelism,

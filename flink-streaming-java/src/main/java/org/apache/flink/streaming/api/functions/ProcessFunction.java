@@ -58,35 +58,46 @@ public abstract class ProcessFunction<I, O> extends AbstractRichFunction {
 	 * <p>This function can output zero or more elements using the {@link Collector} parameter
 	 * and also update internal state or set timers using the {@link Context} parameter.
 	 *
-	 * @param value The input value.
+	 * @param value The input value.接受的元素本身
 	 * @param ctx A {@link Context} that allows querying the timestamp of the element and getting
 	 *            a {@link TimerService} for registering timers and querying the time. The
 	 *            context is only valid during the invocation of this method, do not store it.
-	 * @param out The collector for returning result values.
+	 *            context只有在处理该一条元素value的时候有效,每次更换下一个元素的时候,context会失效。
+	 *            context可以获取元素本身、元素对应的时间戳、注册一个时间监听器
+	 * @param out The collector for returning result values.处理后的元素,输出到out中,out会自动追加与参数value相同的时间戳
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
+	 * 因为processElement函数表示处理当前元素,但所有产生的结果都用过共享同一个时间戳,因此collector中已经在第一步更新了时间戳
+	 *因为一个输入 可能产生N个输出 ,因此参数是out
 	 */
 	public abstract void processElement(I value, Context ctx, Collector<O> out) throws Exception;
 
 	/**
 	 * Called when a timer set using {@link TimerService} fires.
 	 *
-	 * @param timestamp The timestamp of the firing timer.
+	 * @param timestamp The timestamp of the firing timer.触发回调的时间节点时间戳
 	 * @param ctx An {@link OnTimerContext} that allows querying the timestamp of the firing timer,
 	 *            querying the {@link TimeDomain} of the firing timer and getting a
 	 *            {@link TimerService} for registering timers and querying the time.
 	 *            The context is only valid during the invocation of this method, do not store it.
-	 * @param out The collector for returning result values.
+	 *            可以继续获取时间对象,进行下一次的设置周期回调 && 获取触发回调时时间方式(事件时间 or 处理时间)
+	 * @param out The collector for returning result values.输出数据的容器
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
+	 *
+	 * 当使用Context的timerService,由于是流处理,进程一直存在,因此对进程中的时间对象注册一个时间回调,当到达该时间时,触发回调函数,调用该方法。
+	 * 比如午夜0点触发回调函数清空缓存数据。
+	 *
 	 */
 	public void onTimer(long timestamp, OnTimerContext ctx, Collector<O> out) throws Exception {}
 
 	/**
 	 * Information available in an invocation of {@link #processElement(Object, Context, Collector)}
 	 * or {@link #onTimer(long, OnTimerContext, Collector)}.
+	 * 该上下文表示的是当前处理元素的上下文对象
+	 * 提供数据元素对应的时间戳基础信息、任务对应的时间服务器对象、分发数据到其他输出流中
 	 */
 	public abstract class Context {
 
@@ -95,11 +106,13 @@ public abstract class ProcessFunction<I, O> extends AbstractRichFunction {
 		 *
 		 * <p>This might be {@code null}, for example if the time characteristic of your program
 		 * is set to {@link org.apache.flink.streaming.api.TimeCharacteristic#ProcessingTime}.
+		 * 返回当前正在处理元素的时间戳
 		 */
 		public abstract Long timestamp();
 
 		/**
 		 * A {@link TimerService} for querying time and registering timers.
+		 * 获取时间服务对象 --- 可以对数据回调处理
 		 */
 		public abstract TimerService timerService();
 
@@ -108,12 +121,14 @@ public abstract class ProcessFunction<I, O> extends AbstractRichFunction {
 		 *
 		 * @param outputTag the {@code OutputTag} that identifies the side output to emit to.
 		 * @param value The record to emit.
+		 * 上下文可以将数据分发到其他分支
 		 */
 		public abstract <X> void output(OutputTag<X> outputTag, X value);
 	}
 
 	/**
 	 * Information available in an invocation of {@link #onTimer(long, OnTimerContext, Collector)}.
+	 * 用于回调函数对应的上下文
 	 */
 	public abstract class OnTimerContext extends Context {
 		/**

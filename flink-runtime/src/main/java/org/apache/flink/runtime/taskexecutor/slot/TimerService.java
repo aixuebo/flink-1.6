@@ -50,7 +50,7 @@ public class TimerService<K> {
 	private final Map<K, Timeout<K>> timeouts;
 
 	/** Listener which is notified about occurring timeouts. */
-	private TimeoutListener<K> timeoutListener;
+	private TimeoutListener<K> timeoutListener;//当发生timeout的时候,统一收口到该实现类里
 
 	public TimerService(
 			final ScheduledExecutorService scheduledExecutorService,
@@ -97,12 +97,13 @@ public class TimerService<K> {
 	 * @param key for which to register the timeout
 	 * @param delay until the timeout
 	 * @param unit of the timeout delay
+	 * 为key注册一个定时调度
 	 */
 	public void registerTimeout(final K key, final long delay, final TimeUnit unit) {
 		Preconditions.checkState(timeoutListener != null, "The " + getClass().getSimpleName() +
 			" has not been started.");
 
-		if (timeouts.containsKey(key)) {
+		if (timeouts.containsKey(key)) {//重新绑定定时调度器
 			unregisterTimeout(key);
 		}
 
@@ -118,12 +119,13 @@ public class TimerService<K> {
 		Timeout<K> timeout = timeouts.remove(key);
 
 		if (timeout != null) {
-			timeout.cancel();
+			timeout.cancel();//取消定时调度
 		}
 	}
 
 	/**
 	 * Unregister all timeouts.
+	 * 取消全部定时调度
 	 */
 	protected void unregisterAllTimeouts() {
 		for (Timeout<K> timeout : timeouts.values()) {
@@ -139,6 +141,8 @@ public class TimerService<K> {
 	 * @param key for which to check the timeout
 	 * @param ticket of the timeout
 	 * @return True if the timeout ticket is still valid; otherwise false
+	 *
+	 * true,表示当前key是否在监听uuid的超时事件
 	 */
 	public boolean isValid(K key, UUID ticket) {
 		if (timeouts.containsKey(key)) {
@@ -158,9 +162,10 @@ public class TimerService<K> {
 
 		private final TimeoutListener<K> timeoutListener;
 		private final K key;
-		private final ScheduledFuture<?> scheduledTimeout;
+		private final ScheduledFuture<?> scheduledTimeout;//任务超时调度,超时范围内,如果没有被取消,则容易产生超时任务
 		private final UUID ticket;
 
+		//延迟delay单位时间后,执行该run方法
 		Timeout(
 			final TimeoutListener<K> timeoutListener,
 			final K key,
@@ -172,7 +177,7 @@ public class TimerService<K> {
 
 			this.timeoutListener = Preconditions.checkNotNull(timeoutListener);
 			this.key = Preconditions.checkNotNull(key);
-			this.scheduledTimeout = scheduledExecutorService.schedule(this, delay, unit);
+			this.scheduledTimeout = scheduledExecutorService.schedule(this, delay, unit);//开启调度任务
 			this.ticket = UUID.randomUUID();
 		}
 
@@ -184,6 +189,7 @@ public class TimerService<K> {
 			scheduledTimeout.cancel(true);
 		}
 
+		//通知该key+ticket超时了
 		@Override
 		public void run() {
 			timeoutListener.notifyTimeout(key, ticket);

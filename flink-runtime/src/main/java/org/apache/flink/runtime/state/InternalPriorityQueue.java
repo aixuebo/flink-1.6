@@ -31,6 +31,7 @@ import java.util.Collection;
  * Interface for collection that gives in order access to elements w.r.t their priority.
  *
  * @param <T> type of elements in the ordered set.
+ * 优先队列接口,其中元素T是按照顺序存储的
  */
 @Internal
 public interface InternalPriorityQueue<T> {
@@ -40,6 +41,7 @@ public interface InternalPriorityQueue<T> {
 	 * or returns {@code null} if this set is empty.
 	 *
 	 * @return the first element of this ordered set, or {@code null} if this set is empty.
+	 * 删除第一个元素，并且返回第一个元素
 	 */
 	@Nullable
 	T poll();
@@ -49,6 +51,7 @@ public interface InternalPriorityQueue<T> {
 	 * or returns {@code null} if this set is empty.
 	 *
 	 * @return the first element (w.r.t. order) of this ordered set, or {@code null} if this set is empty.
+	 * 查看第一个元素,但不删除第一个元素
 	 */
 	@Nullable
 	T peek();
@@ -68,6 +71,7 @@ public interface InternalPriorityQueue<T> {
 	 * @param toRemove the element to remove.
 	 * @return <code>true</code> if the operation changed the head element or if it is unclear if the head element changed.
 	 * Only returns <code>false</code> if the head element was not changed by this operation.
+	 * 从队列中删除某一个元素
 	 */
 	boolean remove(@Nonnull T toRemove);
 
@@ -88,11 +92,13 @@ public interface InternalPriorityQueue<T> {
 
 	/**
 	 * Adds all the given elements to the set.
+	 * 向队列添加一组元素
 	 */
 	void addAll(@Nullable Collection<? extends T> toAdd);
 
 	/**
 	 * Iterator over all elements, no order guaranteed. Iterator must be closed after usage.
+	 * 迭代器
 	 */
 	@Nonnull
 	CloseableIterator<T> iterator();

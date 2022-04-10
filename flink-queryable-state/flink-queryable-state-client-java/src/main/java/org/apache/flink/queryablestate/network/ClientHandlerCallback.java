@@ -23,6 +23,9 @@ import org.apache.flink.queryablestate.network.messages.MessageBody;
 
 /**
  * Callback for {@link ClientHandler}.
+ * 客户端需要实现的回调函数
+ *
+ * 参见ClientHandler
  */
 @Internal
 public interface ClientHandlerCallback<RESP extends MessageBody> {
@@ -31,7 +34,8 @@ public interface ClientHandlerCallback<RESP extends MessageBody> {
 	 * Called on a successful request.
 	 *
 	 * @param requestId			ID of the request
-	 * @param response			The received response
+	 * @param response			The received response 返回的response结果
+	 * 请求成功
 	 */
 	void onRequestResult(long requestId, RESP response);
 
@@ -40,6 +44,7 @@ public interface ClientHandlerCallback<RESP extends MessageBody> {
 	 *
 	 * @param requestId ID of the request
 	 * @param cause     Cause of the request failure
+	 * 请求失败
 	 */
 	void onRequestFailure(long requestId, Throwable cause);
 
@@ -50,6 +55,7 @@ public interface ClientHandlerCallback<RESP extends MessageBody> {
 	 * or an unexpected channel close.
 	 *
 	 * @param cause Cause of the failure
+	 * 服务失败
 	 */
 	void onFailure(Throwable cause);
 

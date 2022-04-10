@@ -22,6 +22,7 @@ import org.apache.flink.metrics.Gauge;
 
 /**
  * A {@link Gauge} for exposing the current input/output watermark.
+ * 存储当前的水印
  */
 public class WatermarkGauge implements Gauge<Long> {
 

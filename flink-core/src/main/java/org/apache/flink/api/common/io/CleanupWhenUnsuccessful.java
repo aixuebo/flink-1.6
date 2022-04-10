@@ -28,6 +28,7 @@ public interface CleanupWhenUnsuccessful {
 	
 	/**
 	 * Hook that is called upon an unsuccessful execution.
+	 * 当执行失败的时候调用该接口
 	 * 
 	 * @throws Exception The method may forward exceptions when the cleanup fails.
 	 */

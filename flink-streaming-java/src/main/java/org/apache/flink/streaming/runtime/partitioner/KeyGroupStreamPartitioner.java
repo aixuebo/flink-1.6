@@ -28,16 +28,19 @@ import org.apache.flink.util.Preconditions;
  * Partitioner selects the target channel based on the key group index.
  *
  * @param <T> Type of the elements in the Stream being partitioned
+ *
+ * 元素分配给某一个分区。
+ * 将元素转换成key，对key进行hash，hash取模就是分区结果
  */
 @Internal
 public class KeyGroupStreamPartitioner<T, K> extends StreamPartitioner<T> implements ConfigurableStreamPartitioner {
 	private static final long serialVersionUID = 1L;
 
-	private final int[] returnArray = new int[1];
+	private final int[] returnArray = new int[1];//输出某一个分区
 
 	private final KeySelector<T, K> keySelector;
 
-	private int maxParallelism;
+	private int maxParallelism;//最大并行度
 
 	public KeyGroupStreamPartitioner(KeySelector<T, K> keySelector, int maxParallelism) {
 		Preconditions.checkArgument(maxParallelism > 0, "Number of key-groups must be > 0!");

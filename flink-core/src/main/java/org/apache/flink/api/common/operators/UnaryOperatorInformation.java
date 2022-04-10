@@ -27,6 +27,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
  *
  * @param <IN> Output type of the input operator
  * @param <OUT> Output type of the records output by the operator described by this information
+ * 设置输入类型、输出类型的一元操作 --- 定义输入类型、输出类型
  */
 @Internal
 public class UnaryOperatorInformation<IN, OUT> extends OperatorInformation<OUT> {

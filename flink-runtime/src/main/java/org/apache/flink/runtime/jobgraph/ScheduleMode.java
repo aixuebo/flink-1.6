@@ -26,11 +26,12 @@ public enum ScheduleMode {
 	/** Schedule tasks lazily from the sources. Downstream tasks are started once their input data are ready */
 	LAZY_FROM_SOURCES,
 
-	/** Schedules all tasks immediately. */
-	EAGER;
+	/** Schedules all tasks immediately.立即调度所有的任务 */
+	EAGER;//急切的
 	
 	/**
 	 * Returns whether we are allowed to deploy consumers lazily.
+	 * 是否是lazy模式
 	 */
 	public boolean allowLazyDeployment() {
 		return this == LAZY_FROM_SOURCES;

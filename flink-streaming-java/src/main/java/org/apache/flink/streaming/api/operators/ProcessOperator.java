@@ -61,28 +61,31 @@ public class ProcessOperator<IN, OUT>
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
-		collector.setTimestamp(element);
+		collector.setTimestamp(element);//设置当前元素时间戳
 		context.element = element;
-		userFunction.processElement(element.getValue(), context, collector);
+		userFunction.processElement(element.getValue(), context, collector);//因为processElement函数表示处理当前元素,但所有产生的结果都用过共享同一个时间戳,因此collector中已经在第一步更新了时间戳
 		context.element = null;
 	}
 
+	//更新Watermark
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {
 		super.processWatermark(mark);
 		this.currentWatermark = mark.getTimestamp();
 	}
 
+	//上下文，不仅可以拿到事件的时间戳,还可以拿到当前处理时间戳、currentWatermark等基础信息,同时也可以将数据分发到其他流中
 	private class ContextImpl extends ProcessFunction<IN, OUT>.Context implements TimerService {
-		private StreamRecord<IN> element;
+		private StreamRecord<IN> element;//当前处理的元素
 
-		private final ProcessingTimeService processingTimeService;
+		private final ProcessingTimeService processingTimeService;//时间服务器是从任务中获取的
 
 		ContextImpl(ProcessFunction<IN, OUT> function, ProcessingTimeService processingTimeService) {
 			function.super();
 			this.processingTimeService = processingTimeService;
 		}
 
+		//获取当前元素的时间戳
 		@Override
 		public Long timestamp() {
 			checkState(element != null);
@@ -94,19 +97,22 @@ public class ProcessOperator<IN, OUT>
 			}
 		}
 
+		//向其他流分发数据
 		@Override
 		public <X> void output(OutputTag<X> outputTag, X value) {
 			if (outputTag == null) {
 				throw new IllegalArgumentException("OutputTag must not be null.");
 			}
-			output.collect(outputTag, new StreamRecord<>(value, element.getTimestamp()));
+			output.collect(outputTag, new StreamRecord<>(value, element.getTimestamp()));//分发的数据包含时间戳
 		}
 
+		//返回当前时间戳,即表示返回当前处理元素的时间戳
 		@Override
 		public long currentProcessingTime() {
 			return processingTimeService.getCurrentProcessingTime();
 		}
 
+		//返回当前事件的watermark值
 		@Override
 		public long currentWatermark() {
 			return currentWatermark;

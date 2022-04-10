@@ -22,8 +22,8 @@ package org.apache.flink.runtime.taskexecutor.slot;
  * Internal task slot state
  */
 enum TaskSlotState {
-	ACTIVE, // Slot is in active use by a job manager responsible for a job
-	ALLOCATED, // Slot has been allocated for a job but not yet given to a job manager
-	RELEASING, // Slot is not empty but tasks are failed. Upon removal of all tasks, it will be released
-	FREE // Slot is free
+	ACTIVE, // Slot is in active use by a job manager responsible for a job 该slot已经分配给了job,并且分配了job manager
+	ALLOCATED, // Slot has been allocated for a job but not yet given to a job manager 该slot已经分配给了job，但没有分配job manager
+	RELEASING, // Slot is not empty but tasks are failed. Upon removal of all tasks, it will be released 该slot正在释放
+	FREE // Slot is free 该slot是空闲的
 }

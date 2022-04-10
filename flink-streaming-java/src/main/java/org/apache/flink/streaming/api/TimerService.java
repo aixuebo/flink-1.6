@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * Interface for working with time and timers.
+ * 时间服务器,可以获取当前处理时间戳、水印时间戳。同时可以注册延后处理服务
  */
 @PublicEvolving
 public interface TimerService {
@@ -32,10 +33,14 @@ public interface TimerService {
 	/** Error string for {@link UnsupportedOperationException} on deleting timers. */
 	String UNSUPPORTED_DELETE_TIMER_MSG = "Deleting timers is only supported on a keyed streams.";
 
-	/** Returns the current processing time. */
+	/** Returns the current processing time.
+	 * 返回当前时间戳,表示处理数据的当前时间 System.currentTimeMillis(),即表示处理元素的时间戳
+	 **/
 	long currentProcessingTime();
 
-	/** Returns the current event-time watermark. */
+	/** Returns the current event-time watermark.
+	 * 返回当前事件的watermark值
+	 **/
 	long currentWatermark();
 
 	/**
@@ -45,6 +50,7 @@ public interface TimerService {
 	 * in a keyed context, such as in an operation on
 	 * {@link org.apache.flink.streaming.api.datastream.KeyedStream} then that context
 	 * will also be active when you receive the timer notification.
+	 * 注册回调函数
 	 */
 	void registerProcessingTimeTimer(long time);
 

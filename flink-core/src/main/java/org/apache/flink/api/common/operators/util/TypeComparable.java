@@ -27,7 +27,7 @@ import org.apache.flink.api.common.typeutils.TypeComparator;
 public class TypeComparable<T> {
 	private final T elem;
 	private final TypeComparator<T> comparator;
-	private final int hashCode;
+	private final int hashCode;//value的hash值
 
 	public TypeComparable(T elem, TypeComparator<T> comparator) {
 		this.elem = elem;
@@ -35,11 +35,13 @@ public class TypeComparable<T> {
 		this.hashCode = comparator.hash(elem);
 	}
 
+	//该数据存储在map中时,hashCode作为计算map插入的位置
 	@Override
 	public int hashCode() {
 		return hashCode;
 	}
 
+	//该数据存储在map中时,equals用于找到相同的值
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof TypeComparable)) {
@@ -47,6 +49,6 @@ public class TypeComparable<T> {
 		}
 		@SuppressWarnings("unchecked")
 		TypeComparable<T> other = (TypeComparable<T>) o;
-		return comparator.compare(elem, other.elem) == 0;
+		return comparator.compare(elem, other.elem) == 0;//计算两个元素对应的位置完全相同
 	}
 }

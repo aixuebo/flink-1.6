@@ -47,6 +47,7 @@ class StateTableByKeyGroupReaders {
 	 * @param <N> type of namespace.
 	 * @param <S> type of state.
 	 * @return the appropriate reader.
+	 * 如何读取StateTable
 	 */
 	static <K, N, S> StateSnapshotKeyGroupReader readerForVersion(StateTable<K, N, S> stateTable, int version) {
 		switch (version) {
@@ -62,19 +63,21 @@ class StateTableByKeyGroupReaders {
 		}
 	}
 
+	//组成方式 byte[命名空间] + byte[key] + byte[value]
 	private static <K, N, S> StateSnapshotKeyGroupReader createV2PlusReader(StateTable<K, N, S> stateTable) {
 		final TypeSerializer<K> keySerializer = stateTable.keyContext.getKeySerializer();
 		final TypeSerializer<N> namespaceSerializer = stateTable.getNamespaceSerializer();
 		final TypeSerializer<S> stateSerializer = stateTable.getStateSerializer();
 		final Tuple3<N, K, S> buffer = new Tuple3<>();
-		return KeyGroupPartitioner.createKeyGroupPartitionReader((in) -> {
+		return KeyGroupPartitioner.createKeyGroupPartitionReader((in) -> {//反序列化三元组
 			buffer.f0 = namespaceSerializer.deserialize(in);
 			buffer.f1 = keySerializer.deserialize(in);
 			buffer.f2 = stateSerializer.deserialize(in);
 			return buffer;
-		}, (element, keyGroupId1) -> stateTable.put(element.f1, keyGroupId1, element.f0, element.f2));
+		}, (element, keyGroupId1) -> stateTable.put(element.f1, keyGroupId1, element.f0, element.f2));//key、keyGroupId, namespace, value
 	}
 
+	//填充StateTable
 	static final class StateTableByKeyGroupReaderV1<K, N, S> implements StateSnapshotKeyGroupReader {
 
 		protected final StateTable<K, N, S> stateTable;
@@ -95,13 +98,13 @@ class StateTableByKeyGroupReaders {
 			final TypeSerializer<S> stateSerializer = stateTable.getStateSerializer();
 
 			// V1 uses kind of namespace compressing format
-			int numNamespaces = inView.readInt();
+			int numNamespaces = inView.readInt();//多少个不同的命名空间
 			for (int k = 0; k < numNamespaces; k++) {
-				N namespace = namespaceSerializer.deserialize(inView);
-				int numEntries = inView.readInt();
+				N namespace = namespaceSerializer.deserialize(inView);//反序列化 命名空间
+				int numEntries = inView.readInt();//有多少个key=value映射
 				for (int l = 0; l < numEntries; l++) {
-					K key = keySerializer.deserialize(inView);
-					S state = stateSerializer.deserialize(inView);
+					K key = keySerializer.deserialize(inView);//反序列化key对象
+					S state = stateSerializer.deserialize(inView);//反序列化value
 					stateTable.put(key, keyGroupId, namespace, state);
 				}
 			}

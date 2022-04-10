@@ -57,6 +57,8 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
  * @param <K> The type of key the state is associated to
  * @param <N> The type of the namespace
  * @param <V> The type of values kept internally in state
+ *
+ * 内存中存储的永远都是 <(K,N),V) 组成的对象,但传输中需要传输的是字节数组,因此需要序列化与反序列化操作
  */
 public interface InternalKvState<K, N, V> extends State {
 
@@ -99,10 +101,18 @@ public interface InternalKvState<K, N, V> extends State {
 	 * @return Serialized value or <code>null</code> if no value is associated with the key and namespace.
 	 * 
 	 * @throws Exception Exceptions during serialization are forwarded
+	 * 对value进行序列化 --- 通过该key+命名空间,找到value值,然后再序列化value
+	 *
+	 * 相当于Map的get方法,传入key,获取value
+	 *
+	 * 首先将key反序列化成key+命名空间对象。然后通过key+命名空间对象,获取value对象,然后将value对象反序列化
+	 *
+	 * 相当于get方法,只是返回的是传输的二进制,即value经过序列化后的值
 	 */
 	byte[] getSerializedValue(
-			final byte[] serializedKeyAndNamespace,
+			final byte[] serializedKeyAndNamespace,//key+命名空间的序列化数据
 			final TypeSerializer<K> safeKeySerializer,
 			final TypeSerializer<N> safeNamespaceSerializer,
-			final TypeSerializer<V> safeValueSerializer) throws Exception;
+			final TypeSerializer<V> safeValueSerializer) //获取value对象,然后将其转换成字节数组,用于传输
+		throws Exception;
 }

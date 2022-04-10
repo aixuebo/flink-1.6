@@ -27,14 +27,15 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * This class is responsible for grouping the TaskExecutorGateway and the InstanceID
  * of a registered task executor.
+ * 代表一个taskmanager实例对象
  */
 public class TaskExecutorConnection {
 
-	private final ResourceID resourceID;
+	private final ResourceID resourceID;//taskExecutor的资源id
 
-	private final InstanceID instanceID;
+	private final InstanceID instanceID;//在本地节点的唯一id
 
-	private final TaskExecutorGateway taskExecutorGateway;
+	private final TaskExecutorGateway taskExecutorGateway;//task的代理类
 
 	public TaskExecutorConnection(ResourceID resourceID, TaskExecutorGateway taskExecutorGateway) {
 		this.resourceID = checkNotNull(resourceID);

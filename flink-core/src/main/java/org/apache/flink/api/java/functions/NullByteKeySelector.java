@@ -26,6 +26,7 @@ import org.apache.flink.annotation.Internal;
  * the same key, which is a {@code (byte) 0} value.
  *
  * @param <T> The type of the input element.
+ * 所以的数据的key输出都是0,即保证全局只有一个key
  */
 @Internal
 public class NullByteKeySelector<T> implements KeySelector<T, Byte> {

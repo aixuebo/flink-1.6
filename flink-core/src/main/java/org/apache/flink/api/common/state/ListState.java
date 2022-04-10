@@ -33,6 +33,9 @@ import java.util.List;
  * consistently together.
  *
  * @param <T> Type of values that this list state keeps.
+ *
+ * 一个key对应一个List值 && 同时包含了聚合模型的能力。
+ * value的输入是T,aggr聚合模型输出是T的迭代器
  */
 @PublicEvolving
 public interface ListState<T> extends MergingState<T, Iterable<T>> {
@@ -47,6 +50,7 @@ public interface ListState<T> extends MergingState<T, Iterable<T>> {
 	 * @param values The new values for the state.
 	 *
 	 * @throws Exception The method may forward exception thrown internally (by I/O or functions).
+	 * 替换操作
 	 */
 	void update(List<T> values) throws Exception;
 
@@ -60,6 +64,7 @@ public interface ListState<T> extends MergingState<T, Iterable<T>> {
 	 * @param values The new values to be added to the state.
 	 *
 	 * @throws Exception The method may forward exception thrown internally (by I/O or functions).
+	 * list的addall操作
 	 */
 	void addAll(List<T> values) throws Exception;
 }

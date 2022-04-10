@@ -32,11 +32,12 @@ import java.util.Iterator;
  * takes the partition iterator as input.
  *
  * @param <T>
+ * 属于mapPartition函数,每一个mapPartition中抽样numSample个数据
  */
 @Internal
 public class SampleWithFraction<T> extends RichMapPartitionFunction<T, T> {
 
-	private boolean withReplacement;
+	private boolean withReplacement;//是否放回重复抽样
 	private double fraction;
 	private long seed;
 

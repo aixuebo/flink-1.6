@@ -38,7 +38,7 @@ public final class ListTypeInfo<T> extends TypeInformation<List<T>> {
 
 	private static final long serialVersionUID = 1L;
 
-	private final TypeInformation<T> elementTypeInfo;
+	private final TypeInformation<T> elementTypeInfo;//元素类型
 
 
 	public ListTypeInfo(Class<T> elementTypeClass) {
@@ -86,6 +86,7 @@ public final class ListTypeInfo<T> extends TypeInformation<List<T>> {
 		return 1;
 	}
 
+	//他就是list
 	@SuppressWarnings("unchecked")
 	@Override
 	public Class<List<T>> getTypeClass() {

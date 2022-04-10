@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>The network threads receive the message, deserialize it and dispatch the
  * query task. The actual query is handled in a separate thread as it might
  * otherwise block the network threads (file I/O etc.).
+ * 服务端具体如何处理每一个客户端的请求 --- 处理具体的一个请求
  */
 @Internal
 @ChannelHandler.Sharable
@@ -70,6 +71,7 @@ public class KvStateServerHandler extends AbstractServerHandler<KvStateInternalR
 		this.registry = Preconditions.checkNotNull(kvStateRegistry);
 	}
 
+	//接收到了一个请求 --- 请求id+请求对象
 	@Override
 	public CompletableFuture<KvStateResponse> handleRequest(final long requestId, final KvStateInternalRequest request) {
 		final CompletableFuture<KvStateResponse> responseFuture = new CompletableFuture<>();
@@ -77,13 +79,13 @@ public class KvStateServerHandler extends AbstractServerHandler<KvStateInternalR
 		try {
 			final KvStateEntry<?, ?, ?> kvState = registry.getKvState(request.getKvStateId());
 			if (kvState == null) {
-				responseFuture.completeExceptionally(new UnknownKvStateIdException(getServerName(), request.getKvStateId()));
+				responseFuture.completeExceptionally(new UnknownKvStateIdException(getServerName(), request.getKvStateId()));//找不到状态id的值
 			} else {
 				byte[] serializedKeyAndNamespace = request.getSerializedKeyAndNamespace();
 
-				byte[] serializedResult = getSerializedValue(kvState, serializedKeyAndNamespace);
+				byte[] serializedResult = getSerializedValue(kvState, serializedKeyAndNamespace);//获取对应的value
 				if (serializedResult != null) {
-					responseFuture.complete(new KvStateResponse(serializedResult));
+					responseFuture.complete(new KvStateResponse(serializedResult));//返回该value
 				} else {
 					responseFuture.completeExceptionally(new UnknownKeyOrNamespaceException(getServerName()));
 				}
@@ -99,7 +101,8 @@ public class KvStateServerHandler extends AbstractServerHandler<KvStateInternalR
 
 	private static <K, N, V> byte[] getSerializedValue(
 			final KvStateEntry<K, N, V> entry,
-			final byte[] serializedKeyAndNamespace) throws Exception {
+			final byte[] serializedKeyAndNamespace) //key+命名空间
+		throws Exception {
 
 		final InternalKvState<K, N, V> state = entry.getState();
 		final KvStateInfo<K, N, V> infoForCurrentThread = entry.getInfoForCurrentThread();

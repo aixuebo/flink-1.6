@@ -30,6 +30,7 @@ import java.util.Queue;
  * that are already in the queue may not be added another time.
  *
  * @param <E> The type of the elements in the queue.
+ *           先入后出队列
  */
 public class LifoSetQueue<E> extends AbstractQueue<E> implements Queue<E> {
 

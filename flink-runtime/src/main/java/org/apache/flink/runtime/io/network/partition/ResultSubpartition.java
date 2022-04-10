@@ -31,28 +31,31 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A single subpartition of a {@link ResultPartition} instance.
+ * 代表一个子的partition数据结果 --- 即计算的结果需要最终会发送到N个节点,该对象表示某一个子任务的结果,方便下游直接来读取数据
  */
 public abstract class ResultSubpartition {
 
 	/** The index of the subpartition at the parent partition. */
-	protected final int index;
+	protected final int index;//第几个partition
 
 	/** The parent partition this subpartition belongs to. */
-	protected final ResultPartition parent;
+	protected final ResultPartition parent;//归属哪个总的partition
 
 	/** All buffers of this subpartition. Access to the buffers is synchronized on this object. */
 	protected final ArrayDeque<BufferConsumer> buffers = new ArrayDeque<>();
 
-	/** The number of non-event buffers currently in this subpartition. */
+	/** The number of non-event buffers currently in this subpartition.
+	 * 记录当前子分区中有多少个非事件的buffer
+	 **/
 	@GuardedBy("buffers")
 	private int buffersInBacklog;
 
 	// - Statistics ----------------------------------------------------------
 
-	/** The total number of buffers (both data and event buffers). */
+	/** The total number of buffers (both data and event buffers).总共多少个BufferConsumer */
 	private long totalNumberOfBuffers;
 
-	/** The total number of bytes (both data and event buffers). */
+	/** The total number of bytes (both data and event buffers).所有BufferConsumer一共消费了多少个字节 */
 	private long totalNumberOfBytes;
 
 	public ResultSubpartition(int index, ResultPartition parent) {
@@ -78,11 +81,13 @@ public abstract class ResultSubpartition {
 
 	/**
 	 * Notifies the parent partition about a consumed {@link ResultSubpartitionView}.
+	 * 通知父亲已经完成该partition的消费
 	 */
 	protected void onConsumedSubpartition() {
 		parent.onConsumedSubpartition(index);
 	}
 
+	//获取父节点的异常信息
 	protected Throwable getFailureCause() {
 		return parent.getFailureCause();
 	}
@@ -146,6 +151,7 @@ public abstract class ResultSubpartition {
 		}
 	}
 
+	//减少非时间buffer数量
 	protected int decreaseBuffersInBacklogUnsafe(boolean isBuffer) {
 		assert Thread.holdsLock(buffers);
 		if (isBuffer) {
@@ -171,13 +177,14 @@ public abstract class ResultSubpartition {
 	/**
 	 * A combination of a {@link Buffer} and the backlog length indicating
 	 * how many non-event buffers are available in the subpartition.
+	 * 存储要返回给客户端的信息
 	 */
 	public static final class BufferAndBacklog {
 
-		private final Buffer buffer;
-		private final boolean isMoreAvailable;
-		private final int buffersInBacklog;
-		private final boolean nextBufferIsEvent;
+		private final Buffer buffer;//本次buffer的数据
+		private final boolean isMoreAvailable;//是否存在下一个buffer可以被读
+		private final int buffersInBacklog;//在分区中,有多少非事件的buffer
+		private final boolean nextBufferIsEvent;//下一个buffer是否是事件buffer
 
 		public BufferAndBacklog(Buffer buffer, boolean isMoreAvailable, int buffersInBacklog, boolean nextBufferIsEvent) {
 			this.buffer = checkNotNull(buffer);

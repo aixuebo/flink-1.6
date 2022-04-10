@@ -25,6 +25,7 @@ import org.apache.flink.util.ExceptionUtils;
 
 import java.io.Serializable;
 
+//归档
 public class ArchivedExecution implements AccessExecution, Serializable {
 	private static final long serialVersionUID = 4817108757483345173L;
 	// --------------------------------------------------------------------------------------------

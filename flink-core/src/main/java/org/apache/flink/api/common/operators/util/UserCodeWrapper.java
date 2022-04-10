@@ -35,6 +35,7 @@ public interface UserCodeWrapper<T> extends Serializable {
 	 * The subclass is supposed to just return the user code object or instantiate the class.
 	 * 
 	 * @return The class with the user code.
+	 * 返回需要被序列化的实例
 	 */
 	T getUserCodeObject(Class<? super T> superClass, ClassLoader cl);
 	
@@ -43,6 +44,7 @@ public interface UserCodeWrapper<T> extends Serializable {
 	 * in the case of an input or output format, it will be the format object.
 	 * 
 	 * @return The class with the user code.
+	 * 返回需要被序列化的实例
 	 */
 	T getUserCodeObject();
 	
@@ -54,6 +56,7 @@ public interface UserCodeWrapper<T> extends Serializable {
 	 * @param annotationClass
 	 *        the Class object corresponding to the annotation type
 	 * @return the annotation, or null if no annotation of the requested type was found
+	 * 获取T的某一个Annotation
 	 */
 	<A extends Annotation> A getUserCodeAnnotation(Class<A> annotationClass);
 	
@@ -62,6 +65,7 @@ public interface UserCodeWrapper<T> extends Serializable {
 	 * If the user code is provided as an object, {@link Object#getClass()} is called on the user code object.
 	 * 
 	 * @return The class of the user code object.
+	 * 获取T实例对应的class
 	 */
 	Class<? extends T> getUserCodeClass ();
 	

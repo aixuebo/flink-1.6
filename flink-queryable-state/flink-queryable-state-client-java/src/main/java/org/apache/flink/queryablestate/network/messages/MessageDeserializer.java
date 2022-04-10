@@ -34,6 +34,7 @@ public interface MessageDeserializer<M extends MessageBody> {
 	 * Deserializes a message contained in a byte buffer.
 	 * @param buf the buffer containing the message.
 	 * @return The deserialized message.
+	 * 将字节数组 反序列化 成MessageBody对象
 	 */
 	M deserializeMessage(ByteBuf buf);
 }

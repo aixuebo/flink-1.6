@@ -39,12 +39,20 @@ public class EuclideanDistance<DATA> extends ExtractionAwareDeltaFunction<DATA, 
 		super(null);
 	}
 
+	//数据转换成数组
 	public EuclideanDistance(Extractor<DATA, double[]> converter) {
 		super(converter);
 	}
 
 	private static final long serialVersionUID = 3119432599634512359L;
 
+	/**
+	 *
+	 * @param oldDataPoint the older data point.以前的元素值
+	 * @param newDataPoint the new data point. 最新的元素值
+	 *
+	 * @return
+	 */
 	@Override
 	public double getNestedDelta(double[] oldDataPoint, double[] newDataPoint) {
 		double result = 0;

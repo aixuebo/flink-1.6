@@ -26,6 +26,7 @@ import java.io.IOException;
 
 /**
  * A buffer-oriented runtime result writer API for producing results.
+ * 描述本地的输出一个parition的结果，由于partition的下游还会继续分发到多个patititon
  */
 public interface ResultPartitionWriter {
 
@@ -33,7 +34,7 @@ public interface ResultPartitionWriter {
 
 	ResultPartitionID getPartitionId();
 
-	int getNumberOfSubpartitions();
+	int getNumberOfSubpartitions();//输出有多少个子partition
 
 	int getNumTargetKeyGroups();
 
@@ -53,11 +54,13 @@ public interface ResultPartitionWriter {
 
 	/**
 	 * Manually trigger consumption from enqueued {@link BufferConsumer BufferConsumers} in all subpartitions.
+	 * flush所有channel的分区数据
 	 */
 	void flushAll();
 
 	/**
 	 * Manually trigger consumption from enqueued {@link BufferConsumer BufferConsumers} in one specified subpartition.
+	 * flush某一个分区数据
 	 */
 	void flush(int subpartitionIndex);
 }

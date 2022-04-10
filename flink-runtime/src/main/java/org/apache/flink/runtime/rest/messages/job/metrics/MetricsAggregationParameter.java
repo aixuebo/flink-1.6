@@ -25,6 +25,7 @@ import java.util.Locale;
 
 /**
  * TODO: add javadoc.
+ * 参数值是参数值是list<AggregationMode> ,即要处理的聚合函数集合
  */
 public class MetricsAggregationParameter extends MessageQueryParameter<MetricsAggregationParameter.AggregationMode> {
 

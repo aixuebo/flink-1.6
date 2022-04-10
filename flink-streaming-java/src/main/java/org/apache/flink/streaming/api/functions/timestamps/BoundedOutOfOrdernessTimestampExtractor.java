@@ -33,15 +33,20 @@ public abstract class BoundedOutOfOrdernessTimestampExtractor<T> implements Assi
 
 	private static final long serialVersionUID = 1L;
 
-	/** The current maximum timestamp seen so far. */
+	/** The current maximum timestamp seen so far.
+	 * 记录最大的时间戳
+	 **/
 	private long currentMaxTimestamp;
 
-	/** The timestamp of the last emitted watermark. */
+	/** The timestamp of the last emitted watermark.
+	 * 记录生一次发射Watermark的时间戳
+	 **/
 	private long lastEmittedWatermark = Long.MIN_VALUE;
 
 	/**
 	 * The (fixed) interval between the maximum seen timestamp seen in the records
 	 * and that of the watermark to be emitted.
+	 * Watermark需要将事件时间戳调慢多久。
 	 */
 	private final long maxOutOfOrderness;
 
@@ -51,6 +56,7 @@ public abstract class BoundedOutOfOrdernessTimestampExtractor<T> implements Assi
 				"lateness to " + maxOutOfOrderness + ". This parameter cannot be negative.");
 		}
 		this.maxOutOfOrderness = maxOutOfOrderness.toMilliseconds();
+		////防止内存溢出,做的特殊处理,因为Long.MIN_VALUE已经最小了,如果在-maxOutOfOrderness,那肯定就是非常大的值了。
 		this.currentMaxTimestamp = Long.MIN_VALUE + this.maxOutOfOrderness;
 	}
 
@@ -63,23 +69,26 @@ public abstract class BoundedOutOfOrdernessTimestampExtractor<T> implements Assi
 	 *
 	 * @param element The element that the timestamp is extracted from.
 	 * @return The new timestamp.
+	 * 提取元素时间戳
 	 */
 	public abstract long extractTimestamp(T element);
 
+	//生产Watermark
 	@Override
 	public final Watermark getCurrentWatermark() {
 		// this guarantees that the watermark never goes backwards.
-		long potentialWM = currentMaxTimestamp - maxOutOfOrderness;
+		long potentialWM = currentMaxTimestamp - maxOutOfOrderness; //先调慢时间
 		if (potentialWM >= lastEmittedWatermark) {
 			lastEmittedWatermark = potentialWM;
 		}
+		//发射最新的Watermark,看代码,可能多次发送重复的Watermark,因为没有新的数据进来,currentMaxTimestamp一直保持不变
 		return new Watermark(lastEmittedWatermark);
 	}
 
 	@Override
 	public final long extractTimestamp(T element, long previousElementTimestamp) {
-		long timestamp = extractTimestamp(element);
-		if (timestamp > currentMaxTimestamp) {
+		long timestamp = extractTimestamp(element);//提取时间戳
+		if (timestamp > currentMaxTimestamp) {//更新最大时间戳
 			currentMaxTimestamp = timestamp;
 		}
 		return timestamp;

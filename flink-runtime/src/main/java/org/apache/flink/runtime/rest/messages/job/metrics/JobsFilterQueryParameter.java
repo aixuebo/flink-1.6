@@ -25,6 +25,7 @@ import org.apache.flink.runtime.rest.messages.MessageQueryParameter;
 
 /**
  * {@link MessageQueryParameter} for selecting jobs when aggregating metrics.
+ * 参数值是参数值是list<JobID>
  */
 public class JobsFilterQueryParameter extends MessageQueryParameter<JobID> {
 

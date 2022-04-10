@@ -71,7 +71,7 @@ public class TupleCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 		}
 
 		if (includedFieldsMask == null) {
-			includedFieldsMask = createDefaultMask(tupleTypeInfo.getArity());
+			includedFieldsMask = createDefaultMask(tupleTypeInfo.getArity());//每一个tutle的元素都要在csv中读取出来
 		}
 
 		tupleSerializer = (TupleSerializerBase<OUT>) tupleTypeInfo.createSerializer(new ExecutionConfig());
@@ -88,6 +88,7 @@ public class TupleCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 		setFieldsGeneric(includedFieldsMask, classes);
 	}
 
+	//reuse 就是tuple实例
 	@Override
 	public OUT fillRecord(OUT reuse, Object[] parsedValues) {
 		return tupleSerializer.createOrReuseInstance(parsedValues, reuse);

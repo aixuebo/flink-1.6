@@ -24,6 +24,9 @@ import org.apache.flink.util.Collector;
 
 /**
  * A {@link WindowFunction} that just emits each input element.
+ * 所有元素原封不动的输出
+ *
+ * 窗口聚合后的值,窗口到期后，发送哪些数据到下游
  */
 @Internal
 public class PassThroughWindowFunction<K, W extends Window, T> implements WindowFunction<T, T, K, W> {

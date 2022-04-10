@@ -30,12 +30,13 @@ import java.io.IOException;
  * serialization, with the help of a type serializer.
  *
  * @param <T> The type to be represented as an IOReadableWritable.
+ * 将对象序列化,输出到out中
  */
 public class SerializationDelegate<T> implements IOReadableWritable {
 
-	private T instance;
+	private T instance;//序列化成什么对象
 
-	private final TypeSerializer<T> serializer;
+	private final TypeSerializer<T> serializer;//如何序列化对象
 
 	public SerializationDelegate(TypeSerializer<T> serializer) {
 		this.serializer = serializer;
@@ -49,6 +50,7 @@ public class SerializationDelegate<T> implements IOReadableWritable {
 		return this.instance;
 	}
 
+	//将对象序列化,输出到out中
 	@Override
 	public void write(DataOutputView out) throws IOException {
 		this.serializer.serialize(this.instance, out);

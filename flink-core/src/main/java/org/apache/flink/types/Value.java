@@ -31,6 +31,8 @@ import org.apache.flink.core.io.IOReadableWritable;
  * the serialization of its value.
  * 
  * @see org.apache.flink.core.io.IOReadableWritable
+ *
+ * Value位于所有类型的继承链的最顶端，可以说是所有类型的根。它代指所有可被序列化为Flink二进制表示的类型
  */
 @Public
 public interface Value extends IOReadableWritable, Serializable {

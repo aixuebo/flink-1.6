@@ -35,6 +35,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 /**
  * Implementation using {@link ActorGateway} to forward the messages.
+ * 提供task的任务输入split数据源信息
  */
 public class TaskInputSplitProvider implements InputSplitProvider {
 

@@ -69,21 +69,25 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 	
 	/**
 	 * Indication that the number of samples has not been set by the configuration.
+	 * 抽样函数默认值
 	 */
 	private static final int NUM_SAMPLES_UNDEFINED = -1;
 	
 	/**
 	 * The maximum number of line samples to be taken.
+	 * 最大抽样数
 	 */
 	private static int DEFAULT_MAX_NUM_SAMPLES;
 	
 	/**
 	 * The minimum number of line samples to be taken.
+	 * 最小抽样数
 	 */
 	private static int DEFAULT_MIN_NUM_SAMPLES;
 	
 	/**
 	 * The maximum size of a sample record before sampling is aborted. To catch cases where a wrong delimiter is given.
+	 * 最大的抽样数据中,字节长度
 	 */
 	private static int MAX_SAMPLE_LEN;
 
@@ -95,6 +99,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 		loadConfigParameters(GlobalConfiguration.loadConfiguration());
 	}
 
+	//设置最大抽样数、最小抽样数、每条数据最大字节数
 	protected static void loadConfigParameters(Configuration parameters) {
 		int maxSamples = parameters.getInteger(OptimizerOptions.DELIMITED_FORMAT_MAX_LINE_SAMPLES);
 		int minSamples = parameters.getInteger(OptimizerOptions.DELIMITED_FORMAT_MIN_LINE_SAMPLES);
@@ -136,23 +141,22 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 	//  They are all transient, because we do not want them so be serialized 
 	// --------------------------------------------------------------------------------------------
 	
-	private transient byte[] readBuffer;
+	private transient byte[] readBuffer;//用于存储从流中读取的数据
 
-	private transient byte[] wrapBuffer;
+	private transient byte[] wrapBuffer;//存储当readBuffer中的内容还没有到一行数据,因此部分数据要存储起来
 
-	private transient int readPos;
+	private transient int readPos;//readBuffer中目前准备消费的位置
+	private transient int limit;//readBuffer中end位置
 
-	private transient int limit;
-
-	private transient byte[] currBuffer;		// buffer in which current record byte sequence is found
+	private transient byte[] currBuffer;		// buffer in which current record byte sequence is found 存储当前一行记录的缓冲区
 	private transient int currOffset;			// offset in above buffer
-	private transient int currLen;				// length of current byte sequence
+	private transient int currLen;				// length of current byte sequence 当前行大小
 
 	private transient boolean overLimit;
 
-	private transient boolean end;
+	private transient boolean end;//表示是否已经读取结尾
 
-	private long offset = -1;
+	private long offset = -1; //表示一行数据的offset开始位置 --- 在整体的文件中
 
 	// --------------------------------------------------------------------------------------------
 	//  The configuration parameters. Configured on the instance and serialized to be shipped.
@@ -160,14 +164,15 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 
 	// The delimiter may be set with a byte-sequence or a String. In the latter
 	// case the byte representation is updated consistent with current charset.
-	private byte[] delimiter = new byte[] {'\n'};
+	//如果不想是回车作为换行符,可以set替换
+	private byte[] delimiter = new byte[] {'\n'};//delimiterString的字节数组  一条数据的分隔符
 	private String delimiterString = null;
 
-	private int lineLengthLimit = Integer.MAX_VALUE;
+	private int lineLengthLimit = Integer.MAX_VALUE;//一行数据最多允许多少个字节
 	
 	private int bufferSize = -1;
 	
-	private int numLineSamples = NUM_SAMPLES_UNDEFINED;
+	private int numLineSamples = NUM_SAMPLES_UNDEFINED;//抽样行数
 	
 	
 	// --------------------------------------------------------------------------------------------
@@ -307,6 +312,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 	 * defines the record delimiter.
 	 * 
 	 * @param parameters The configuration object to read the parameters from.
+	 * 配置抽样行数、换行分隔符
 	 */
 	@Override
 	public void configure(Configuration parameters) {
@@ -337,7 +343,8 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			}
 		}
 	}
-	
+
+	//抽样统计每行字节长度
 	@Override
 	public FileBaseStatistics getStatistics(BaseStatistics cachedStats) throws IOException {
 		
@@ -367,17 +374,19 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 
 			// disabling sampling for unsplittable files since the logic below assumes splitability.
 			// TODO: Add sampling for unsplittable files. Right now, only compressed text files are affected by this limitation.
+			//不能拆分文件不统计,属于压缩文件
 			if (unsplittable) {
 				return stats;
 			}
 			
 			// compute how many samples to take, depending on the defined upper and lower bound
-			final int numSamples;
+			final int numSamples;//抽样行数
 			if (this.numLineSamples != NUM_SAMPLES_UNDEFINED) {
 				numSamples = this.numLineSamples;
 			} else {
+				//初始化抽样条数,按照每1k字节抽取一条计算
 				// make the samples small for very small files
-				final int calcSamples = (int) (stats.getTotalInputSize() / 1024);
+				final int calcSamples = (int) (stats.getTotalInputSize() / 1024);//假设1k字节中抽取一条数据.需要抽取多少条
 				numSamples = Math.min(DEFAULT_MAX_NUM_SAMPLES, Math.max(DEFAULT_MIN_NUM_SAMPLES, calcSamples));
 			}
 			
@@ -397,24 +406,26 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			// prevent overly large records, for example if we have an incorrectly configured delimiter
 			this.lineLengthLimit = MAX_SAMPLE_LEN;
 			
-			long offset = 0;
-			long totalNumBytes = 0;
-			long stepSize = stats.getTotalInputSize() / numSamples;
+			long offset = 0;//下一次抽样的位置
+			long totalNumBytes = 0;//抽样多少字节
+			long stepSize = stats.getTotalInputSize() / numSamples;//步长
 
-			int fileNum = 0;
-			int samplesTaken = 0;
+			int fileNum = 0;//当前第几个文件
+			int samplesTaken = 0;//第几个抽样
 
 			// take the samples
-			while (samplesTaken < numSamples && fileNum < allFiles.size()) {
+			while (samplesTaken < numSamples && fileNum < allFiles.size()) {//抽样
 				// make a split for the sample and use it to read a record
 				FileStatus file = allFiles.get(fileNum);
+				//从offset开始读取数据,能读取的长度已经不是文件的总长度了,因为已经有offset不能再读取了,所以是file.getLen() - offset。
+				//不存在数据块编号和host的需求,因此不设置
 				FileInputSplit split = new FileInputSplit(0, file.getPath(), offset, file.getLen() - offset, null);
 
 				// we open the split, read one line, and take its length
 				try {
 					open(split);
 					if (readLine()) {
-						totalNumBytes += this.currLen + this.delimiter.length;
+						totalNumBytes += this.currLen + this.delimiter.length;//计算一行的字节大小 --- 包含换行符
 						samplesTaken++;
 					}
 				} finally {
@@ -433,7 +444,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			
 			// we have the width, store it
 			return new FileBaseStatistics(stats.getLastModificationTime(),
-				stats.getTotalInputSize(), totalNumBytes / (float) samplesTaken);
+				stats.getTotalInputSize(), totalNumBytes / (float) samplesTaken);//抽样的字节数/抽样的行数
 			
 		} catch (IOException ioex) {
 			if (LOG.isWarnEnabled()) {
@@ -470,20 +481,22 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 		super.open(split);
 		initBuffers();
 
-		this.offset = splitStart;
+		this.offset = splitStart;//文件块的开始位置
 		if (this.splitStart != 0) {
-			this.stream.seek(offset);
-			readLine();
+			this.stream.seek(offset);//先定位位置,在填充数据
+			//填充fillBuffer数据,删除上一行的内容
+			readLine();//将这一行数据删除掉,因为定位的offset不一定是行文件的开始---丢到的这部分数据,肯定被上一个分块的最后一行数据读取完成了
 			// if the first partial record already pushes the stream over
 			// the limit of our split, then no record starts within this split
 			if (this.overLimit) {
 				this.end = true;
 			}
 		} else {
-			fillBuffer(0);
+			fillBuffer(0);//从头读,因此直接填充数据
 		}
 	}
 
+	//初始化
 	private void initBuffers() {
 		this.bufferSize = this.bufferSize <= 0 ? DEFAULT_READ_BUFFER_SIZE : this.bufferSize;
 
@@ -513,7 +526,9 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 	public boolean reachedEnd() {
 		return this.end;
 	}
-	
+
+	// 参数是可以重复利用的对象.比如String,可以重复利用该对象,每次往对象中赋予新值即可
+	// 如果返回null,说明读取结束
 	@Override
 	public OT nextRecord(OT record) throws IOException {
 		if (readLine()) {
@@ -546,30 +561,30 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 		int countInWrapBuffer = 0;
 
 		// position of matching positions in the delimiter byte array
-		int delimPos = 0;
+		int delimPos = 0;//分解符字节数组匹配的位置,如果分解符不是一个字节,而是5个字节,则必须要求全部匹配,则delimPos需要从0到4必须依次移动都存在
 
 		while (true) {
-			if (this.readPos >= this.limit) {
+			if (this.readPos >= this.limit) {//填充数据
 				// readBuffer is completely consumed. Fill it again but keep partially read delimiter bytes.
-				if (!fillBuffer(delimPos)) {
+				if (!fillBuffer(delimPos)) {//读取流结束
 					int countInReadBuffer = delimPos;
-					if (countInWrapBuffer + countInReadBuffer > 0) {
+					if (countInWrapBuffer + countInReadBuffer > 0) {//说明还有数据
 						// we have bytes left to emit
-						if (countInReadBuffer > 0) {
+						if (countInReadBuffer > 0) {//说明有一部分换行符出现了
 							// we have bytes left in the readBuffer. Move them into the wrapBuffer
-							if (this.wrapBuffer.length - countInWrapBuffer < countInReadBuffer) {
+							if (this.wrapBuffer.length - countInWrapBuffer < countInReadBuffer) {//wrapBuffer依然不足存储 剩余的换行符内容
 								// reallocate
-								byte[] tmp = new byte[countInWrapBuffer + countInReadBuffer];
+								byte[] tmp = new byte[countInWrapBuffer + countInReadBuffer];//继续扩容成正好的字节数组
 								System.arraycopy(this.wrapBuffer, 0, tmp, 0, countInWrapBuffer);
 								this.wrapBuffer = tmp;
 							}
 
-							// copy readBuffer bytes to wrapBuffer
+							// copy readBuffer bytes to wrapBuffer 将readBuffer的数据继续追加到wrapBuffer中
 							System.arraycopy(this.readBuffer, 0, this.wrapBuffer, countInWrapBuffer, countInReadBuffer);
 							countInWrapBuffer += countInReadBuffer;
 						}
 
-						this.offset += countInWrapBuffer;
+						this.offset += countInWrapBuffer;//偏移量继续移动
 						setResult(this.wrapBuffer, 0, countInWrapBuffer);
 						return true;
 					} else {
@@ -581,27 +596,27 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			int startPos = this.readPos - delimPos;
 			int count;
 
-			// Search for next occurrence of delimiter in read buffer.
+			// Search for next occurrence of delimiter in read buffer.在buffer中搜索下一个分解符位置
 			while (this.readPos < this.limit && delimPos < this.delimiter.length) {
 				if ((this.readBuffer[this.readPos]) == this.delimiter[delimPos]) {
 					// Found the expected delimiter character. Continue looking for the next character of delimiter.
 					delimPos++;
 				} else {
-					// Delimiter does not match.
+					// Delimiter does not match.说明不是全部匹配
 					// We have to reset the read position to the character after the first matching character
 					//   and search for the whole delimiter again.
-					readPos -= delimPos;
+					readPos -= delimPos;//跳过第一个匹配的位置,继续查找
 					delimPos = 0;
 				}
 				readPos++;
 			}
 
 			// check why we dropped out
-			if (delimPos == this.delimiter.length) {
+			if (delimPos == this.delimiter.length) {//说明在现有的buffer中找到了换行符
 				// we found a delimiter
-				int readBufferBytesRead = this.readPos - startPos;
+				int readBufferBytesRead = this.readPos - startPos;//遇到换行符时,读取了多少个字节
 				this.offset += countInWrapBuffer + readBufferBytesRead;
-				count = readBufferBytesRead - this.delimiter.length;
+				count = readBufferBytesRead - this.delimiter.length;//刨除换行字节长度
 
 				// copy to byte array
 				if (countInWrapBuffer > 0) {
@@ -620,37 +635,38 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 					setResult(this.readBuffer, startPos, count);
 					return true;
 				}
-			} else {
+			} else {//说明现有的buffer中没有找到换行符
 				// we reached the end of the readBuffer
-				count = this.limit - startPos;
+				count = this.limit - startPos;//目前已经读取了多少个字节
 				
 				// check against the maximum record length
-				if (((long) countInWrapBuffer) + count > this.lineLengthLimit) {
+				if (((long) countInWrapBuffer) + count > this.lineLengthLimit) {//超过了最大允许字节限制,抛异常,说明数据太长了
 					throw new IOException("The record length exceeded the maximum record length (" + 
 							this.lineLengthLimit + ").");
 				}
 
 				// Compute number of bytes to move to wrapBuffer
 				// Chars of partially read delimiter must remain in the readBuffer. We might need to go back.
-				int bytesToMove = count - delimPos;
+				int bytesToMove = count - delimPos;//要填充到缓冲区的数据内容
 				// ensure wrapBuffer is large enough
-				if (this.wrapBuffer.length - countInWrapBuffer < bytesToMove) {
+				if (this.wrapBuffer.length - countInWrapBuffer < bytesToMove) {//缓冲区不足
 					// reallocate
 					byte[] tmp = new byte[Math.max(this.wrapBuffer.length * 2, countInWrapBuffer + bytesToMove)];
 					System.arraycopy(this.wrapBuffer, 0, tmp, 0, countInWrapBuffer);
-					this.wrapBuffer = tmp;
+					this.wrapBuffer = tmp;//扩展缓存区
 				}
 
-				// copy readBuffer to wrapBuffer (except delimiter chars)
+				// copy readBuffer to wrapBuffer (except delimiter chars) 移除可能的换行分隔符字节内容
 				System.arraycopy(this.readBuffer, startPos, this.wrapBuffer, countInWrapBuffer, bytesToMove);
 				countInWrapBuffer += bytesToMove;
-				// move delimiter chars to the beginning of the readBuffer
+				// move delimiter chars to the beginning of the readBuffer 将可能的换行符内容,添加到buffer中
 				System.arraycopy(this.readBuffer, this.readPos - delimPos, this.readBuffer, 0, delimPos);
 
 			}
 		}
 	}
-	
+
+	//len不包含换行分隔符字节
 	private void setResult(byte[] buffer, int offset, int len) {
 		this.currBuffer = buffer;
 		this.currOffset = offset;
@@ -659,12 +675,13 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 
 	/**
 	 * Fills the read buffer with bytes read from the file starting from an offset.
+	 * 从offset位置开始填充数据,offset之前的数据保留
 	 */
 	private boolean fillBuffer(int offset) throws IOException {
 		int maxReadLength = this.readBuffer.length - offset;
 		// special case for reading the whole split.
 		if (this.splitLength == FileInputFormat.READ_WHOLE_SPLIT_FLAG) {
-			int read = this.stream.read(this.readBuffer, offset, maxReadLength);
+			int read = this.stream.read(this.readBuffer, offset, maxReadLength);//向readBuffer中写入数据,写入maxReadLength个数据,从offset开始写入
 			if (read == -1) {
 				this.stream.close();
 				this.stream = null;
@@ -677,7 +694,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 		}
 		
 		// else ..
-		int toRead;
+		int toRead;//计算要读取多少字节,因为可能readBuffer非常大,比要读取的splitLength还要大
 		if (this.splitLength > 0) {
 			// if we have more data, read that
 			toRead = this.splitLength > maxReadLength ? maxReadLength : (int) this.splitLength;
@@ -692,7 +709,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			this.overLimit = true;
 		}
 
-		int read = this.stream.read(this.readBuffer, offset, toRead);
+		int read = this.stream.read(this.readBuffer, offset, toRead);//真正读取数据
 
 		if (read == -1) {
 			this.stream.close();
@@ -712,11 +729,13 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 
 	/**
 	 * The configuration key to set the record delimiter.
+	 * 配置行分隔符
 	 */
 	protected static final String RECORD_DELIMITER = "delimited-format.delimiter";
 	
 	/**
 	 * The configuration key to set the number of samples to take for the statistics.
+	 * 抽样的配置key
 	 */
 	private static final String NUM_STATISTICS_SAMPLES = "delimited-format.numSamples";
 
@@ -730,6 +749,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 		return this.offset;
 	}
 
+	//重新打开一个数据块,从state状态位置中开始读取数据
 	@PublicEvolving
 	@Override
 	public void reopen(FileInputSplit split, Long state) throws IOException {
@@ -739,9 +759,9 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 			" Illegal offset "+ state +", smaller than the splits start=" + split.getStart());
 
 		try {
-			this.open(split);
+			this.open(split);//虽然读取的时候,offset已经被赋值,可能是错误的,因此需要重新设置offset
 		} finally {
-			this.offset = state;
+			this.offset = state;//重新设置位置
 		}
 
 		if (state > this.splitStart + split.getLength()) {
@@ -754,7 +774,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 				// this is the case for unsplittable files
 				fillBuffer(0);
 			} else {
-				this.splitLength = this.splitStart + split.getLength() - this.offset;
+				this.splitLength = this.splitStart + split.getLength() - this.offset;//重新设计要读取的字节长度
 				if (splitLength <= 0) {
 					this.end = true;
 				}

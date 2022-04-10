@@ -34,6 +34,7 @@ import org.apache.flink.annotation.PublicEvolving;
  *
  * @param <IN> Type of the value that can be added to the state.
  * @param <OUT> Type of the value that can be retrieved from the state.
+ * aggr模型,即输入IN,参与计算,输出OUT
  */
 @PublicEvolving
 public interface AppendingState<IN, OUT> extends State {
@@ -52,6 +53,7 @@ public interface AppendingState<IN, OUT> extends State {
 	 * if the state is empty.
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 返回聚合后的结果
 	 */
 	OUT get() throws Exception;
 
@@ -65,6 +67,7 @@ public interface AppendingState<IN, OUT> extends State {
 	 * @param value The new value for the state.
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 添加一个新元素,去聚合
 	 */
 	void add(IN value) throws Exception;
 

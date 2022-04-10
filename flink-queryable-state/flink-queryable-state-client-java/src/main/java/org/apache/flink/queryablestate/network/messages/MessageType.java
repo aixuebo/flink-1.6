@@ -28,15 +28,15 @@ import org.apache.flink.annotation.Internal;
 @Internal
 public enum MessageType {
 
-	/** The message is a request. */
+	/** The message is a request. 发送一个请求*/
 	REQUEST,
 
-	/** The message is a successful response. */
+	/** The message is a successful response.请求成功,并且有返回值response */
 	REQUEST_RESULT,
 
-	/** The message indicates a protocol-related failure. */
+	/** The message indicates a protocol-related failure.请求失败,并且带回来失败原因 */
 	REQUEST_FAILURE,
 
-	/** The message indicates a server failure. */
+	/** The message indicates a server failure.请求的服务器有问题,服务后期不能再提供服务 */
 	SERVER_FAILURE
 }

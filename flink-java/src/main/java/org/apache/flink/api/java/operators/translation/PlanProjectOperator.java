@@ -32,6 +32,7 @@ import org.apache.flink.api.java.tuple.Tuple;
  *
  * @param <T> Input tuple type
  * @param <R> Output tuple type
+ * 投影,只保留Input中部分字段
  */
 @Internal
 public class PlanProjectOperator<T, R extends Tuple> extends MapOperatorBase<T, R, MapFunction<T, R>> {

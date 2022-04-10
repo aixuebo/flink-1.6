@@ -29,7 +29,7 @@ public interface Collector<T> {
 
 	/**
 	 * Emits a record.
-	 *
+	 * 收集一个元素,即add方法
 	 * @param record The record to collect.
 	 */
 	void collect(T record);

@@ -55,7 +55,9 @@ public class Plan implements Visitable<Operator<?>> {
 	/** The name of the job. */
 	protected String jobName;
 
-	/** The default parallelism to use for nodes that have no explicitly specified parallelism. */
+	/** The default parallelism to use for nodes that have no explicitly specified parallelism.
+	 * 设置并行度 = task manager数 * 每一个task manager上slot数量
+	 **/
 	protected int defaultParallelism = ExecutionConfig.PARALLELISM_DEFAULT;
 	
 	/** Hash map for files in the distributed cache: registered name to cache entry. */
@@ -358,7 +360,7 @@ public class Plan implements Visitable<Operator<?>> {
 	}
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//获取所以操作中最大的并行度
 	private static final class MaxDopVisitor implements Visitor<Operator<?>> {
 
 		private int maxDop = -1;

@@ -33,12 +33,16 @@ import org.apache.flink.util.Preconditions;
  *
  * @see MessagePathParameter
  * @see MessageQueryParameter
+ * 代表一个参数 --- 泛型表示参数值类型
+ *
+ * 提供设置参数值、参数值与string类型转换操作、是否必须参数能力
  */
 public abstract class MessageParameter<X> {
-	private boolean resolved = false;
+	private boolean resolved = false;//true表示设置了参数值,如果false 说明参数值还是为false
 
-	private final MessageParameterRequisiteness requisiteness;
+	private final MessageParameterRequisiteness requisiteness;//参数是否是强制的
 
+	//参数由key和value组成
 	private final String key;
 	private X value;
 
@@ -60,6 +64,7 @@ public abstract class MessageParameter<X> {
 	 * Resolves this parameter for the given value.
 	 *
 	 * @param value value to resolve this parameter with
+	 * 设置参数值
 	 */
 	public final void resolve(X value) {
 		Preconditions.checkState(!resolved, "This parameter was already resolved.");
@@ -71,6 +76,7 @@ public abstract class MessageParameter<X> {
 	 * Resolves this parameter for the given string value representation.
 	 *
 	 * @param value string representation of value to resolve this parameter with
+	 * 设置参数值
 	 */
 	public final void resolveFromString(String value) throws ConversionException {
 		resolve(convertFromString(value));
@@ -81,6 +87,7 @@ public abstract class MessageParameter<X> {
 	 *
 	 * @param value string representation of parameter value
 	 * @return parameter value
+	 * 将string类型转换成参数值类型
 	 */
 	protected abstract X convertFromString(String value) throws ConversionException;
 
@@ -89,6 +96,7 @@ public abstract class MessageParameter<X> {
 	 *
 	 * @param value parameter value
 	 * @return string representation of typed value
+	 * 相当于toString操作
 	 */
 	protected abstract String convertToString(X value);
 
@@ -96,6 +104,7 @@ public abstract class MessageParameter<X> {
 	 * Returns the key of this parameter, e.g. "jobid".
 	 *
 	 * @return key of this parameter
+	 * 获取参数key
 	 */
 	public final String getKey() {
 		return key;
@@ -105,6 +114,7 @@ public abstract class MessageParameter<X> {
 	 * Returns the resolved value of this parameter, or {@code null} if it isn't resolved yet.
 	 *
 	 * @return resolved value, or null if it wasn't resolved yet
+	 * 获取value值
 	 */
 	public final X getValue() {
 		return value;
@@ -114,6 +124,7 @@ public abstract class MessageParameter<X> {
 	 * Returns the resolved value of this parameter as a string, or {@code null} if it isn't resolved yet.
 	 *
 	 * @return resolved value, or null if it wasn't resolved yet
+	 * 获取参数的String类型值
 	 */
 	final String getValueAsString() {
 		return value == null
@@ -125,6 +136,7 @@ public abstract class MessageParameter<X> {
 	 * Returns whether this parameter must be resolved for the request.
 	 *
 	 * @return true if the parameter is mandatory, false otherwise
+	 * 参数是否是强制的
 	 */
 	public final boolean isMandatory() {
 		return requisiteness == MessageParameterRequisiteness.MANDATORY;
@@ -132,6 +144,7 @@ public abstract class MessageParameter<X> {
 
 	/**
 	 * Enum for indicating whether a parameter is mandatory or optional.
+	 * 参数是强制的还是可选的
 	 */
 	protected enum MessageParameterRequisiteness {
 		MANDATORY,

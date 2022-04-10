@@ -559,7 +559,7 @@ public class KeyedProcessOperatorTest extends TestLogger {
 			timerService.registerEventTimeTimer(6);
 			timerService.deleteProcessingTimeTimer(3);
 			timerService.deleteEventTimeTimer(4);
-		}
+		}DataStream
 
 		@Override
 		public void onTimer(

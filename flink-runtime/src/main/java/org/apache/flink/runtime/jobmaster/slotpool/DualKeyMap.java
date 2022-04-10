@@ -35,9 +35,9 @@ import java.util.Set;
  */
 public class DualKeyMap<A, B, V> {
 
-	private final HashMap<A, Tuple2<B, V>> aMap;
+	private final HashMap<A, Tuple2<B, V>> aMap; // A -> <B,V>
 
-	private final HashMap<B, A> bMap;
+	private final HashMap<B, A> bMap;// B-->A
 
 	private transient Collection<V> values;
 

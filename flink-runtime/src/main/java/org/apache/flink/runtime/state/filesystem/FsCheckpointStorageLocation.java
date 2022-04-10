@@ -48,7 +48,7 @@ public class FsCheckpointStorageLocation extends FsCheckpointStreamFactory imple
 
 	private final CheckpointStorageLocationReference reference;
 
-	private final int fileStateSizeThreshold;
+	private final int fileStateSizeThreshold;//优先在内存中存储,占用内存大小
 
 	public FsCheckpointStorageLocation(
 			FileSystem fileSystem,

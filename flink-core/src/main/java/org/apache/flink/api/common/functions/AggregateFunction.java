@@ -105,9 +105,21 @@ import java.io.Serializable;
  * }
  * }</pre>
  *
- * @param <IN>  The type of the values that are aggregated (input values)
- * @param <ACC> The type of the accumulator (intermediate aggregate state).
- * @param <OUT> The type of the aggregated result
+ * @param <IN>  The type of the values that are aggregated (input values) 输入类型
+ * @param <ACC> The type of the accumulator (intermediate aggregate state). 初始化类型,相当于fold
+ * @param <OUT> The type of the aggregated result 输出结果类型
+ * 分布式的聚合函数
+ * AggregateFunction<IN, ACC, OUT>  聚合函数,元素I两两聚合成中间结果Acc,ACC转换成O
+ *
+ *
+ * 使用方式
+ * public void apply(W window, Iterable<T> values, Collector<R> out) throws Exception {
+ * 		ACC acc = aggFunction.createAccumulator();//创建中间结果值
+ * 		for (T value : values) {
+ * 			acc = aggFunction.add(value, acc);
+ * 		}
+ *     out.collect(aggFunction.getResult(acc));
+ * }
  */
 @PublicEvolving
 public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable {
@@ -123,6 +135,7 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	 * is the size of the accumulator.
 	 *
 	 * @return A new accumulator, corresponding to an empty aggregate.
+	 * 创建默认值
 	 */
 	ACC createAccumulator();
 
@@ -134,6 +147,9 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	 *
 	 * @param value The value to add
 	 * @param accumulator The accumulator to add the value to
+	 * 单节点的merge结果 + value值
+	 *
+	 * 每次迭代,新元素都与中间状态值做计算，输出中间状态类型的值
 	 */
 	ACC add(IN value, ACC accumulator);
 
@@ -142,6 +158,8 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	 *
 	 * @param accumulator The accumulator of the aggregation
 	 * @return The final aggregation result.
+	 * 输出聚合后的结果
+	 * 最终将中间状态的结果值,进行计算,转换成输出类型
 	 */
 	OUT getResult(ACC accumulator);
 
@@ -156,6 +174,8 @@ public interface AggregateFunction<IN, ACC, OUT> extends Function, Serializable 
 	 * @param b Another accumulator to merge
 	 *
 	 * @return The accumulator with the merged state
+	 * 两个节点聚合后的结果做merge
+	 * 用于两个分布式节点的结果进行合并
 	 */
 	ACC merge(ACC a, ACC b);
 }

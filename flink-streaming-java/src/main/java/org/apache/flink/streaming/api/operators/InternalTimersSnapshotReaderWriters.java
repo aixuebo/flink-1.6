@@ -44,6 +44,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * Readers and writers for different versions of the {@link InternalTimersSnapshot}.
  * Outdated formats are also kept here for documentation of history backlog.
+ *
+ * 读写不同版本生产的时间事件快照,进行序列化/反序列化快照内容 --- 参考InternalTimersSnapshot
+ *
+ * 读写接口--各种匿名子类实现,但很简单，就是不同版本生产的,走不同的逻辑
  */
 @Internal
 public class InternalTimersSnapshotReaderWriters {
@@ -55,7 +59,8 @@ public class InternalTimersSnapshotReaderWriters {
 	//   - pre-versioned: Flink 1.4.0
 	//   - v1: Flink 1.4.1
 	// -------------------------------------------------------------------------------
-
+    //根据版本号不同,创建不同的InternalTimersSnapshot时间快照的输出流文件
+	// 告知数据的key和命名空间如何序列化 + 每一个EventTimeTimers序列化的内容 + 每一个ProcessingTimeTimer序列化的内容
 	public static <K, N> InternalTimersSnapshotWriter getWriterForVersion(int version, InternalTimersSnapshot<K, N> timersSnapshot) {
 
 		switch (version) {
@@ -82,6 +87,7 @@ public class InternalTimersSnapshotReaderWriters {
 		 *
 		 * @param out the output view to write to
 		 * @throws IOException
+		 * 写入InternalTimersSnapshot序列化对象
 		 */
 		void writeTimersSnapshot(DataOutputView out) throws IOException;
 	}
@@ -94,11 +100,12 @@ public class InternalTimersSnapshotReaderWriters {
 			this.timersSnapshot = checkNotNull(timersSnapshot);
 		}
 
+		//key和命名空间如何序列化
 		protected abstract void writeKeyAndNamespaceSerializers(DataOutputView out) throws IOException;
 
 		@Override
 		public final void writeTimersSnapshot(DataOutputView out) throws IOException {
-			writeKeyAndNamespaceSerializers(out);
+			writeKeyAndNamespaceSerializers(out);//输出前置
 
 			LegacyTimerSerializer<K, N> timerSerializer = new LegacyTimerSerializer<>(
 				timersSnapshot.getKeySerializer(),
@@ -109,7 +116,7 @@ public class InternalTimersSnapshotReaderWriters {
 			if (eventTimers != null) {
 				out.writeInt(eventTimers.size());
 				for (TimerHeapInternalTimer<K, N> eventTimer : eventTimers) {
-					timerSerializer.serialize(eventTimer, out);
+					timerSerializer.serialize(eventTimer, out);//一条一条数据进行序列化
 				}
 			} else {
 				out.writeInt(0);
@@ -128,12 +135,18 @@ public class InternalTimersSnapshotReaderWriters {
 		}
 	}
 
+	/**
+	 * 只输出key和命名空间如何序列化方式
+	 * @param <K>
+	 * @param <N>
+	 */
 	private static class InternalTimersSnapshotWriterPreVersioned<K, N> extends AbstractInternalTimersSnapshotWriter<K, N> {
 
 		public InternalTimersSnapshotWriterPreVersioned(InternalTimersSnapshot<K, N> timersSnapshot) {
 			super(timersSnapshot);
 		}
 
+		//输出如何序列化key和命名空间
 		@Override
 		protected void writeKeyAndNamespaceSerializers(DataOutputView out) throws IOException {
 			// the pre-versioned format only serializes the serializers, without their configuration snapshots
@@ -146,6 +159,11 @@ public class InternalTimersSnapshotReaderWriters {
 		}
 	}
 
+	/**
+	 * 新版本,输出key和命名空间的配置信息
+	 * @param <K>
+	 * @param <N>
+	 */
 	private static class InternalTimersSnapshotWriterV1<K, N> extends AbstractInternalTimersSnapshotWriter<K, N> {
 
 		public InternalTimersSnapshotWriterV1(InternalTimersSnapshot<K, N> timersSnapshot) {
@@ -197,6 +215,7 @@ public class InternalTimersSnapshotReaderWriters {
 		 * @param in the input view
 		 * @return the read timers snapshot
 		 * @throws IOException
+		 * 反序列化一个InternalTimersSnapshot快照对象
 		 */
 		InternalTimersSnapshot<K, N> readTimersSnapshot(DataInputView in) throws IOException;
 	}
@@ -209,27 +228,30 @@ public class InternalTimersSnapshotReaderWriters {
 			this.userCodeClassLoader = checkNotNull(userCodeClassLoader);
 		}
 
+		//如何读取key和命名空间的反序列化对象
 		protected abstract void restoreKeyAndNamespaceSerializers(
-				InternalTimersSnapshot<K, N> restoredTimersSnapshot,
+				InternalTimersSnapshot<K, N> restoredTimersSnapshot,//反序列化后的key和命名空间填充到该参数中
 				DataInputView in) throws IOException;
 
 		@Override
 		public final InternalTimersSnapshot<K, N> readTimersSnapshot(DataInputView in) throws IOException {
-			InternalTimersSnapshot<K, N> restoredTimersSnapshot = new InternalTimersSnapshot<>();
+			InternalTimersSnapshot<K, N> restoredTimersSnapshot = new InternalTimersSnapshot<>();//创建快照返回值
 
-			restoreKeyAndNamespaceSerializers(restoredTimersSnapshot, in);
+			restoreKeyAndNamespaceSerializers(restoredTimersSnapshot, in);//读取key+命名空间,并且填充到返回值里
 
+			//创建序列化对象
 			LegacyTimerSerializer<K, N> timerSerializer =
 				new LegacyTimerSerializer<>(
 					restoredTimersSnapshot.getKeySerializer(),
 					restoredTimersSnapshot.getNamespaceSerializer());
 
+			//填充时间Time内容
 			// read the event time timers
 			int sizeOfEventTimeTimers = in.readInt();
 			Set<TimerHeapInternalTimer<K, N>> restoredEventTimers = new HashSet<>(sizeOfEventTimeTimers);
 			if (sizeOfEventTimeTimers > 0) {
 				for (int i = 0; i < sizeOfEventTimeTimers; i++) {
-					TimerHeapInternalTimer<K, N> timer = timerSerializer.deserialize(in);
+					TimerHeapInternalTimer<K, N> timer = timerSerializer.deserialize(in);//一条一条数据进行反序列化
 					restoredEventTimers.add(timer);
 				}
 			}
@@ -296,16 +318,17 @@ public class InternalTimersSnapshotReaderWriters {
 
 	/**
 	 * A {@link TypeSerializer} used to serialize/deserialize a {@link TimerHeapInternalTimer}.
+	 * 如何序列化与反序列化内容
 	 */
 	public static class LegacyTimerSerializer<K, N> extends TypeSerializer<TimerHeapInternalTimer<K, N>> {
 
 		private static final long serialVersionUID = 1119562170939152304L;
 
 		@Nonnull
-		private final TypeSerializer<K> keySerializer;
+		private final TypeSerializer<K> keySerializer;//如何序列化/反序列化key
 
 		@Nonnull
-		private final TypeSerializer<N> namespaceSerializer;
+		private final TypeSerializer<N> namespaceSerializer;//如何序列化/反序列化 命名空间
 
 		LegacyTimerSerializer(@Nonnull TypeSerializer<K> keySerializer, @Nonnull TypeSerializer<N> namespaceSerializer) {
 			this.keySerializer = keySerializer;
@@ -354,6 +377,7 @@ public class InternalTimersSnapshotReaderWriters {
 			return -1;
 		}
 
+		//序列化某一条数据
 		@Override
 		public void serialize(TimerHeapInternalTimer<K, N> record, DataOutputView target) throws IOException {
 			keySerializer.serialize(record.getKey(), target);
@@ -361,6 +385,7 @@ public class InternalTimersSnapshotReaderWriters {
 			LongSerializer.INSTANCE.serialize(record.getTimestamp(), target);
 		}
 
+		//反序列化某一条数据
 		@Override
 		public TimerHeapInternalTimer<K, N> deserialize(DataInputView source) throws IOException {
 			K key = keySerializer.deserialize(source);

@@ -39,6 +39,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * interface defines the serialization and deserialization routines for the data type.
  *
  * @param <T> The type of the class represented by this type information.
+ *
+ * 针对hadoop的Writable对象进行包装
  */
 @Public
 public class WritableTypeInfo<T extends Writable> extends TypeInformation<T> implements AtomicType<T> {

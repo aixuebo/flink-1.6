@@ -33,6 +33,8 @@ import java.util.Collection;
  * @param <IN> The type of the input elements.
  * @param <SV> The type of the values in the state.
  * @param <OUT> The type of the output elements.
+ *
+ * 类似reduce功能,提供merge两个值的能力
  */
 abstract class AbstractHeapMergingState<K, N, IN, SV, OUT>
 	extends AbstractHeapAppendingState<K, N, IN, SV, OUT>
@@ -80,7 +82,7 @@ abstract class AbstractHeapMergingState<K, N, IN, SV, OUT>
 			SV sourceState = map.removeAndGetOld(source);
 
 			if (merged != null && sourceState != null) {
-				merged = mergeState(merged, sourceState);
+				merged = mergeState(merged, sourceState);//merge操作
 			} else if (merged == null) {
 				merged = sourceState;
 			}
@@ -92,10 +94,19 @@ abstract class AbstractHeapMergingState<K, N, IN, SV, OUT>
 		}
 	}
 
+	//子类实现如何merge  a表示前一个元素  b表示当前元素
 	protected abstract SV mergeState(SV a, SV b) throws Exception;
 
+	//如何merge两个值
 	final class MergeTransformation implements StateTransformationFunction<SV, SV> {
 
+		/**
+		 *
+		 * @param targetState 表示每次聚合后的值
+		 * @param merged 当前value
+		 * @return
+		 * @throws Exception
+		 */
 		@Override
 		public SV apply(SV targetState, SV merged) throws Exception {
 			if (targetState != null) {

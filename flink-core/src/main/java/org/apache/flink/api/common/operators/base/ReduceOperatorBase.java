@@ -51,6 +51,7 @@ import java.util.Map;
  *
  * @param <T> The type (parameters and return type) of the reduce function.
  * @param <FT> The type of the reduce function.
+ * 确保相同的key的元素一起聚合成新的值
  */
 @Internal
 public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleInputOperator<T, T, FT> {
@@ -59,6 +60,7 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 	 * An enumeration of hints, optionally usable to tell the system exactly how to execute the combiner phase
 	 * of a reduce.
 	 * (Note: The final reduce phase (after combining) is currently always executed by a sort-based strategy.)
+	 * 提示如何优化reduce
 	 */
 	public enum CombineHint {
 
@@ -166,11 +168,11 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 	
 	public void setCustomPartitioner(Partitioner<?> customPartitioner) {
 		if (customPartitioner != null) {
-			int[] keys = getKeyColumns(0);
+			int[] keys = getKeyColumns(0);//第一个数据源的key
 			if (keys == null || keys.length == 0) {
 				throw new IllegalArgumentException("Cannot use custom partitioner for a non-grouped GroupReduce (AllGroupReduce)");
 			}
-			if (keys.length > 1) {
+			if (keys.length > 1) {//key必须只有一个,因为Partitioner中只定义了一个key
 				throw new IllegalArgumentException("Cannot use the key partitioner for composite keys (more than one key field)");
 			}
 		}
@@ -182,7 +184,8 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 	}
 
 	// --------------------------------------------------------------------------------------------
-	
+
+	//数据源 按照key做分组，分组内的数据做聚合。返回聚合后的数据
 	@Override
 	protected List<T> executeOnCollections(List<T> inputData, RuntimeContext ctx, ExecutionConfig executionConfig) throws Exception {
 		// make sure we can handle empty inputs
@@ -193,9 +196,9 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 		ReduceFunction<T> function = this.userFunction.getUserCodeObject();
 
 		UnaryOperatorInformation<T, T> operatorInfo = getOperatorInfo();
-		TypeInformation<T> inputType = operatorInfo.getInputType();
+		TypeInformation<T> inputType = operatorInfo.getInputType();//输入类型
 
-		int[] inputColumns = getKeyColumns(0);
+		int[] inputColumns = getKeyColumns(0);//返回根据哪个key进行分发计算
 
 		if (!(inputType instanceof CompositeType) && inputColumns.length > 1) {
 			throw new InvalidProgramException("Grouping is only possible on composite types.");
@@ -212,12 +215,14 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 					? ((AtomicType<T>) inputType).createComparator(false, executionConfig)
 					: ((CompositeType<T>) inputType).createComparator(inputColumns, inputOrderings, 0, executionConfig);
 
+			//使用map做相同key的merge操作  因为肯定会多条数据进行聚合,因此map的size肯定比inputData少,因此初始化/10
+			//key按照key分组  value是聚合后的值
 			Map<TypeComparable<T>, T> aggregateMap = new HashMap<TypeComparable<T>, T>(inputData.size() / 10);
 
 			for (T next : inputData) {
 				TypeComparable<T> wrapper = new TypeComparable<T>(next, inputComparator);
 
-				T existing = aggregateMap.get(wrapper);
+				T existing = aggregateMap.get(wrapper); //map查找到相同值,即next中每一个需要的关键位置都相同
 				T result;
 
 				if (existing != null) {
@@ -236,7 +241,8 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>> extends SingleI
 			return new ArrayList<T>(aggregateMap.values());
 		}
 		else {
-			T aggregate = inputData.get(0);
+			//不需要有多个key,即全局只有一个结果
+			T aggregate = inputData.get(0);//获取第一个数据,先作为聚合结果
 			
 			aggregate = serializer.copy(aggregate);
 

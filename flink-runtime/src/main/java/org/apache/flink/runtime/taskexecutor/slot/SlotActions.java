@@ -24,6 +24,7 @@ import java.util.UUID;
 
 /**
  * Interface to trigger slot actions from within the {@link TaskSlotTable}.
+ * 对外开放的接口
  */
 public interface SlotActions {
 
@@ -31,6 +32,7 @@ public interface SlotActions {
 	 * Free the task slot with the given allocation id.
 	 *
 	 * @param allocationId to identify the slot to be freed
+	 * 释放该slot
 	 */
 	void freeSlot(AllocationID allocationId);
 
@@ -40,6 +42,7 @@ public interface SlotActions {
 	 *
 	 * @param allocationId identifying the task slot to be timed out
 	 * @param ticket allowing to filter invalid timeouts out
+	 * 说明slotI的，在ticket这个uuid值的情况时,已经超时了
 	 */
 	void timeoutSlot(AllocationID allocationId, UUID ticket);
 }

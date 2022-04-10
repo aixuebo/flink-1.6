@@ -47,49 +47,55 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class provides simple utility methods for reading and parsing program arguments from different sources.
+ * 参数解析工具
+ *
+ * 支持格式:
+ * 1.--key1 value1 --key2 value2 -key3 value3
+ * 2.加难度 --key1 --key2 value2  -key3  即key1、key3对应的值是NO_VALUE_KEY
  */
 @Public
 public class ParameterTool extends ExecutionConfig.GlobalJobParameters implements Serializable, Cloneable {
 	private static final long serialVersionUID = 1L;
 
 	protected static final String NO_VALUE_KEY = "__NO_VALUE_KEY";
-	protected static final String DEFAULT_UNDEFINED = "<undefined>";
+	protected static final String DEFAULT_UNDEFINED = "<undefined>";//value不存在的时候,返回的默认值
 
 	// ------------------ Constructors ------------------------
 
 	/**
 	 * Returns {@link ParameterTool} for the given arguments. The arguments are keys followed by values.
-	 * Keys have to start with '-' or '--'
+	 * Keys have to start with '-' or '--' key可以以-或者--开始
 	 *
 	 * <p><strong>Example arguments:</strong>
 	 * --key1 value1 --key2 value2 -key3 value3
 	 *
 	 * @param args Input array arguments
 	 * @return A {@link ParameterTool}
+	 * 将args 解析成ParameterTool对象
 	 */
 	public static ParameterTool fromArgs(String[] args) {
 		Map<String, String> map = new HashMap<String, String>(args.length / 2);
 
-		String key = null;
-		String value = null;
-		boolean expectValue = false;
+		String key = null;//key
+		String value = null;//值
+		boolean expectValue = false;//true表示下一个参数就是value值了
 		for (String arg : args) {
 			// check for -- argument
 			if (arg.startsWith("--")) {
-				if (expectValue) {
+				if (expectValue) {//要提取value --- 理论上感觉出现--的时候不应该expectValue为true   此时说明上一个key是没有值的
 					// we got into a new key, even though we were a value --> current key is one without value
-					if (value != null) {
+					if (value != null) {//此时value不能是空
 						throw new IllegalStateException("Unexpected state");
 					}
 					map.put(key, NO_VALUE_KEY);
 					// key will be overwritten in the next step
 				}
-				key = arg.substring(2);
+				key = arg.substring(2);//key删除--,即获取key的内容
 				expectValue = true;
 			} // check for - argument
 			else if (arg.startsWith("-")) {
 				// we are waiting for a value, so this is a - prefixed value (negative number)
-				if (expectValue) {
+				if (expectValue) {// --- 理论上感觉出现-的时候不应该expectValue为true
 
 					if (NumberUtils.isNumber(arg)) {
 						// negative number
@@ -101,16 +107,16 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 						}
 						// We waited for a value but found a new key. So the previous key doesnt have a value.
 						map.put(key, NO_VALUE_KEY);
-						key = arg.substring(1);
+						key = arg.substring(1);//删除-字符,剩余的就是key
 						expectValue = true;
 					}
 				} else {
 					// we are not waiting for a value, so its an argument
-					key = arg.substring(1);
+					key = arg.substring(1);//删除-字符,剩余的就是key
 					expectValue = true;
 				}
 			} else {
-				if (expectValue) {
+				if (expectValue) {//提取value值
 					value = arg;
 					expectValue = false;
 				} else {
@@ -125,7 +131,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 				throw new IllegalStateException("Value expected but flag not set");
 			}
 			if (key != null && value != null) {
-				map.put(key, value);
+				map.put(key, value);//生产key与value映射关系
 				key = null;
 				value = null;
 				expectValue = false;
@@ -208,16 +214,17 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	 * -Dkey1=value1 -Dkey2=value2
 	 *
 	 * @return A {@link ParameterTool}
+	 * 获取系统参数
 	 */
 	public static ParameterTool fromSystemProperties() {
 		return fromMap((Map) System.getProperties());
 	}
 
 	// ------------------ ParameterUtil  ------------------------
-	protected final Map<String, String> data;
+	protected final Map<String, String> data;//存储参数key和value的映射
 
 	// data which is only used on the client and does not need to be transmitted
-	protected transient Map<String, String> defaultData;
+	protected transient Map<String, String> defaultData;//存储参数key的默认值映射
 	protected transient Set<String> unrequestedParameters;
 
 	private ParameterTool(Map<String, String> data) {
@@ -263,6 +270,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 
 	/**
 	 * Returns number of parameters in {@link ParameterTool}.
+	 * 多少个参数
 	 */
 	public int getNumberOfParameters() {
 		return data.size();
@@ -271,6 +279,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the String value for the given key.
 	 * If the key does not exist it will return null.
+	 * 获取key对应的值,结果允许为null
 	 */
 	public String get(String key) {
 		addToDefaults(key, null);
@@ -281,6 +290,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the String value for the given key.
 	 * If the key does not exist it will throw a {@link RuntimeException}.
+	 * 获取key对应的值,必须存在value,否则抛异常
 	 */
 	public String getRequired(String key) {
 		addToDefaults(key, null);
@@ -294,6 +304,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the String value for the given key.
 	 * If the key does not exist it will return the given default value.
+	 * 获取key对应的值,如果值不存在,则添加默认值
 	 */
 	public String get(String key, String defaultValue) {
 		addToDefaults(key, defaultValue);
@@ -307,6 +318,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 
 	/**
 	 * Check if value is set.
+	 * 校验是否有参数这个key
 	 */
 	public boolean has(String value) {
 		addToDefaults(value, null);
@@ -319,6 +331,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Integer value for the given key.
 	 * The method fails if the key does not exist or the value is not an Integer.
+	 * 获取key的integer类型值,该值必须存在,否则抛异常
 	 */
 	public int getInt(String key) {
 		addToDefaults(key, null);
@@ -344,6 +357,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Long value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的long类型值,该值必须存在,否则抛异常
 	 */
 	public long getLong(String key) {
 		addToDefaults(key, null);
@@ -369,6 +383,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Float value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的Float类型值,该值必须存在,否则抛异常
 	 */
 	public float getFloat(String key) {
 		addToDefaults(key, null);
@@ -395,6 +410,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Double value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的Double类型值,该值必须存在,否则抛异常
 	 */
 	public double getDouble(String key) {
 		addToDefaults(key, null);
@@ -421,6 +437,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Boolean value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的Boolean类型值,该值必须存在,否则抛异常
 	 */
 	public boolean getBoolean(String key) {
 		addToDefaults(key, null);
@@ -447,6 +464,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Short value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的Short类型值,该值必须存在,否则抛异常
 	 */
 	public short getShort(String key) {
 		addToDefaults(key, null);
@@ -473,6 +491,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	/**
 	 * Returns the Byte value for the given key.
 	 * The method fails if the key does not exist.
+	 * 获取key的Byte类型值,该值必须存在,否则抛异常
 	 */
 	public byte getByte(String key) {
 		addToDefaults(key, null);
@@ -495,7 +514,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	}
 
 	// --------------- Internals
-
+    //为key添加默认值
 	protected void addToDefaults(String key, String value) {
 		String currentValue = defaultData.get(key);
 		if (currentValue == null) {
@@ -518,6 +537,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	 * Returns a {@link Configuration} object from this {@link ParameterTool}.
 	 *
 	 * @return A {@link Configuration}
+	 * 通过data的信息,生产Configuration对象
 	 */
 	public Configuration getConfiguration() {
 		Configuration conf = new Configuration();
@@ -531,6 +551,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	 * Returns a {@link Properties} object from this {@link ParameterTool}.
 	 *
 	 * @return A {@link Properties}
+	 * 通过data的信息,生产Properties对象
 	 */
 	public Properties getProperties() {
 		Properties props = new Properties();
@@ -545,6 +566,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	 * <p>Use this method to create a properties file skeleton.
 	 *
 	 * @param pathToFile Location of the default properties file.
+	 * 创建一个文件,将defaultData信息存储到该文件内
 	 */
 	public void createPropertiesFile(String pathToFile) throws IOException {
 		createPropertiesFile(pathToFile, true);
@@ -557,6 +579,7 @@ public class ParameterTool extends ExecutionConfig.GlobalJobParameters implement
 	 * @param pathToFile Location of the default properties file.
 	 * @param overwrite Boolean flag indicating whether or not to overwrite the file
 	 * @throws IOException If overwrite is not allowed and the file exists
+	 * 创建一个文件,将defaultData信息存储到该文件内
 	 */
 	public void createPropertiesFile(String pathToFile, boolean overwrite) throws IOException {
 		File file = new File(pathToFile);

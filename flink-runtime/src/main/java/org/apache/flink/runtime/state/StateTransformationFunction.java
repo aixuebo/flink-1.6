@@ -26,6 +26,8 @@ import org.apache.flink.annotation.Internal;
  *
  * @param <S> type of the previous state that is the bases for the computation of the new state.
  * @param <T> type of the element value that is used to compute the change of state.
+ *
+ * 相当于fold,两个不同类型的数据进行merge操作
  */
 @Internal
 public interface StateTransformationFunction<S, T> {
@@ -37,6 +39,7 @@ public interface StateTransformationFunction<S, T> {
 	 * @param value         the value that the implementation applies to the old state to obtain the new state.
 	 * @return the new state, computed by applying the given value on the given old state.
 	 * @throws Exception if something goes wrong in applying the transformation function.
+	 * 前一个值+当前值,merge成新的值,属于reduce操作
 	 */
 	S apply(S previousState, T value) throws Exception;
 }

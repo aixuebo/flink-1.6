@@ -38,6 +38,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * The connection between a TaskExecutor and the ResourceManager.
+ * 一个从节点如何去连接ResourceManager
  */
 public class TaskExecutorToResourceManagerConnection
 		extends RegisteredRpcConnection<ResourceManagerId, ResourceManagerGateway, TaskExecutorRegistrationSuccess> {
@@ -57,13 +58,13 @@ public class TaskExecutorToResourceManagerConnection
 	public TaskExecutorToResourceManagerConnection(
 			Logger log,
 			RpcService rpcService,
-			String taskManagerAddress,
-			ResourceID taskManagerResourceId,
-			int dataPort,
-			HardwareDescription hardwareDescription,
-			String resourceManagerAddress,
-			ResourceManagerId resourceManagerId,
-			Executor executor,
+			String taskManagerAddress,//从节点的地址
+			ResourceID taskManagerResourceId,//从节点的uuid
+			int dataPort,//从节点端口
+			HardwareDescription hardwareDescription,//从节点资源描述
+			String resourceManagerAddress,//ResourceManager的地址
+			ResourceManagerId resourceManagerId,//ResourceManager的uuid
+			Executor executor,//本地如何执行runnable任务
 			RegistrationConnectionListener<TaskExecutorToResourceManagerConnection, TaskExecutorRegistrationSuccess> registrationListener) {
 
 		super(log, resourceManagerAddress, resourceManagerId, executor);
@@ -89,6 +90,7 @@ public class TaskExecutorToResourceManagerConnection
 			hardwareDescription);
 	}
 
+	//成功收到注册成功返回值
 	@Override
 	protected void onRegistrationSuccess(TaskExecutorRegistrationSuccess success) {
 		log.info("Successful registration at resource manager {} under registration id {}.",
@@ -97,6 +99,7 @@ public class TaskExecutorToResourceManagerConnection
 		registrationListener.onRegistrationSuccess(this, success);
 	}
 
+	//注册失败后,收到返回值
 	@Override
 	protected void onRegistrationFailure(Throwable failure) {
 		log.info("Failed to register at resource manager {}.", getTargetAddress(), failure);
@@ -108,9 +111,11 @@ public class TaskExecutorToResourceManagerConnection
 	//  Utilities
 	// ------------------------------------------------------------------------
 
+	//真实的一个注册请求是如何完成的
 	private static class ResourceManagerRegistration
 			extends RetryingRegistration<ResourceManagerId, ResourceManagerGateway, TaskExecutorRegistrationSuccess> {
 
+		//task从节点信息内容
 		private final String taskExecutorAddress;
 
 		private final ResourceID resourceID;
@@ -122,12 +127,12 @@ public class TaskExecutorToResourceManagerConnection
 		ResourceManagerRegistration(
 				Logger log,
 				RpcService rpcService,
-				String targetAddress,
-				ResourceManagerId resourceManagerId,
-				String taskExecutorAddress,
-				ResourceID resourceID,
+				String targetAddress,//远程服务器地址
+				ResourceManagerId resourceManagerId,//远程服务器交互对象
+				String taskExecutorAddress,//从节点服务器地址
+				ResourceID resourceID,//从节点uuid
 				int dataPort,
-				HardwareDescription hardwareDescription) {
+				HardwareDescription hardwareDescription) {//从节点资源
 
 			super(log, rpcService, "ResourceManager", ResourceManagerGateway.class, targetAddress, resourceManagerId);
 			this.taskExecutorAddress = checkNotNull(taskExecutorAddress);
@@ -136,6 +141,7 @@ public class TaskExecutorToResourceManagerConnection
 			this.hardwareDescription = checkNotNull(hardwareDescription);
 		}
 
+		//真实的执行注册请求
 		@Override
 		protected CompletableFuture<RegistrationResponse> invokeRegistration(
 				ResourceManagerGateway resourceManager, ResourceManagerId fencingToken, long timeoutMillis) throws Exception {

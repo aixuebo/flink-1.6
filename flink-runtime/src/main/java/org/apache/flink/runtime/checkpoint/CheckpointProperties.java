@@ -287,7 +287,7 @@ public class CheckpointProperties implements Serializable {
 	 * terminates in state {@link JobStatus#FAILED}. The user is required to
 	 * configure the clean up behaviour on job cancellation.
 	 *
-	 * @return Checkpoint properties for an external checkpoint.
+	 * @return Checkpoint properties for an external checkpoint. Checkpoint文件在job异常结束时的保存策略
 	 */
 	public static CheckpointProperties forCheckpoint(CheckpointRetentionPolicy policy) {
 		switch (policy) {

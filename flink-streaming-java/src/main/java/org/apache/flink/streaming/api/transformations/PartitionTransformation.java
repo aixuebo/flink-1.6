@@ -34,12 +34,16 @@ import java.util.List;
  * connected to downstream operations.
  *
  * @param <T> The type of the elements that result from this {@code PartitionTransformation}
+ * 更改流元素的分区，输出类型依然是原始流类型，因此不需要操作，只需要一个分区算法对象即可
+ *
+ * 说明需要shuffle处理的流转换操作,相当于在做repartition操作
+ *
  */
 @Internal
 public class PartitionTransformation<T> extends StreamTransformation<T> {
 
-	private final StreamTransformation<T> input;
-	private final StreamPartitioner<T> partitioner;
+	private final StreamTransformation<T> input;//原始流输入数据
+	private final StreamPartitioner<T> partitioner;//如何拆分成key,按照key分发数据进行shuffle,即如何做repartition操作
 
 	/**
 	 * Creates a new {@code PartitionTransformation} from the given input and
@@ -49,7 +53,7 @@ public class PartitionTransformation<T> extends StreamTransformation<T> {
 	 * @param partitioner The {@code StreamPartitioner}
 	 */
 	public PartitionTransformation(StreamTransformation<T> input, StreamPartitioner<T> partitioner) {
-		super("Partition", input.getOutputType(), input.getParallelism());
+		super("Partition", input.getOutputType(), input.getParallelism());//只是重新分区,流依然还是原来的流类型,因此类型不变
 		this.input = input;
 		this.partitioner = partitioner;
 	}

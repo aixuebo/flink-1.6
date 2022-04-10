@@ -89,6 +89,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>TODO : Make pending requests location preference aware
  * TODO : Make pass location preferences to ResourceManager when sending a slot request
+ *
+ * 每一个job有一个该对象,用于调度job的slot信息
  */
 public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedSlotActions {
 
@@ -97,12 +99,12 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 
 	private final JobID jobId;
 
-	private final SchedulingStrategy schedulingStrategy;
+	private final SchedulingStrategy schedulingStrategy;//调度策略
 
 	private final ProviderAndOwner providerAndOwner;
 
 	/** All registered TaskManagers, slots will be accepted and used only if the resource is registered. */
-	private final HashSet<ResourceID> registeredTaskManagers;
+	private final HashSet<ResourceID> registeredTaskManagers;//所有的task节点uuid唯一ID
 
 	/** The book-keeping of all allocated slots. */
 	private final AllocatedSlots allocatedSlots;
@@ -122,18 +124,18 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 	/** Timeout for releasing idle slots. */
 	private final Time idleSlotTimeout;
 
-	private final Clock clock;
+	private final Clock clock;//时间戳获取对象
 
 	/** Managers for the different slot sharing groups. */
 	protected final Map<SlotSharingGroupId, SlotSharingManager> slotSharingManagers;
 
 	/** the fencing token of the job manager. */
-	private JobMasterId jobMasterId;
+	private JobMasterId jobMasterId;//job的唯一ID
+	private String jobManagerAddress;//job的地址
 
 	/** The gateway to communicate with resource manager. */
-	private ResourceManagerGateway resourceManagerGateway;
+	private ResourceManagerGateway resourceManagerGateway;//resourceManager网关
 
-	private String jobManagerAddress;
 
 	// ------------------------------------------------------------------------
 
@@ -193,6 +195,8 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 	 *
 	 * @param jobMasterId The necessary leader id for running the job.
 	 * @param newJobManagerAddress for the slot requests which are sent to the resource manager
+	 *
+	 * 当job有leader的时候,调用该方法
 	 */
 	public void start(JobMasterId jobMasterId, String newJobManagerAddress) throws Exception {
 		this.jobMasterId = checkNotNull(jobMasterId);
@@ -706,7 +710,7 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 			new SlotRequest(jobId, allocationId, pendingRequest.getResourceProfile(), jobManagerAddress),
 			rpcTimeout);
 
-		// on failure, fail the request future
+		// on failure, fail the request future 处理异常
 		rmResponse.whenCompleteAsync(
 			(Acknowledge ignored, Throwable failure) -> {
 				if (failure != null) {
@@ -1037,6 +1041,8 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 	 *
 	 * @param resourceID The id of the TaskManager
 	 * @return Future acknowledge if th operation was successful
+	 *
+	 * 成功收到task节点的信息
 	 */
 	@Override
 	public CompletableFuture<Acknowledge> registerTaskManager(final ResourceID resourceID) {
@@ -1072,8 +1078,9 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 		removePendingRequest(slotRequestId);
 	}
 
+	//与某一个task节点不在有联系,即该task节点不会在给job提供slot
 	private void releaseTaskManagerInternal(final ResourceID resourceId, final Exception cause) {
-		final Set<AllocatedSlot> removedSlots = new HashSet<>(allocatedSlots.removeSlotsForTaskManager(resourceId));
+		final Set<AllocatedSlot> removedSlots = new HashSet<>(allocatedSlots.removeSlotsForTaskManager(resourceId));//该task节点上的slot集合
 
 		for (AllocatedSlot allocatedSlot : removedSlots) {
 			allocatedSlot.releasePayload(cause);
@@ -1623,6 +1630,7 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 
 	/**
 	 * A pending request for a slot.
+	 * 一个slot的请求
 	 */
 	private static class PendingRequest {
 
@@ -1630,7 +1638,7 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 
 		private final ResourceProfile resourceProfile;
 
-		private final CompletableFuture<AllocatedSlot> allocatedSlotFuture;
+		private final CompletableFuture<AllocatedSlot> allocatedSlotFuture;//返回去哪个slot上执行该任务
 
 		PendingRequest(
 				SlotRequestId slotRequestId,

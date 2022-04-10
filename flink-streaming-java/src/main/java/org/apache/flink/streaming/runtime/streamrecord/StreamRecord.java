@@ -23,6 +23,9 @@ import org.apache.flink.annotation.Internal;
  * One value in a data stream. This stores the value and an optional associated timestamp.
  *
  * @param <T> The type encapsulated with the stream record.
+ * 表示流里面一个真实的待处理的元素对象
+ *
+ * 即 由时间戳+value组成
  */
 @Internal
 public final class StreamRecord<T> extends StreamElement {
@@ -34,7 +37,7 @@ public final class StreamRecord<T> extends StreamElement {
 	private long timestamp;
 
 	/** Flag whether the timestamp is actually set. */
-	private boolean hasTimestamp;
+	private boolean hasTimestamp;//true表示元素设置了时间戳
 
 	/**
 	 * Creates a new StreamRecord. The record does not have a timestamp.
@@ -115,6 +118,7 @@ public final class StreamRecord<T> extends StreamElement {
 	 * @param value The new value to wrap in this StreamRecord
 	 * @param timestamp The new timestamp in milliseconds
 	 * @return Returns the StreamElement with replaced value
+	 * 更新值和时间戳
 	 */
 	@SuppressWarnings("unchecked")
 	public <X> StreamRecord<X> replace(X value, long timestamp) {
@@ -130,6 +134,7 @@ public final class StreamRecord<T> extends StreamElement {
 		this.hasTimestamp = true;
 	}
 
+	//抹除时间戳信息
 	public void eraseTimestamp() {
 		this.hasTimestamp = false;
 	}
@@ -141,6 +146,7 @@ public final class StreamRecord<T> extends StreamElement {
 	/**
 	 * Creates a copy of this stream record. Uses the copied value as the value for the new
 	 * record, i.e., only copies timestamp fields.
+	 * 产生新的元素对象，时间戳做copy,value值是参数值
 	 */
 	public StreamRecord<T> copy(T valueCopy) {
 		StreamRecord<T> copy = new StreamRecord<>(valueCopy);
@@ -152,6 +158,7 @@ public final class StreamRecord<T> extends StreamElement {
 	/**
 	 * Copies this record into the new stream record. Uses the copied value as the value for the new
 	 * record, i.e., only copies timestamp fields.
+	 * 产生新的元素对象，时间戳做target的copy,value值是参数值valueCopy
 	 */
 	public void copyTo(T valueCopy, StreamRecord<T> target) {
 		target.value = valueCopy;

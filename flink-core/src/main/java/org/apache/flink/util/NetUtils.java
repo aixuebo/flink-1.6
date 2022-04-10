@@ -310,6 +310,7 @@ public class NetUtils {
 	 * @param rangeDefinition String describing a single port, a range of ports or multiple ranges.
 	 * @return Set of ports from the range definition
 	 * @throws NumberFormatException If an invalid string is passed.
+	 * 参数是端口号区间  比如 100-120,125-130
 	 */
 	public static Iterator<Integer> getPortRangeFromString(String rangeDefinition) throws NumberFormatException {
 		final String[] ranges = rangeDefinition.trim().split(",");

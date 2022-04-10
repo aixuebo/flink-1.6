@@ -36,9 +36,11 @@ import java.util.stream.Collectors;
 /**
  * {@link ArchivedExecutionGraphStore} implementation which stores the {@link ArchivedExecutionGraph}
  * in memory.
+ * 基于内存的方式,存储job的结果
  */
 public class MemoryArchivedExecutionGraphStore implements ArchivedExecutionGraphStore {
 
+	//缓存每一个jobId的结果
 	private final Map<JobID, ArchivedExecutionGraph> serializableExecutionGraphs = new HashMap<>(4);
 
 	@Override

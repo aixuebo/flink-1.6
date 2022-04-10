@@ -38,6 +38,7 @@ import java.io.Serializable;
  *
  * @param <T> Type of the input elements.
  * @param <O> Type of the returned elements.
+ * value1 --> value2的映射转换
  */
 @Public
 @FunctionalInterface

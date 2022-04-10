@@ -41,6 +41,8 @@ import java.util.Set;
 /**
  * Wrapping {@link Output} that forwards to other {@link Output Outputs } based on a list of
  * {@link OutputSelector OutputSelectors}.
+ *
+ * 泛型out表示输出的元素类型
  */
 public class DirectedOutput<OUT> implements OperatorChain.WatermarkGaugeExposingOutput<StreamRecord<OUT>> {
 
@@ -58,11 +60,11 @@ public class DirectedOutput<OUT> implements OperatorChain.WatermarkGaugeExposing
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public DirectedOutput(
-			List<OutputSelector<OUT>> outputSelectors,
-			List<? extends Tuple2<? extends Output<StreamRecord<OUT>>, StreamEdge>> outputs) {
-		this.outputSelectors = outputSelectors.toArray(new OutputSelector[outputSelectors.size()]);
+			List<OutputSelector<OUT>> outputSelectors,//List<OutputSelector>
+			List<? extends Tuple2<? extends Output<StreamRecord<OUT>>, StreamEdge>> outputs) { //List<Tuple<Output<元素对象>,StreamEdge>>
+		this.outputSelectors = outputSelectors.toArray(new OutputSelector[outputSelectors.size()]); //List<OutputSelector> 转换成 数组
 
-		this.allOutputs = new Output[outputs.size()];
+		this.allOutputs = new Output[outputs.size()];//提取出所有的output
 		for (int i = 0; i < outputs.size(); i++) {
 			allOutputs[i] = outputs.get(i).f0;
 		}

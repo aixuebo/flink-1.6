@@ -148,6 +148,7 @@ public class DistinctOperator<T> extends SingleInputOperator<T, T, DistinctOpera
 		return KeyFunctions.appendKeyRemover(reducer, keys);
 	}
 
+	//保留一个数据
 	@Internal
 	private static final class DistinctFunction<T> implements ReduceFunction<T> {
 

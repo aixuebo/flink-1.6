@@ -44,9 +44,9 @@ import org.apache.flink.util.OutputTag;
  * {@link org.apache.flink.api.common.functions.RichFunction#open(org.apache.flink.configuration.Configuration)}
  * and {@link org.apache.flink.api.common.functions.RichFunction#close()}.
  *
- * @param <K> Type of the key.
- * @param <I> Type of the input elements.
- * @param <O> Type of the output elements.
+ * @param <K> Type of the key.key的类型
+ * @param <I> Type of the input elements.输入类型
+ * @param <O> Type of the output elements.输出类型
  */
 @PublicEvolving
 public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction {
@@ -73,7 +73,7 @@ public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction
 	/**
 	 * Called when a timer set using {@link TimerService} fires.
 	 *
-	 * @param timestamp The timestamp of the firing timer.
+	 * @param timestamp The timestamp of the firing timer. 定时器所设定的触发的时间戳
 	 * @param ctx An {@link OnTimerContext} that allows querying the timestamp, the {@link TimeDomain}, and the key
 	 *            of the firing timer and getting a {@link TimerService} for registering timers and querying the time.
 	 *            The context is only valid during the invocation of this method, do not store it.
@@ -81,6 +81,8 @@ public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
+	 *  在定时器触发的时候执行。当闹钟响的时候要做什么？该方法来实现。
+	 *  因此前期需要注册一个闹钟。
 	 */
 	public void onTimer(long timestamp, OnTimerContext ctx, Collector<O> out) throws Exception {}
 
@@ -95,11 +97,13 @@ public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction
 		 *
 		 * <p>This might be {@code null}, for example if the time characteristic of your program
 		 * is set to {@link org.apache.flink.streaming.api.TimeCharacteristic#ProcessingTime}.
+		 * 当前时间戳
 		 */
 		public abstract Long timestamp();
 
 		/**
 		 * A {@link TimerService} for querying time and registering timers.
+		 * 时间服务
 		 */
 		public abstract TimerService timerService();
 
@@ -113,6 +117,7 @@ public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction
 
 		/**
 		 * Get key of the element being processed.
+		 * 当前上下文环境中的key
 		 */
 		public abstract K getCurrentKey();
 	}
@@ -128,6 +133,7 @@ public abstract class KeyedProcessFunction<K, I, O> extends AbstractRichFunction
 
 		/**
 		 * Get key of the firing timer.
+		 * 返回的是回调函数绑定时候的key,而不是当前上下文环境的key
 		 */
 		@Override
 		public abstract K getCurrentKey();

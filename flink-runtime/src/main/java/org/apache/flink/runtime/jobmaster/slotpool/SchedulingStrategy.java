@@ -49,11 +49,13 @@ public interface SchedulingStrategy {
 	 * @param <IN> type of the objects against we match the profile.
 	 * @param <OUT> type of the produced output from a matching object.
 	 * @return the result produced by resultProducer if a matching candidate was found or null otherwise.
+	 *
+	 * 选择一个候选集slot
 	 */
 	@Nullable
 	<IN, OUT> OUT findMatchWithLocality(
 		@Nonnull SlotProfile slotProfile,
-		@Nonnull Stream<IN> candidates,
+		@Nonnull Stream<IN> candidates,//候选集集合
 		@Nonnull Function<IN, SlotContext> contextExtractor,
 		@Nonnull Predicate<IN> additionalRequirementsFilter,
 		@Nonnull BiFunction<IN, Locality, OUT> resultProducer);

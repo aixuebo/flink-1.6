@@ -77,6 +77,7 @@ public class JobManagerOptions {
 
 	/**
 	 * JVM heap size for the JobManager with memory size.
+	 * jobManager的JVM堆内大小
 	 */
 	@Documentation.CommonOption(position = Documentation.CommonOption.POSITION_MEMORY)
 	public static final ConfigOption<String> JOB_MANAGER_HEAP_MEMORY =
@@ -140,6 +141,7 @@ public class JobManagerOptions {
 	/**
 	 * The job store cache size in bytes which is used to keep completed
 	 * jobs in memory.
+	 * 在内存中存储已经完成的job的信息占用最大的内存,超过该值就要考虑清除一部分了
 	 */
 	public static final ConfigOption<Long> JOB_STORE_CACHE_SIZE =
 		key("jobstore.cache-size")
@@ -148,6 +150,7 @@ public class JobManagerOptions {
 
 	/**
 	 * The time in seconds after which a completed job expires and is purged from the job store.
+	 * 已完成的job,需要保留多久
 	 */
 	public static final ConfigOption<Long> JOB_STORE_EXPIRATION_TIME =
 		key("jobstore.expiration-time")

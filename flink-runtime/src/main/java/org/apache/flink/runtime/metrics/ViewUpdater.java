@@ -30,6 +30,7 @@ import static org.apache.flink.metrics.View.UPDATE_INTERVAL_SECONDS;
 
 /**
  * The ViewUpdater is responsible for updating all metrics that implement the {@link View} interface.
+ * 统一周期，每隔5s更新一次汇总值，用于计算每秒吞吐量
  */
 public class ViewUpdater {
 	private final Set<View> toAdd = new HashSet<>();
@@ -68,9 +69,9 @@ public class ViewUpdater {
 	 */
 	private static class ViewUpdaterTask extends TimerTask {
 		private final Object lock;
-		private final Set<View> views;
-		private final Set<View> toAdd;
-		private final Set<View> toRemove;
+		private final Set<View> views; //每隔一定周期内要监控定期统计的 view。
+		private final Set<View> toAdd; //待统计的view准备添加进队列。
+		private final Set<View> toRemove;//不再关注的view从队列删除
 
 		private ViewUpdaterTask(Object lock, Set<View> toAdd, Set<View> toRemove) {
 			this.lock = lock;

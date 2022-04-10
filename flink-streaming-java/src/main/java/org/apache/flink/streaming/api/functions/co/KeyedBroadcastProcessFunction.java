@@ -50,10 +50,10 @@ import org.apache.flink.util.Collector;
  * {@code processElement()} has read-only access to the broadcast state, but can read/write to the keyed state and
  * register timers.
  *
- * @param <KS> The key type of the input keyed stream.
- * @param <IN1> The input type of the keyed (non-broadcast) side.
- * @param <IN2> The input type of the broadcast side.
- * @param <OUT> The output type of the operator.
+ * @param <KS> The key type of the input keyed stream.key的类型
+ * @param <IN1> The input type of the keyed (non-broadcast) side.非广播数据源类型
+ * @param <IN2> The input type of the broadcast side.广播数据源类型
+ * @param <OUT> The output type of the operator.输出类型
  */
 @PublicEvolving
 public abstract class KeyedBroadcastProcessFunction<KS, IN1, IN2, OUT> extends BaseBroadcastProcessFunction {

@@ -127,8 +127,8 @@ public class CoGroupedStreams<T1, T2> {
 	@Public
 	public class Where<KEY> {
 
-		private final KeySelector<T1, KEY> keySelector1;
-		private final TypeInformation<KEY> keyType;
+		private final KeySelector<T1, KEY> keySelector1;//如何提取key
+		private final TypeInformation<KEY> keyType;//key类型
 
 		Where(KeySelector<T1, KEY> keySelector1, TypeInformation<KEY> keyType) {
 			this.keySelector1 = keySelector1;
@@ -139,6 +139,8 @@ public class CoGroupedStreams<T1, T2> {
 		 * Specifies a {@link KeySelector} for elements from the second input.
 		 *
 		 * @param keySelector The KeySelector to be used for extracting the second input's key for partitioning.
+		 *
+		 * 第二个表 如何提取key,以及key的类型
 		 */
 		public EqualTo equalTo(KeySelector<T2, KEY> keySelector)  {
 			Preconditions.checkNotNull(keySelector);
@@ -201,13 +203,13 @@ public class CoGroupedStreams<T1, T2> {
 	 */
 	@Public
 	public static class WithWindow<T1, T2, KEY, W extends Window> {
-		private final DataStream<T1> input1;
+		private final DataStream<T1> input1;//两个输入
 		private final DataStream<T2> input2;
 
-		private final KeySelector<T1, KEY> keySelector1;
+		private final KeySelector<T1, KEY> keySelector1;//如何在两个输入中分别提取key
 		private final KeySelector<T2, KEY> keySelector2;
 
-		private final TypeInformation<KEY> keyType;
+		private final TypeInformation<KEY> keyType;//key的类型,key用于join
 
 		private final WindowAssigner<? super TaggedUnion<T1, T2>, W> windowAssigner;
 
@@ -237,6 +239,7 @@ public class CoGroupedStreams<T1, T2> {
 
 		/**
 		 * Sets the {@code Trigger} that should be used to trigger window emission.
+		 * 设置trigger
 		 */
 		@PublicEvolving
 		public WithWindow<T1, T2, KEY, W> trigger(Trigger<? super TaggedUnion<T1, T2>, ? super W> newTrigger) {
@@ -250,6 +253,7 @@ public class CoGroupedStreams<T1, T2> {
 		 *
 		 * <p>Note: When using an evictor window performance will degrade significantly, since
 		 * pre-aggregation of window results cannot be used.
+		 * 设置evictor
 		 */
 		@PublicEvolving
 		public WithWindow<T1, T2, KEY, W> evictor(Evictor<? super TaggedUnion<T1, T2>, ? super W> newEvictor) {
@@ -267,6 +271,7 @@ public class CoGroupedStreams<T1, T2> {
 		 */
 		public <T> DataStream<T> apply(CoGroupFunction<T1, T2, T> function) {
 
+			//输出类型
 			TypeInformation<T> resultType = TypeExtractor.getCoGroupReturnTypes(
 				function,
 				input1.getType(),
@@ -306,6 +311,7 @@ public class CoGroupedStreams<T1, T2> {
 			//clean the closure
 			function = input1.getExecutionEnvironment().clean(function);
 
+			//将流的元素 都转换成 TaggedUnion对象，这样两个流就是相同的结构了
 			UnionTypeInfo<T1, T2> unionType = new UnionTypeInfo<>(input1.getType(), input2.getType());
 			UnionKeySelector<T1, T2, KEY> unionKeySelector = new UnionKeySelector<>(keySelector1, keySelector2);
 
@@ -318,7 +324,7 @@ public class CoGroupedStreams<T1, T2> {
 					.setParallelism(input2.getParallelism())
 					.returns(unionType);
 
-			DataStream<TaggedUnion<T1, T2>> unionStream = taggedInput1.union(taggedInput2);
+			DataStream<TaggedUnion<T1, T2>> unionStream = taggedInput1.union(taggedInput2);//相同结构的数据流可以进行union操作
 
 			// we explicitly create the keyed stream to manually pass the key type information in
 			WindowedStream<TaggedUnion<T1, T2>, KEY, W> windowOp =
@@ -359,6 +365,7 @@ public class CoGroupedStreams<T1, T2> {
 
 	/**
 	 * Internal class for implementing tagged union co-group.
+	 * 标识数据源是来自哪个,即left前，还是left后
 	 */
 	@Internal
 	public static class TaggedUnion<T1, T2> {
@@ -386,15 +393,18 @@ public class CoGroupedStreams<T1, T2> {
 			return two;
 		}
 
+		//第一个数据源
 		public static <T1, T2> TaggedUnion<T1, T2> one(T1 one) {
 			return new TaggedUnion<>(one, null);
 		}
 
+		//第二个数据源
 		public static <T1, T2> TaggedUnion<T1, T2> two(T2 two) {
 			return new TaggedUnion<>(null, two);
 		}
 	}
 
+	//两个表使用key关联,因此key是一个组合主键,分别来自于两个数据源组成的结果
 	private static class UnionTypeInfo<T1, T2> extends TypeInformation<TaggedUnion<T1, T2>> {
 		private static final long serialVersionUID = 1L;
 
@@ -471,6 +481,7 @@ public class CoGroupedStreams<T1, T2> {
 		}
 	}
 
+	//如何序列化两条数据
 	private static class UnionSerializer<T1, T2> extends TypeSerializer<TaggedUnion<T1, T2>> {
 		private static final long serialVersionUID = 1L;
 
@@ -646,6 +657,7 @@ public class CoGroupedStreams<T1, T2> {
 	//  union window reduce
 	// ------------------------------------------------------------------------
 
+	//map函数映射
 	private static class Input1Tagger<T1, T2> implements MapFunction<T1, TaggedUnion<T1, T2>> {
 		private static final long serialVersionUID = 1L;
 
@@ -664,6 +676,7 @@ public class CoGroupedStreams<T1, T2> {
 		}
 	}
 
+	//不同的数据源,执行不同的转换key函数
 	private static class UnionKeySelector<T1, T2, KEY> implements KeySelector<TaggedUnion<T1, T2>, KEY> {
 		private static final long serialVersionUID = 1L;
 
@@ -676,6 +689,7 @@ public class CoGroupedStreams<T1, T2> {
 			this.keySelector2 = keySelector2;
 		}
 
+		//根据数据源是谁,判断使用哪个KeySelector转换成key
 		@Override
 		public KEY getKey(TaggedUnion<T1, T2> value) throws Exception{
 			if (value.isOne()) {
@@ -696,12 +710,14 @@ public class CoGroupedStreams<T1, T2> {
 			super(userFunction);
 		}
 
+		//相同key的数据会收集好，一起计算
 		@Override
 		public void apply(KEY key,
 				W window,
 				Iterable<TaggedUnion<T1, T2>> values,
 				Collector<T> out) throws Exception {
 
+			//非常耗费内存,需要把所有集合数据都加载到内存,其实可以复制一份Iterable,做迭代器级别的迭代
 			List<T1> oneValues = new ArrayList<>();
 			List<T2> twoValues = new ArrayList<>();
 

@@ -28,6 +28,8 @@ import org.apache.flink.util.Collector;
 /**
  * Internal window function for wrapping a {@link WindowFunction} that takes an {@code Iterable}
  * when the window state also is an {@code Iterable}.
+ *
+ * 因为参数本身就是迭代器,所以虽然是WindowFunction的包装类,但看似没什么效果，目的只是统一对外接口,满足InternalWindowFunction中process方法。
  */
 public final class InternalIterableWindowFunction<IN, OUT, KEY, W extends Window>
 		extends WrappingFunction<WindowFunction<IN, OUT, KEY, W>>

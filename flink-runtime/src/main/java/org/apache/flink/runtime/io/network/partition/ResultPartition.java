@@ -47,6 +47,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * A result partition for data produced by a single task.
+ * 一个task产生的分区结果
  *
  * <p>This class is the runtime part of a logical {@link IntermediateResultPartition}. Essentially,
  * a result partition is a collection of {@link Buffer} instances. The buffers are organized in one
@@ -59,6 +60,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * <h2>Life-cycle</h2>
  *
  * <p>The life-cycle of each result partition has three (possibly overlapping) phases:
+ * 生命周期的三个阶段,生产、消费(被其他节点抓取数据)、释放
  * <ol>
  * <li><strong>Produce</strong>: </li>
  * <li><strong>Consume</strong>: </li>
@@ -71,7 +73,9 @@ import static org.apache.flink.util.Preconditions.checkState;
  * depends on the PIPELINED vs. BLOCKING characteristic of the result partition. With pipelined
  * results, receivers are deployed as soon as the first buffer is added to the result partition.
  * With blocking results on the other hand, receivers are deployed after the partition is finished.
- *
+ * 消费任务在请求结果之前，一定是已经被部署发布了,
+ * 因此如果是PIPELINED模式,则分区内当产生第一个buffer数据时，就让消费任务部署。
+ * 如果是BLOCKING模式,则分区内数据都生产完成后,在让下游消费任务部署。
  * <h2>Buffer management</h2>
  *
  * <h2>State management</h2>
@@ -110,6 +114,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	 * The total number of references to subpartitions of this result. The result partition can be
 	 * safely released, iff the reference count is zero. A reference count of -1 denotes that the
 	 * result partition has been released.
+	 * 等待被释放的子分区数量
 	 */
 	private final AtomicInteger pendingReferences = new AtomicInteger();
 
@@ -127,9 +132,9 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 		JobID jobId,
 		ResultPartitionID partitionId,
 		ResultPartitionType partitionType,
-		int numberOfSubpartitions,
+		int numberOfSubpartitions,//要拆分成多少个子partition
 		int numTargetKeyGroups,
-		ResultPartitionManager partitionManager,
+		ResultPartitionManager partitionManager,//如何管理分区结果
 		ResultPartitionConsumableNotifier partitionConsumableNotifier,
 		IOManager ioManager,
 		boolean sendScheduleOrUpdateConsumersMessage) {
@@ -179,6 +184,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	 *
 	 * <p>The pool is registered with the partition *after* it as been constructed in order to conform
 	 * to the life-cycle of task registrations in the {@link TaskManager}.
+	 * 所有子分区共享buffer缓冲区
 	 */
 	public void registerBufferPool(BufferPool bufferPool) {
 		checkArgument(bufferPool.getNumberOfRequiredMemorySegments() >= getNumberOfSubpartitions(),
@@ -241,7 +247,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	}
 
 	// ------------------------------------------------------------------------
-
+    //为子分配分配一个数据
 	@Override
 	public void addBufferConsumer(BufferConsumer bufferConsumer, int subpartitionIndex) throws IOException {
 		checkNotNull(bufferConsumer);
@@ -279,6 +285,8 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	 * <p>After this operation, it is not possible to add further data to the result partition.
 	 *
 	 * <p>For BLOCKING results, this will trigger the deployment of consuming tasks.
+	 * 完成,一旦调用后,说明分区数据都已经写完,不能再写入子分区数据了。
+	 * 如果是BLOCKING结果,则会触发子任务继续部署
 	 */
 	public void finish() throws IOException {
 		boolean success = false;
@@ -307,6 +315,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 
 	/**
 	 * Releases the result partition.
+	 * 释放所有的内存
 	 */
 	public void release(Throwable cause) {
 		if (isReleased.compareAndSet(false, true)) {
@@ -368,6 +377,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 	 *
 	 * <p>This is a callback from the buffer pool, which is registered for result partitions, which
 	 * are back pressure-free.
+	 * 释放参数的内存
 	 */
 	@Override
 	public void releaseMemory(int toRelease) throws IOException {
@@ -415,6 +425,7 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 
 	/**
 	 * Notification when a subpartition is released.
+	 * 收到通知,子分区完成消费
 	 */
 	void onConsumedSubpartition(int subpartitionIndex) {
 
@@ -422,12 +433,12 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 			return;
 		}
 
-		int refCnt = pendingReferences.decrementAndGet();
+		int refCnt = pendingReferences.decrementAndGet();//减少一个子分区引用
 
 		if (refCnt == 0) {
-			partitionManager.onConsumedPartition(this);
+			partitionManager.onConsumedPartition(this);//调用release方法
 		}
-		else if (refCnt < 0) {
+		else if (refCnt < 0) {//说明所有分区都已经被释放了
 			throw new IllegalStateException("All references released.");
 		}
 
@@ -441,12 +452,23 @@ public class ResultPartition implements ResultPartitionWriter, BufferPoolOwner {
 
 	// ------------------------------------------------------------------------
 
+	//确定现在还没有结束
 	private void checkInProduceState() throws IllegalStateException {
 		checkState(!isFinished, "Partition already finished.");
 	}
 
 	/**
 	 * Notifies pipelined consumers of this result partition once.
+	 * 当分区全部写完数据，或者有新的数据写入子分区时,做一个通知
+	 * 重点:仅一次。。
+	 *
+	 *
+	 * 注意上面最后的notifyPipelinedConsumers这个方法的调用。
+	 * 在Flink中，数据交换的机制有两种，一种pipeline，另外一种是blocking的。
+	 * a.pipeline是指在ResultPartition中只要被写入了一条record，那么它会立即通知jobmananger我这个ResultPartition可以被消费了，要从我这取数据的赶紧来取了。
+	 * 我们说spark，flink比hadoop快很多，一个原因是因为前者做了很多operator chain的工作，减少了很多shuffle环节，
+	 * 另外一个原因就是这个，这种机制不用等到一个节点的所有计算结果全部计算完成才通知另一个计算节点来消费数据。
+	 * b.blocking机制其实就是跟hadoop一样了，就是等计算节点上的所有计算结果全部生成才让消费者来取数据。
 	 */
 	private void notifyPipelinedConsumers() {
 		if (sendScheduleOrUpdateConsumersMessage && !hasNotifiedPipelinedConsumers && partitionType.isPipelined()) {

@@ -40,6 +40,8 @@ public interface Extractor<FROM, TO> extends Serializable {
 	 * @param in
 	 *            the input data
 	 * @return the extracted/converted data
+	 *
+	 * 对输入对象进行转换或者提取,转换成另外类型数据
 	 */
 	TO extract(FROM in);
 

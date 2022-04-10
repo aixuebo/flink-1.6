@@ -35,6 +35,8 @@ import java.io.IOException;
  * consistently together.
  *
  * @param <T> Type of the value in the state.
+ *
+ * 一个key只能保存一个值
  */
 @PublicEvolving
 public interface ValueState<T> extends State {
@@ -52,6 +54,8 @@ public interface ValueState<T> extends State {
 	 * @return The state value corresponding to the current input.
 	 *
 	 * @throws IOException Thrown if the system cannot access the state.
+	 *
+	 * 获取value的值,相当于get
 	 */
 	T value() throws IOException;
 
@@ -65,6 +69,7 @@ public interface ValueState<T> extends State {
 	 * @param value The new value for the state.
 	 *
 	 * @throws IOException Thrown if the system cannot access the state.
+	 * 更新value的值
 	 */
 	void update(T value) throws IOException;
 

@@ -33,6 +33,8 @@ import org.apache.flink.streaming.api.functions.windowing.delta.extractor.Extrac
  * @param <TO>
  *            The type on which the delta function runs. (The type of the delta
  *            function)
+ *
+ * 对delta函数提供一种额外的能力，即将delta函数的输入类型 转换成另外一个类型。
  */
 @PublicEvolving
 public abstract class ExtractionAwareDeltaFunction<DATA, TO> implements DeltaFunction<DATA> {

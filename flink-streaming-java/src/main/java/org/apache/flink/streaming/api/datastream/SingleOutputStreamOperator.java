@@ -42,12 +42,13 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * applied on a {@link DataStream} with one predefined output type.
  *
  * @param <T> The type of the elements in this stream.
+ * 根据用户自定义的函数,对流进行操作,输出新的流类型---即数据转换的过程
  */
 @Public
 public class SingleOutputStreamOperator<T> extends DataStream<T> {
 
 	/** Indicate this is a non-parallel operator and cannot set a non-1 degree of parallelism. **/
-	protected boolean nonParallel = false;
+	protected boolean nonParallel = false;//true 强制非并行,即不允许并行
 
 	/**
 	 * We keep track of the side outputs that were already requested and their types. With this,
@@ -56,7 +57,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 */
 	private Map<OutputTag<?>, TypeInformation> requestedSideOutputs = new HashMap<>();
 
-	private boolean wasSplitApplied = false;
+	private boolean wasSplitApplied = false;//true表示流已经拆分分流完成
 
 	protected SingleOutputStreamOperator(StreamExecutionEnvironment environment, StreamTransformation<T> transformation) {
 		super(environment, transformation);
@@ -207,6 +208,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 		return this;
 	}
 
+	//true 表示允许并行  false表示不能并行
 	private boolean canBeParallel() {
 		return !nonParallel;
 	}
@@ -216,6 +218,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 * And mark this operator cannot set a non-1 degree of parallelism.
 	 *
 	 * @return The operator with only one parallelism.
+	 * 强制非并行,即不允许并行
 	 */
 	@PublicEvolving
 	public SingleOutputStreamOperator<T> forceNonParallel() {
@@ -305,6 +308,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 *
 	 * @param typeClass The class of the returned data type.
 	 * @return This operator with the type information corresponding to the given type class.
+	 * 通过显示的设置输出class,返回输出流对象类型
 	 */
 	public SingleOutputStreamOperator<T> returns(Class<T> typeClass) {
 		requireNonNull(typeClass, "type class must not be null.");
@@ -334,6 +338,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 *
 	 * @param typeHint The type hint for the returned data type.
 	 * @return This operator with the type information corresponding to the given type hint.
+	 * 通过显示的设置输出class,返回输出流对象类型
 	 */
 	public SingleOutputStreamOperator<T> returns(TypeHint<T> typeHint) {
 		requireNonNull(typeHint, "TypeHint must not be null");
@@ -358,6 +363,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 *
 	 * @param typeInfo type information as a return type hint
 	 * @return This operator with a given return type hint.
+	 * 通过显示的设置输出class,返回输出流对象类型
 	 */
 	public SingleOutputStreamOperator<T> returns(TypeInformation<T> typeInfo) {
 		requireNonNull(typeInfo, "TypeInformation must not be null");
@@ -405,6 +411,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
 	 * into the side output with the given {@link OutputTag}.
 	 *
 	 * @see org.apache.flink.streaming.api.functions.ProcessFunction.Context#output(OutputTag, Object)
+	 * 获取子流
 	 */
 	public <X> DataStream<X> getSideOutput(OutputTag<X> sideOutputTag) {
 		if (wasSplitApplied) {

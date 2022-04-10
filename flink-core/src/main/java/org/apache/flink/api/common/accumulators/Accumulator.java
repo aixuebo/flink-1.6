@@ -40,22 +40,26 @@ import java.io.Serializable;
  * @param <R>
  *            Type of the accumulator result as it will be reported to the
  *            client
+ * 做聚合---将元素v进行聚合,聚合结果是R。注意R可以序列化
  */
 @Public
 public interface Accumulator<V, R extends Serializable> extends Serializable, Cloneable {
 	/**
 	 * @param value
 	 *            The value to add to the accumulator object
+	 * 添加一个V,如何参与计算，生产R
 	 */
 	void add(V value);
 
 	/**
 	 * @return local The local value from the current UDF context
+	 * 返回R
 	 */
 	R getLocalValue();
 
 	/**
 	 * Reset the local value. This only affects the current UDF context.
+	 * 重置R
 	 */
 	void resetLocal();
 
@@ -64,6 +68,7 @@ public interface Accumulator<V, R extends Serializable> extends Serializable, Cl
 	 * at the end of the job.
 	 * 
 	 * @param other Reference to accumulator to merge in.
+	 * R的merge
 	 */
 	void merge(Accumulator<V, R> other);
 

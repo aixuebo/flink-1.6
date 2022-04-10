@@ -62,6 +62,9 @@ import static org.apache.flink.util.Preconditions.checkState;
  * </pre>
  *
  * <strong>It is NOT possible to recursively union union input gates.</strong>
+ *
+ * 当join时,传入两个流,但程序解析的时候只会每次处理一条数据(来自任意一个流)。
+ * 因此该类目的就是接收两个流的数据,通过某种策略,让下游感知是一次只能处理一个流的数据
  */
 public class UnionInputGate implements InputGate, InputGateListener {
 

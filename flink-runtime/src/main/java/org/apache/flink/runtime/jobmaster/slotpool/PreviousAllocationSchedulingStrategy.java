@@ -37,6 +37,8 @@ import java.util.stream.Stream;
  * If the previous allocation cannot be found, then it returns {@code null}. If the slot has not
  * been scheduled before (no assigned allocation id), it will fall back to
  * {@link LocationPreferenceSchedulingStrategy}.
+ *
+ * 尝试通过slot的uuid去匹配一个slot
  */
 public class PreviousAllocationSchedulingStrategy extends LocationPreferenceSchedulingStrategy {
 
@@ -55,7 +57,7 @@ public class PreviousAllocationSchedulingStrategy extends LocationPreferenceSche
 
 		Collection<AllocationID> priorAllocations = slotProfile.getPriorAllocations();
 
-		if (priorAllocations.isEmpty()) {
+		if (priorAllocations.isEmpty()) {//没有尝试的slot唯一id,则使用通用方式匹配
 			return super.findMatchWithLocality(slotProfile, candidates, contextExtractor, additionalRequirementsFilter, resultProducer);
 		} else {
 			return findPreviousAllocation(candidates, contextExtractor, additionalRequirementsFilter, resultProducer, priorAllocations);

@@ -34,6 +34,7 @@ import java.util.NoSuchElementException;
 
 /**
  * A {@link SourceFunction} that reads data using an {@link InputFormat}.
+ * 读取split文件,返回split文件内容发送到下游
  */
 @Internal
 public class InputFormatSourceFunction<OUT> extends RichParallelSourceFunction<OUT> {
@@ -80,17 +81,17 @@ public class InputFormatSourceFunction<OUT> extends RichParallelSourceFunction<O
 				((RichInputFormat) format).openInputFormat();
 			}
 
-			OUT nextElement = serializer.createInstance();
+			OUT nextElement = serializer.createInstance();//文件解析后的元素对象
 			while (isRunning) {
-				format.open(splitIterator.next());
+				format.open(splitIterator.next());//读取下一个split文件
 
 				// for each element we also check if cancel
 				// was called by checking the isRunning flag
 
 				while (isRunning && !format.reachedEnd()) {
-					nextElement = format.nextRecord(nextElement);
+					nextElement = format.nextRecord(nextElement);//填充元素对象
 					if (nextElement != null) {
-						ctx.collect(nextElement);
+						ctx.collect(nextElement);//发送元素
 					} else {
 						break;
 					}

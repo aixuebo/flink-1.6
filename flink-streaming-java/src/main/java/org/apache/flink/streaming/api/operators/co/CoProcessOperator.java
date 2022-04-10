@@ -35,6 +35,9 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * A {@link org.apache.flink.streaming.api.operators.StreamOperator} for executing
  * {@link CoProcessFunction CoProcessFunctions}.
+ *
+ *
+ * 处理两个流的connect操作
  */
 @Internal
 public class CoProcessOperator<IN1, IN2, OUT>

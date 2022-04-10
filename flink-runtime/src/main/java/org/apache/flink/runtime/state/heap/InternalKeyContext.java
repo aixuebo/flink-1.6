@@ -28,32 +28,42 @@ import org.apache.flink.runtime.state.KeyGroupRange;
  * <p>
  * The typical use case for this interface is providing a view on the current-key selection aspects of
  * {@link org.apache.flink.runtime.state.KeyedStateBackend}.
+ * key的上下文信息
+ *
+ * 实现类,参见AbstractKeyedStateBackend
  */
 @Internal
 public interface InternalKeyContext<K> {
 
+	//当设置完当前key,则会计算getCurrentKeyGroupIndex = key的hash/getNumberOfKeyGroups
 	/**
 	 * Used by states to access the current key.
+	 * 当前key
 	 */
 	K getCurrentKey();
 
 	/**
 	 * Returns the key-group to which the current key belongs.
+	 * 当前key所属组index,
+	 * 即key的hash/getNumberOfKeyGroups
 	 */
 	int getCurrentKeyGroupIndex();
 
 	/**
 	 * Returns the number of key-groups aka max parallelism.
+	 * 所有的组序号数,即key的并行度值max parallelism
 	 */
 	int getNumberOfKeyGroups();
 
 	/**
 	 * Returns the key groups for this backend.
+	 * 当前组范围
 	 */
 	KeyGroupRange getKeyGroupRange();
 
 	/**
 	 * {@link TypeSerializer} for the state backend key type.
+	 * 如何序列化、copy key对象
 	 */
 	TypeSerializer<K> getKeySerializer();
 

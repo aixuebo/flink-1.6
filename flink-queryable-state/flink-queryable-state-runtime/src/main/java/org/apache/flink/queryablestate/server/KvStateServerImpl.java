@@ -43,9 +43,9 @@ public class KvStateServerImpl extends AbstractServerBase<KvStateInternalRequest
 	/** The {@link KvStateRegistry} to query for state instances. */
 	private final KvStateRegistry kvStateRegistry;
 
-	private final KvStateRequestStats stats;
+	private final KvStateRequestStats stats;//统计对象
 
-	private MessageSerializer<KvStateInternalRequest, KvStateResponse> serializer;
+	private MessageSerializer<KvStateInternalRequest, KvStateResponse> serializer;//序列化、反序列化对象
 
 	/**
 	 * Creates the state server.
@@ -66,17 +66,18 @@ public class KvStateServerImpl extends AbstractServerBase<KvStateInternalRequest
 	 */
 	public KvStateServerImpl(
 			final InetAddress bindAddress,
-			final Iterator<Integer> bindPortIterator,
+			final Iterator<Integer> bindPortIterator,//服务端的ip和port
 			final Integer numEventLoopThreads,
-			final Integer numQueryThreads,
+			final Integer numQueryThreads,//服务端线程数
 			final KvStateRegistry kvStateRegistry,
-			final KvStateRequestStats stats) {
+			final KvStateRequestStats stats) {//服务端统计对象
 
 		super("Queryable State Server", bindAddress, bindPortIterator, numEventLoopThreads, numQueryThreads);
 		this.stats = Preconditions.checkNotNull(stats);
 		this.kvStateRegistry = Preconditions.checkNotNull(kvStateRegistry);
 	}
 
+	//返回每一个请求处理的handler
 	@Override
 	public AbstractServerHandler<KvStateInternalRequest, KvStateResponse> initializeHandler() {
 		this.serializer = new MessageSerializer<>(
@@ -85,6 +86,7 @@ public class KvStateServerImpl extends AbstractServerBase<KvStateInternalRequest
 		return new KvStateServerHandler(this, kvStateRegistry, serializer, stats);
 	}
 
+	//序列化对象
 	public MessageSerializer<KvStateInternalRequest, KvStateResponse> getSerializer() {
 		Preconditions.checkState(serializer != null, "Server " + getServerName() + " has not been started.");
 		return serializer;
@@ -95,6 +97,7 @@ public class KvStateServerImpl extends AbstractServerBase<KvStateInternalRequest
 		super.start();
 	}
 
+	//服务端ip地址
 	@Override
 	public InetSocketAddress getServerAddress() {
 		return super.getServerAddress();

@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobID;
 
 /**
  * A factory for per Job checkpoint recovery components.
+ * 每一个job如何checkpoint管理
  */
 public interface CheckpointRecoveryFactory {
 

@@ -22,6 +22,7 @@ import org.apache.flink.annotation.Internal;
 
 import java.io.Serializable;
 
+//比较两个元素的大小,以及是否相同
 @Internal
 public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 		implements Serializable {
@@ -34,8 +35,8 @@ public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 	private final TypeComparator<Object>[] comparators1;
 	private final TypeComparator<Object>[] comparators2;
 
-	private final Object[] referenceKeyFields;
-	
+	//比较2个提取的key的每一个元素都是相同的
+	private final Object[] referenceKeyFields;//提取的key元素集合
 	private final Object[] candidateKeyFields;
 
 	@SuppressWarnings("unchecked")
@@ -62,13 +63,14 @@ public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 	
 	@Override
 	public void setReference(T1 reference) {
-		comparator1.extractKeys(reference, referenceKeyFields, 0);
+		comparator1.extractKeys(reference, referenceKeyFields, 0);//提取key元素集合
 	}
 
+	//所有的key必须完全一致
 	@Override
 	public boolean equalToReference(T2 candidate) {
-		comparator2.extractKeys(candidate, candidateKeyFields, 0);
-		for (int i = 0; i < this.comparators1.length; i++) {
+		comparator2.extractKeys(candidate, candidateKeyFields, 0);//提取key元素集合
+		for (int i = 0; i < this.comparators1.length; i++) {//比较
 			if (this.comparators1[i].compare(referenceKeyFields[i], candidateKeyFields[i]) != 0) {
 				return false;
 			}
@@ -76,6 +78,7 @@ public class GenericPairComparator<T1, T2> extends TypePairComparator<T1, T2>
 		return true;
 	}
 
+	//比较大小
 	@Override
 	public int compareToReference(T2 candidate) {
 		comparator2.extractKeys(candidate, candidateKeyFields, 0);

@@ -377,6 +377,7 @@ public final class ConfigConstants {
 	/**
 	 * The config parameter defining the timeout for filesystem stream opening.
 	 * A value of 0 indicates infinite waiting.
+	 * 读取文件系统流的超时时间
 	 */
 	public static final String FS_STREAM_OPENING_TIMEOUT_KEY = "taskmanager.runtime.fs_timeout";
 
@@ -522,6 +523,7 @@ public final class ConfigConstants {
 
 	/**
 	 * Template for the YARN container start invocation.
+	 * java命令行模式，按照什么命令行执行代码
 	 */
 	public static final String YARN_CONTAINER_START_COMMAND_TEMPLATE =
 		"yarn.container-start-command-template";
@@ -1551,6 +1553,7 @@ public final class ConfigConstants {
 
 	/**
 	 * Start command template for Flink on YARN containers.
+	 * java命令行模式，按照什么命令行执行代码
 	 */
 	public static final String DEFAULT_YARN_CONTAINER_START_COMMAND_TEMPLATE =
 		"%java% %jvmmem% %jvmopts% %logging% %class% %args% %redirects%";
@@ -1842,6 +1845,7 @@ public final class ConfigConstants {
 
 	/**
 	 * Sets the number of local task managers.
+	 * 设置local模式下,task manager数量
 	 */
 	public static final String LOCAL_NUMBER_TASK_MANAGER = "local.number-taskmanager";
 
@@ -2003,7 +2007,7 @@ public final class ConfigConstants {
 	public static final String ENV_FLINK_CONF_DIR = "FLINK_CONF_DIR";
 
 	/** The environment variable name which contains the location of the lib folder. */
-	public static final String ENV_FLINK_LIB_DIR = "FLINK_LIB_DIR";
+	public static final String ENV_FLINK_LIB_DIR = "FLINK_LIB_DIR";//需要的外部文件
 
 	/** The environment variable name which contains the location of the bin directory. */
 	public static final String ENV_FLINK_BIN_DIR = "FLINK_BIN_DIR";

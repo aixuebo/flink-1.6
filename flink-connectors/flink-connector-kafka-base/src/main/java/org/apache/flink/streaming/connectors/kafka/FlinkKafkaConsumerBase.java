@@ -455,13 +455,13 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
 	@Override
 	public void open(Configuration configuration) throws Exception {
-		// determine the offset commit mode
+		// determine the offset commit mode 指定offset的提交方式
 		this.offsetCommitMode = OffsetCommitModes.fromConfiguration(
 				getIsAutoCommitEnabled(),
 				enableCommitOnCheckpoints,
 				((StreamingRuntimeContext) getRuntimeContext()).isCheckpointingEnabled());
 
-		// create the partition discoverer
+		// create the partition discoverer 创建分区发现器
 		this.partitionDiscoverer = createPartitionDiscoverer(
 				topicsDescriptor,
 				getRuntimeContext().getIndexOfThisSubtask(),

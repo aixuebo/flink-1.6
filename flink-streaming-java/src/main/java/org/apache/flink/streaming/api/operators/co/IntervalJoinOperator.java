@@ -106,8 +106,9 @@ public class IntervalJoinOperator<K, T1, T2, OUT>
 	private final TypeSerializer<T1> leftTypeSerializer;
 	private final TypeSerializer<T2> rightTypeSerializer;
 
-	private transient MapState<Long, List<BufferEntry<T1>>> leftBuffer;
-	private transient MapState<Long, List<BufferEntry<T2>>> rightBuffer;
+	//key，在相同的时间戳下,会有多条数据，因此<key,元素时间戳,List<元素内容>>
+	private transient MapState<Long, List<BufferEntry<T1>>> leftBuffer; //存储每一个left节点的数据
+	private transient MapState<Long, List<BufferEntry<T2>>> rightBuffer; //存储每一个right节点的数据
 
 	private transient TimestampedCollector<OUT> collector;
 	private transient ContextImpl context;
@@ -228,7 +229,7 @@ public class IntervalJoinOperator<K, T1, T2, OUT>
 		addToBuffer(ourBuffer, ourValue, ourTimestamp);
 
 		for (Map.Entry<Long, List<BufferEntry<OTHER>>> bucket: otherBuffer.entries()) {
-			final long timestamp  = bucket.getKey();
+			final long timestamp  = bucket.getKey();//返回map的key,即存储的时间戳
 
 			if (timestamp < ourTimestamp + relativeLowerBound ||
 					timestamp > ourTimestamp + relativeUpperBound) {

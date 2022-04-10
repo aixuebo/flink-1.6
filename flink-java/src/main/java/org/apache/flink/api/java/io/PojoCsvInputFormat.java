@@ -39,12 +39,12 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 
 	private static final long serialVersionUID = 1L;
 
-	private Class<OUT> pojoTypeClass;
+	private Class<OUT> pojoTypeClass;//pojo的class
 
-	private String[] pojoFieldNames;
+	private String[] pojoFieldNames;//字段名称集合
 
-	private transient PojoTypeInfo<OUT> pojoTypeInfo;
-	private transient Field[] pojoFields;
+	private transient PojoTypeInfo<OUT> pojoTypeInfo;//pojo的实例对象
+	private transient Field[] pojoFields;//反射获取每一个属性的Field对象
 
 	public PojoCsvInputFormat(Path filePath, PojoTypeInfo<OUT> pojoTypeInfo) {
 		this(filePath, DEFAULT_LINE_DELIMITER, DEFAULT_FIELD_DELIMITER, pojoTypeInfo);
@@ -102,7 +102,7 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 	private void configure(String lineDelimiter, String fieldDelimiter, PojoTypeInfo<OUT> pojoTypeInfo, String[] fieldNames, boolean[] includedFieldsMask) {
 
 		if (includedFieldsMask == null) {
-			includedFieldsMask = createDefaultMask(fieldNames.length);
+			includedFieldsMask = createDefaultMask(fieldNames.length);//说明所有字段都要
 		}
 
 		for (String name : fieldNames) {
@@ -117,7 +117,7 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 		setDelimiter(lineDelimiter);
 		setFieldDelimiter(fieldDelimiter);
 
-		Class<?>[] classes = new Class<?>[fieldNames.length];
+		Class<?>[] classes = new Class<?>[fieldNames.length];//每一个字段类型
 
 		for (int i = 0; i < fieldNames.length; i++) {
 			try {
@@ -161,12 +161,12 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 
 		pojoFields = new Field[pojoFieldNames.length];
 
-		Map<String, Field> allFields = new HashMap<String, Field>();
+		Map<String, Field> allFields = new HashMap<String, Field>();//填充class的所有属性
 
 		findAllFields(pojoTypeClass, allFields);
 
 		for (int i = 0; i < pojoFieldNames.length; i++) {
-			pojoFields[i] = allFields.get(pojoFieldNames[i]);
+			pojoFields[i] = allFields.get(pojoFieldNames[i]);//获取pojo需要的属性对象Field
 
 			if (pojoFields[i] != null) {
 				pojoFields[i].setAccessible(true);
@@ -181,6 +181,7 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 	 *
 	 * @param clazz Class for which all declared fields are found
 	 * @param allFields Map containing all found fields so far
+	 * 反射的方式获取class的所有属性
 	 */
 	private void findAllFields(Class<?> clazz, Map<String, Field> allFields) {
 		for (Field field : clazz.getDeclaredFields()) {
@@ -192,6 +193,8 @@ public class PojoCsvInputFormat<OUT> extends CsvInputFormat<OUT> {
 		}
 	}
 
+	//为每一个属性赋值
+	//参数reuse为pojo的实例类
 	@Override
 	public OUT fillRecord(OUT reuse, Object[] parsedValues) {
 		for (int i = 0; i < parsedValues.length; i++) {

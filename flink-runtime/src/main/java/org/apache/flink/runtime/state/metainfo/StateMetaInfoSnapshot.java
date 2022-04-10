@@ -50,12 +50,12 @@ public class StateMetaInfoSnapshot {
 	 */
 	public enum CommonOptionsKeys {
 		/** Key to define the {@link StateDescriptor.Type} of a key/value keyed-state */
-		KEYED_STATE_TYPE,
+		KEYED_STATE_TYPE,//key存储类型
 		/**
 		 * Key to define {@link org.apache.flink.runtime.state.OperatorStateHandle.Mode}, about how operator state is
 		 * distributed on restore
 		 */
-		OPERATOR_STATE_DISTRIBUTION_MODE,
+		OPERATOR_STATE_DISTRIBUTION_MODE,//非key存储类型
 	}
 
 	/**

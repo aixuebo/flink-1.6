@@ -42,6 +42,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * TypeInformation for {@link Row}
+ * 相当于vo,一行数据由多个TypeInformation组成
  */
 @PublicEvolving
 public class RowTypeInfo extends TupleTypeInfoBase<Row> {

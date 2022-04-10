@@ -37,14 +37,17 @@ import static java.util.Objects.requireNonNull;
  * connected to downstream operations.
  *
  * @param <T> The type of the elements that result from this {@code SideOutputTransformation}
+ *
+ * 描述好输入和输出就可以了，输入的类型就是tag类型
+ * 获取某一个子分流
  */
 public class SideOutputTransformation<T> extends StreamTransformation<T> {
 	private final StreamTransformation<?> input;
 
-	private final OutputTag<T> tag;
+	private final OutputTag<T> tag;//输出tag类型
 
 	public SideOutputTransformation(StreamTransformation<?> input, final OutputTag<T> tag) {
-		super("SideOutput", tag.getTypeInfo(), requireNonNull(input).getParallelism());
+		super("SideOutput", tag.getTypeInfo(), requireNonNull(input).getParallelism());//输出流是Tag类型
 		this.input = input;
 		this.tag = requireNonNull(tag);
 	}

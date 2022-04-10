@@ -28,6 +28,9 @@ import java.util.Iterator;
  * Base class that simplifies reducing all values provided as {@link Iterable}.
  * @param <IN>
  * @param <OUT>
+ * 属于GroupReduce的子类,即同一个key到reduce后,如何处理。
+ *
+ * 需求目标是，到reduce后的每一个值都可以flatMap操作,即一变多
  */
 @PublicEvolving
 public abstract class GroupReduceIterator<IN, OUT> extends RichGroupReduceFunction<IN, OUT> {

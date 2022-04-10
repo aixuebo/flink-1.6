@@ -40,6 +40,7 @@ public final class JobID extends AbstractID {
 
 	/**
 	 * Creates a new (statistically) random JobID.
+	 * 随机产生id
 	 */
 	public JobID() {
 		super();

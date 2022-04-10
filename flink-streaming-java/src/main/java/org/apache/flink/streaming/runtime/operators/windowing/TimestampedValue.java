@@ -25,6 +25,8 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * Stores the value and the timestamp of the record.
  *
  * @param <T> The type encapsulated value
+ *
+ * 表示一条数据，有时间戳+value组成
  */
 @PublicEvolving
 public class TimestampedValue<T> {

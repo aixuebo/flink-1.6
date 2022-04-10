@@ -20,11 +20,14 @@ package org.apache.flink.metrics;
 
 /**
  * Metric for measuring throughput.
+ * 吞吐量的度量，也就是一系列事件发生的速率，例如TPS；
+ * 即统计每秒产生的数据量
  */
 public interface Meter extends Metric {
 
 	/**
 	 * Mark occurrence of an event.
+	 * 增加数据
 	 */
 	void markEvent();
 
@@ -39,6 +42,7 @@ public interface Meter extends Metric {
 	 * Returns the current rate of events per second.
 	 *
 	 * @return current rate of events per second
+	 * 平均每秒增加多少条数据
 	 */
 	double getRate();
 
@@ -46,6 +50,7 @@ public interface Meter extends Metric {
 	 * Get number of events marked on the meter.
 	 *
 	 * @return number of events marked on the meter
+	 * 累计增加了多少条数据
 	 */
 	long getCount();
 }

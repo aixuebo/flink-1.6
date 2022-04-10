@@ -45,6 +45,8 @@ import static org.apache.flink.util.Preconditions.checkState;
  * @param <G> The type of the gateway to connect to. 目标服务器的网关，比如连接ResourceManager,那就是ResourceManager的网关
  * @param <S> The type of the successful registration responses.注册成功后的返回值对象
  *
+ * 比如参见 JobLeaderService的内部类 JobManagerRegisteredRpcConnection
+ *
  * 封装了如何真实发生的连接，比如从节点如何真实去请求ResourceManager的
  */
 public abstract class RegisteredRpcConnection<F extends Serializable, G extends RpcGateway, S extends RegistrationResponse.Success> {

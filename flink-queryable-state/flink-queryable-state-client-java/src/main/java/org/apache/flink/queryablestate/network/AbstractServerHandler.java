@@ -48,6 +48,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <REQ> the type of request the server expects to receive.
  * @param <RESP> the type of response the server will send.
+ *
+ * 服务端具体如何处理每一个客户端的请求 --- 处理具体的一个请求
  */
 @Internal
 @ChannelHandler.Sharable

@@ -37,6 +37,8 @@ import java.util.Collections;
  * @param <ACC> The type of the AggregateFunction's accumulator
  * @param <V> The type of the AggregateFunction's result, and the input to the WindowFunction
  * @param <R> The result type of the WindowFunction
+ *
+ * 相当于flod与reduce函数
  */
 @Internal
 public class AggregateApplyWindowFunction<K, W extends Window, T, ACC, V, R>

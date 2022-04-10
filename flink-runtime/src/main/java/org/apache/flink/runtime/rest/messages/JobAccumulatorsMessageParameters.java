@@ -23,6 +23,8 @@ import java.util.Collections;
 
 /**
  * Request parameter for job accumulator's handler {@link org.apache.flink.runtime.rest.handler.job.JobAccumulatorsHandler}.
+ * 追加jobid参数替换的url生成器
+ * 追加includeSerializedValue参数的url生成器
  */
 public class JobAccumulatorsMessageParameters extends JobMessageParameters {
 

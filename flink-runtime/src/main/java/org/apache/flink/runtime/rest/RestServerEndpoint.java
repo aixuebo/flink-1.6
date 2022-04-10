@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * An abstract class for netty-based REST server endpoints.
+ * 指代服务端暴露的服务 --- 接收客户端发送的请求,返回response给客户端
  */
 public abstract class RestServerEndpoint implements AutoCloseableAsync {
 
@@ -76,17 +77,17 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 	private final String restBindAddress;
 	private final int restBindPort;
 	@Nullable
-	private final SSLEngineFactory sslEngineFactory;
-	private final int maxContentLength;
+	private final SSLEngineFactory sslEngineFactory;//套一层安全层
+	private final int maxContentLength;//服务端返回的最大字符串长度
 
-	protected final Path uploadDir;
+	protected final Path uploadDir;//保存上传过来的文件目录
 	protected final Map<String, String> responseHeaders;
 
 	private final CompletableFuture<Void> terminationFuture;
 
 	private ServerBootstrap bootstrap;
-	private Channel serverChannel;
-	private String restBaseUrl;
+	private Channel serverChannel;//服务端channel
+	private String restBaseUrl;//服务器请求url  http://host:port
 
 	private State state = State.CREATED;
 
@@ -221,6 +222,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 	 * Hook to start sub class specific services.
 	 *
 	 * @throws Exception if an error occurred
+	 * 子类在启动后做一些特殊处理
 	 */
 	protected abstract void startInternal() throws Exception;
 
@@ -228,6 +230,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 	 * Returns the address on which this endpoint is accepting requests.
 	 *
 	 * @return address on which this endpoint is accepting requests or null if none
+	 * 返回服务端接受请求的ip
 	 */
 	@Nullable
 	public InetSocketAddress getServerAddress() {
@@ -387,6 +390,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 
 	/**
 	 * Creates the upload dir if needed.
+	 * 创建一个目录
 	 */
 	@VisibleForTesting
 	static void createUploadDir(final Path uploadDir, final Logger log) throws IOException {
@@ -405,6 +409,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 	 * @param log logger used for logging output
 	 * @throws IOException if the directory does not exist and cannot be created, or if the
 	 *                     directory isn't writable
+	 * 创建一个目录
 	 */
 	private static synchronized void checkAndCreateUploadDir(final Path uploadDir, final Logger log) throws IOException {
 		if (Files.exists(uploadDir) && Files.isWritable(uploadDir)) {
@@ -432,6 +437,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 	 *
 	 * <p>IMPORTANT: This comparator is highly specific to how Netty path parameters are encoded. Namely
 	 * with a preceding ':' character.
+	 * 比较两个url
 	 */
 	public static final class RestHandlerUrlComparator implements Comparator<Tuple2<RestHandlerSpecification, ChannelInboundHandler>>, Serializable {
 
@@ -461,6 +467,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 		 *
 		 * <p>IMPORTANT: This comparator is highly specific to how Netty path parameters are encoded. Namely
 		 * with a preceding ':' character.
+		 * 比较url--忽略大小写
 		 */
 		public static final class CaseInsensitiveOrderComparator implements Comparator<String>, Serializable {
 			private static final long serialVersionUID = 8550835445193437027L;
@@ -498,6 +505,7 @@ public abstract class RestServerEndpoint implements AutoCloseableAsync {
 		}
 	}
 
+	//服务端状态
 	private enum State {
 		CREATED,
 		RUNNING,

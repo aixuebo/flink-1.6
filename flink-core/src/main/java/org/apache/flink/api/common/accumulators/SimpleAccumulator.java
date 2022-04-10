@@ -25,6 +25,7 @@ import java.io.Serializable;
 /**
  * Similar to Accumulator, but the type of items to add and the result value
  * must be the same.
+ * 要求输入和聚合的输出是相同类型 --- 即简单的聚合计算
  */
 @Public
 public interface SimpleAccumulator<T extends Serializable> extends Accumulator<T,T> {}

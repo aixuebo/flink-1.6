@@ -20,6 +20,7 @@ package org.apache.flink.queryablestate.network.stats;
 
 /**
  * Disabled {@link KvStateRequestStats} implementation.
+ * 什么也不操作
  */
 public class DisabledKvStateRequestStats implements KvStateRequestStats {
 

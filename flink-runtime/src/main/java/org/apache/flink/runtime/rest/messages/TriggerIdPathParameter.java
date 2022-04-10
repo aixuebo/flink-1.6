@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * {@link MessagePathParameter} for the trigger id of an asynchronous operation.
+ * 参数值是TriggerId
  */
 public class TriggerIdPathParameter extends MessagePathParameter<TriggerId> {
 

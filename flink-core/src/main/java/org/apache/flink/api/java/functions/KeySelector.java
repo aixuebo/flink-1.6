@@ -32,6 +32,7 @@ import java.io.Serializable;
  *
  * @param <IN> Type of objects to extract the key from.
  * @param <KEY> Type of key.
+ * key选择器,用于keyBy,输入 --> 输出key
  */
 @Public
 @FunctionalInterface
@@ -62,6 +63,7 @@ public interface KeySelector<IN, KEY> extends Function, Serializable {
 	 *
 	 * @throws Exception Throwing an exception will cause the execution of the respective task to fail,
 	 *                   and trigger recovery or cancellation of the program.
+	 * 如何从给定对象中提取数据key
 	 */
 	KEY getKey(IN value) throws Exception;
 }

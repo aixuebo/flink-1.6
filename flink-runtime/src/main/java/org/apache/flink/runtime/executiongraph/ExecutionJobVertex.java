@@ -72,6 +72,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>The {@code ExecutionJobVertex} corresponds to a parallelized operation. It
  * contains an {@link ExecutionVertex} for each parallel instance of that operation.
+ *
+ * 可被执行的顶点 --- 是ExecutionGraph的某一个顶点，该顶点内包含了一系列可并行的操作
+ *
+ * 在 ExecutionGraph 中，节点对应的类是 ExecutionJobVertex，与之对应的就是 JobGraph 中的 JobVertex。每一个 ExexutionJobVertex 都是由一个 JobVertex 生成的。
  */
 public class ExecutionJobVertex implements AccessExecutionJobVertex, Archiveable<ArchivedExecutionJobVertex> {
 
@@ -104,6 +108,8 @@ public class ExecutionJobVertex implements AccessExecutionJobVertex, Archiveable
 	 */
 	private final List<OperatorID> userDefinedOperatorIds;
 
+	//Flink Job 是可以指定任务的并行度的，在实际运行时，会有多个并行的任务同时在执行，对应到这里就是 ExecutionVertex。
+	//ExecutionVertex 是并行任务的一个子任务，算子的并行度是多少，那么就会有多少个 ExecutionVertex。
 	private final ExecutionVertex[] taskVertices;
 
 	private final IntermediateResult[] producedDataSets;

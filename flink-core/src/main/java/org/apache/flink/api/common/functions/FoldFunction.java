@@ -40,6 +40,12 @@ import java.io.Serializable;
  * @param <O> Type of the elements that the group/list/stream contains
  *
  * @deprecated use {@link AggregateFunction} instead
+ * ReduceFunction与FoldFunction区别
+ * a.FoldFunction 带有输出值的ReduceFunction
+ * b.FoldFunction 允许输入和输出是不同的类型,ReduceFunction要求是相同的类型
+ * c.两者都是元素两两参与merge
+ *
+ * (I,O) --> O
  */
 @Public
 @Deprecated

@@ -24,13 +24,13 @@ public enum Locality {
 	UNCONSTRAINED,
 
 	/** The task was scheduled into the same TaskManager as requested */
-	LOCAL,
+	LOCAL,//本节点执行
 
 	/** The task was scheduled onto the same host as requested */
-	HOST_LOCAL,
+	HOST_LOCAL,//本host域名执行
 
 	/** The task was scheduled to a destination not included in its locality preferences. */
-	NON_LOCAL,
+	NON_LOCAL,//
 
 	/** No locality information was provided, it is unknown if the locality was respected */
 	UNKNOWN

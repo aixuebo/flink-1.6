@@ -40,20 +40,23 @@ import java.util.Map;
  *
  * @param <C> Type of the closeable this registers
  * @param <T> Type for potential meta data associated with the registering closeables
+ * 缓存一组Closeabley,用于生命周期调用close方法
  */
 @Internal
 public abstract class AbstractCloseableRegistry<C extends Closeable, T> implements Closeable {
 
-	/** Lock that guards state of this registry. **/
+	/** Lock that guards state of this registry. 同步锁**/
 	private final Object lock;
 
-	/** Map from tracked Closeables to some associated meta data. */
+	/** Map from tracked Closeables to some associated meta data.
+	 * 持有每一个需要被关闭的子对象
+	 **/
 	@GuardedBy("lock")
 	private final Map<Closeable, T> closeableToRef;
 
 	/** Indicates if this registry is closed. */
 	@GuardedBy("lock")
-	private boolean closed;
+	private boolean closed;//true表示关闭已执行完
 
 	public AbstractCloseableRegistry(@Nonnull Map<Closeable, T> closeableToRef) {
 		this.lock = new Object();

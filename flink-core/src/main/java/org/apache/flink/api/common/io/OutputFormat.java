@@ -37,7 +37,9 @@ import org.apache.flink.configuration.Configuration;
  *   <li>The output format is closed</li>
  * </ol>
  * 
- * @param <IT> The type of the consumed records. 
+ * @param <IT> The type of the consumed records.
+ *
+ * 对外提供的能力很简单:如何初始化该对象、打开文件、将对象序列化成数组输出、关闭
  */
 @Public
 public interface OutputFormat<IT> extends Serializable {
@@ -57,7 +59,7 @@ public interface OutputFormat<IT> extends Serializable {
 	 * <p>
 	 * When this method is called, the output format it guaranteed to be configured.
 	 * 
-	 * @param taskNumber The number of the parallel instance.
+	 * @param taskNumber The number of the parallel instance.并行度任务id
 	 * @param numTasks The number of parallel tasks.
 	 * @throws IOException Thrown, if the output could not be opened due to an I/O problem.
 	 */

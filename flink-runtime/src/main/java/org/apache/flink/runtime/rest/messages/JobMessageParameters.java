@@ -23,6 +23,7 @@ import java.util.Collections;
 
 /**
  * Message parameters which require a job path parameter.
+ * 追加jobid参数替换的url生成器
  */
 public class JobMessageParameters extends MessageParameters {
 

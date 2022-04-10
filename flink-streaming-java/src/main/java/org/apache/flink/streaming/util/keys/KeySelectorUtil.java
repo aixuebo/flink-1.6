@@ -204,13 +204,16 @@ public final class KeySelectorUtil {
 	 * A key selector for selecting individual array fields as keys and returns them as a Tuple.
 	 *
 	 * @param <IN> The type from which the key is extracted, i.e., the array type.
+	 * 输入in是数组,返回tuple
+	 *
+	 * 比如 IN数组有10个位置,返回1 2 5 三个位置的值,因此fields.length=3 分别存储 1 2 5
 	 */
 	public static final class ArrayKeySelector<IN> implements KeySelector<IN, Tuple>, ResultTypeQueryable<Tuple> {
 
 		private static final long serialVersionUID = 1L;
 
-		private final int[] fields;
-		private transient TupleTypeInfo<Tuple> returnType;
+		private final int[] fields;//从数组中提取哪几个位置数据
+		private transient TupleTypeInfo<Tuple> returnType;//数组内元素的类型
 
 		ArrayKeySelector(int[] fields, TupleTypeInfo<Tuple> returnType) {
 			this.fields = requireNonNull(fields);
@@ -219,9 +222,9 @@ public final class KeySelectorUtil {
 
 		@Override
 		public Tuple getKey(IN value) {
-			Tuple key = Tuple.newInstance(fields.length);
+			Tuple key = Tuple.newInstance(fields.length);//创建1 2 5三个位置的tuple
 			for (int i = 0; i < fields.length; i++) {
-				key.setField(Array.get(value, fields[i]), i);
+				key.setField(Array.get(value, fields[i]), i);//分别获取1 2 5 三个数组的值,存储到tuple里
 			}
 			return key;
 		}

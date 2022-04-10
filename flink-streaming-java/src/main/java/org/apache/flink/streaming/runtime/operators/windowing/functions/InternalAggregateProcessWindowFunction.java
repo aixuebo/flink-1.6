@@ -38,6 +38,8 @@ import java.util.Collections;
  * @param <ACC> The type of the AggregateFunction's accumulator
  * @param <V> The type of the AggregateFunction's result, and the input to the WindowFunction
  * @param <R> The result type of the WindowFunction
+ *
+ * 聚合函数处理聚合信息
  */
 public final class InternalAggregateProcessWindowFunction<T, ACC, V, R, K, W extends Window>
 		extends WrappingFunction<ProcessWindowFunction<V, R, K, W>>

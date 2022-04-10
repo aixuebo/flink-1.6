@@ -44,28 +44,34 @@ public class StateTtlConfig implements Serializable {
 	private static final long serialVersionUID = -7592693245044289793L;
 
 	public static final StateTtlConfig DISABLED =
-		newBuilder(Time.milliseconds(Long.MAX_VALUE)).setUpdateType(UpdateType.Disabled).build();
+		newBuilder(Time.milliseconds(Long.MAX_VALUE)).setUpdateType(UpdateType.Disabled).build();//默认不设置过期时间
 
 	/**
 	 * This option value configures when to update last access timestamp which prolongs state TTL.
+	 * 什么时候会更新时间戳
 	 */
 	public enum UpdateType {
-		/** TTL is disabled. State does not expire. */
+		/** TTL is disabled. State does not expire. 状态永远不过期*/
 		Disabled,
-		/** Last access timestamp is initialised when state is created and updated on every write operation. */
-		OnCreateAndWrite,
-		/** The same as <code>OnCreateAndWrite</code> but also updated on read. */
+		/** Last access timestamp is initialised when state is created and updated on every write operation.
+		 * 创建的时候会初始化最近访问时间戳。 每次写操作的时候也会更新时间戳,但读的时候不会更新
+		 **/
+		OnCreateAndWrite,//创建和写操作的时候会更新时间戳
+		/** The same as <code>OnCreateAndWrite</code> but also updated on read.
+		 * 在OnCreateAndWrite基础上,读操作也会更新时间戳
+		 **/
 		OnReadAndWrite
 	}
 
 	/**
 	 * This option configures whether expired user value can be returned or not.
+	 * 过期数据的可见性
 	 */
 	public enum StateVisibility {
 		/** Return expired user value if it is not cleaned up yet. */
-		ReturnExpiredIfNotCleanedUp,
+		ReturnExpiredIfNotCleanedUp,//过期数据会被返回。前提是过期数据还尚未被删除掉
 		/** Never return expired user value. */
-		NeverReturnExpired
+		NeverReturnExpired //过期的数据一定不会被返回,即使没有被清理,也不会被返回
 	}
 
 	/**
@@ -76,10 +82,10 @@ public class StateTtlConfig implements Serializable {
 		ProcessingTime
 	}
 
-	private final UpdateType updateType;
-	private final StateVisibility stateVisibility;
+	private final UpdateType updateType;//什么时候会更新时间戳
+	private final StateVisibility stateVisibility;//过期数据的可见性
 	private final TimeCharacteristic timeCharacteristic;
-	private final Time ttl;
+	private final Time ttl;//过期时间周期
 	private final CleanupStrategies cleanupStrategies;
 
 	private StateTtlConfig(
@@ -146,10 +152,10 @@ public class StateTtlConfig implements Serializable {
 	 */
 	public static class Builder {
 
-		private UpdateType updateType = OnCreateAndWrite;
+		private UpdateType updateType = OnCreateAndWrite;//什么场景需要更新时间戳
 		private StateVisibility stateVisibility = NeverReturnExpired;
 		private TimeCharacteristic timeCharacteristic = ProcessingTime;
-		private Time ttl;
+		private Time ttl;//过期周期
 		private CleanupStrategies cleanupStrategies = new CleanupStrategies();
 
 		public Builder(@Nonnull Time ttl) {

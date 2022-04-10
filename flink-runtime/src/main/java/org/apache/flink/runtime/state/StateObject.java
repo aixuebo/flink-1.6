@@ -41,6 +41,7 @@ public interface StateObject extends Serializable {
 	 * Discards the state referred to and solemnly owned by this handle, to free up resources in
 	 * the persistent storage. This method is called when the state represented by this
 	 * object will not be used any more.
+	 * 丢弃 -- 删除该保存的物理文件
 	 */
 	void discardState() throws Exception;
 
@@ -62,6 +63,7 @@ public interface StateObject extends Serializable {
 	 * system at higher scale.
 	 *
 	 * @return Size of the state in bytes.
+	 * 获取stage占用字节大小
 	 */
 	long getStateSize();
 }

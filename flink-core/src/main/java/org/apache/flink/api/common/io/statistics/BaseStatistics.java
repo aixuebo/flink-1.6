@@ -24,24 +24,28 @@ import org.apache.flink.annotation.Public;
 
 /**
  * Interface describing the basic statistics that can be obtained from the input.
+ * 统计数量源大小、有多少条数据、每一条数据平均字节数
  */
 @Public
 public interface BaseStatistics {
 	
 	/**
 	 * Constant indicating that the input size is unknown.
+	 * 不清楚文件大小
 	 */
 	@PublicEvolving
 	public static final long SIZE_UNKNOWN = -1;
 	
 	/**
 	 * Constant indicating that the number of records is unknown;
+	 * 不清楚有多少条数据
 	 */
 	@PublicEvolving
 	public static final long NUM_RECORDS_UNKNOWN = -1;
 	
 	/**
 	 * Constant indicating that average record width is unknown.
+	 * 不清楚平均每一个数据的长度
 	 */
 	@PublicEvolving
 	public static final float AVG_RECORD_BYTES_UNKNOWN = -1.0f;
@@ -52,6 +56,7 @@ public interface BaseStatistics {
 	 * Gets the total size of the input.
 	 *   
 	 * @return The total size of the input, in bytes.
+	 * 获取文件总大小
 	 */
 	@PublicEvolving
 	public long getTotalInputSize();
@@ -60,6 +65,7 @@ public interface BaseStatistics {
 	 * Gets the number of records in the input (= base cardinality).
 	 * 
 	 * @return The number of records in the input.
+	 * 文件总行数
 	 */
 	@PublicEvolving
 	public long getNumberOfRecords();
@@ -68,6 +74,7 @@ public interface BaseStatistics {
 	 * Gets the average width of a record, in bytes.
 	 * 
 	 * @return The average width of a record in bytes.
+	 * 文件数据平均长度
 	 */
 	@PublicEvolving
 	public float getAverageRecordWidth();

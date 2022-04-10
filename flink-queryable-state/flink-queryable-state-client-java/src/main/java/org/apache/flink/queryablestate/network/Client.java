@@ -64,6 +64,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @param <REQ> the type of request the client will send.
  * @param <RESP> the type of response the client expects to receive.
+ *
+ * 代表一个客户端,该客户端已经明确只能传出某一个具体的request和response。即不同的request要生产不同的客户端对象
  */
 @Internal
 public class Client<REQ extends MessageBody, RESP extends MessageBody> {
@@ -227,27 +229,28 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 
 	/**
 	 * A pending connection that is in the process of connecting.
+	 * 连接中
 	 */
 	private class PendingConnection implements ChannelFutureListener {
 
 		/** Lock to guard the connect call, channel hand in, etc. */
 		private final Object connectLock = new Object();
 
-		/** Address of the server we are connecting to. */
+		/** Address of the server we are connecting to.服务器ip+port */
 		private final InetSocketAddress serverAddress;
 
-		private final MessageSerializer<REQ, RESP> serializer;
+		private final MessageSerializer<REQ, RESP> serializer;//如何序列化request和response
 
-		/** Queue of requests while connecting. */
+		/** Queue of requests while connecting. 等待的请求队列*/
 		private final ArrayDeque<PendingRequest> queuedRequests = new ArrayDeque<>();
 
-		/** The established connection after the connect succeeds. */
+		/** The established connection after the connect succeeds.成功建立的连接 */
 		private EstablishedConnection established;
 
-		/** Atomic shut down future. */
+		/** Atomic shut down future. 请求被关闭*/
 		private final AtomicReference<CompletableFuture<Void>> connectionShutdownFuture = new AtomicReference<>(null);
 
-		/** Failure cause if something goes wrong. */
+		/** Failure cause if something goes wrong. 请求处理中出现异常*/
 		private Throwable failureCause;
 
 		/**
@@ -302,7 +305,7 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 
 		/**
 		 * Hands in a channel after a successful connection.
-		 *
+		 * 说明连接成功
 		 * @param channel Channel to hand in
 		 */
 		private void handInChannel(Channel channel) {
@@ -313,7 +316,7 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 					// new ones can be enqueued.
 					channel.close();
 				} else {
-					established = new EstablishedConnection(serverAddress, serializer, channel);
+					established = new EstablishedConnection(serverAddress, serializer, channel);//建立连接
 
 					while (!queuedRequests.isEmpty()) {
 						final PendingRequest pending = queuedRequests.poll();
@@ -397,8 +400,9 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 
 		/**
 		 * A pending request queued while the channel is connecting.
+		 * 接受一个请求
 		 */
-		private final class PendingRequest extends CompletableFuture<RESP> {
+		private final class PendingRequest extends CompletableFuture<RESP> { //返回值是response对象
 
 			private final REQ request;
 
@@ -411,16 +415,17 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 	/**
 	 * An established connection that wraps the actual channel instance and is
 	 * registered at the {@link ClientHandler} for callbacks.
+	 * 已建立连接
 	 */
 	private class EstablishedConnection implements ClientHandlerCallback<RESP> {
 
-		/** Address of the server we are connected to. */
+		/** Address of the server we are connected to. 连接的服务器*/
 		private final InetSocketAddress serverAddress;
 
 		/** The actual TCP channel. */
 		private final Channel channel;
 
-		/** Pending requests keyed by request ID. */
+		/** Pending requests keyed by request ID. 每一个请求id对应的请求实体*/
 		private final ConcurrentHashMap<Long, TimestampedCompletableFuture> pendingRequests = new ConcurrentHashMap<>();
 
 		/** Current request number used to assign unique request IDs. */
@@ -446,10 +451,10 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 			// Add the client handler with the callback
 			channel.pipeline().addLast(
 					getClientName() + " Handler",
-					new ClientHandler<>(clientName, serializer, this)
+					new ClientHandler<>(clientName, serializer, this) //每一个请求去监听response数据是否正常返回,对应触发不同的逻辑关系
 			);
 
-			stats.reportActiveConnection();
+			stats.reportActiveConnection();//连接成功
 		}
 
 		/**
@@ -503,11 +508,12 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 			TimestampedCompletableFuture requestPromiseTs =
 					new TimestampedCompletableFuture(System.nanoTime());
 			try {
-				final long requestId = requestCount.getAndIncrement();
+				final long requestId = requestCount.getAndIncrement();//产生requestId
 				pendingRequests.put(requestId, requestPromiseTs);
 
 				stats.reportRequest();
 
+				//传输的字节数组
 				ByteBuf buf = MessageSerializer.serializeRequest(channel.alloc(), requestId, request);
 
 				channel.writeAndFlush(buf).addListener((ChannelFutureListener) future -> {
@@ -581,10 +587,11 @@ public class Client<REQ extends MessageBody, RESP extends MessageBody> {
 
 		/**
 		 * Pair of promise and a timestamp.
+		 * 每一个请求id对应的请求实体
 		 */
-		private class TimestampedCompletableFuture extends CompletableFuture<RESP> {
+		private class TimestampedCompletableFuture extends CompletableFuture<RESP> {//返回值是response对象
 
-			private final long timestampInNanos;
+			private final long timestampInNanos;//发送请求时的时间戳
 
 			TimestampedCompletableFuture(long timestampInNanos) {
 				this.timestampInNanos = timestampInNanos;

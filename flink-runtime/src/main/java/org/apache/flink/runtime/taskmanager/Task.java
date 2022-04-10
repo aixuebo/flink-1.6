@@ -122,6 +122,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * produce (if any).
  *
  * <p>Each Task is run by one dedicated thread.
+ * 一个task尝试任务,该任务会在task节点被独立启动执行一段逻辑。一个job的同一个task可以被尝试执行N次,每一次都是可以抽象成一个task
  */
 public class Task implements Runnable, TaskActions, CheckpointListener {
 
@@ -220,7 +221,7 @@ public class Task implements Runnable, TaskActions, CheckpointListener {
 	/** The gateway to the network stack, which handles inputs and produced results. */
 	private final NetworkEnvironment network;
 
-	/** The registry of this task which enables live reporting of accumulators. */
+	/** The registry of this task which enables live reporting of accumulators.记录task任务的内存统计信息,需要同步给jobManager */
 	private final AccumulatorRegistry accumulatorRegistry;
 
 	/** The thread that executes the task. */

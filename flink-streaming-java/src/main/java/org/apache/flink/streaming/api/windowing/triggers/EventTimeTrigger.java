@@ -26,6 +26,8 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
  * to which a pane belongs.
  *
  * @see org.apache.flink.streaming.api.watermark.Watermark
+ *
+ * 通过对比Watermark和窗口的Endtime确定是否触发窗口计算，如果Watermark大于Window EndTime则触发
  */
 @PublicEvolving
 public class EventTimeTrigger extends Trigger<Object, TimeWindow> {
@@ -33,6 +35,7 @@ public class EventTimeTrigger extends Trigger<Object, TimeWindow> {
 
 	private EventTimeTrigger() {}
 
+	//通过对比Watermark和窗口的Endtime确定是否触发窗口计算，如果Watermark大于Window EndTime则触发
 	@Override
 	public TriggerResult onElement(Object element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
 		if (window.maxTimestamp() <= ctx.getCurrentWatermark()) {

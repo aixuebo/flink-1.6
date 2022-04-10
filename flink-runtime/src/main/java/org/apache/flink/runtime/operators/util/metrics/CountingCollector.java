@@ -20,8 +20,12 @@ package org.apache.flink.runtime.operators.util.metrics;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.util.Collector;
 
+/**
+ * 对Collector进行包装，包装一层计数器
+ * @param <OUT>
+ */
 public class CountingCollector<OUT> implements Collector<OUT> {
-	private final Collector<OUT> collector;
+	private final Collector<OUT> collector;//用于输出数据流
 	private final Counter numRecordsOut;
 
 	public CountingCollector(Collector<OUT> collector, Counter numRecordsOut) {
@@ -31,8 +35,8 @@ public class CountingCollector<OUT> implements Collector<OUT> {
 
 	@Override
 	public void collect(OUT record) {
-		this.numRecordsOut.inc();
-		this.collector.collect(record);
+		this.numRecordsOut.inc();//计数器
+		this.collector.collect(record);//输出
 	}
 
 	@Override

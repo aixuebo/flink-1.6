@@ -26,11 +26,14 @@ import org.apache.flink.runtime.rest.handler.RestHandlerSpecification;
  * @param <R> type of the request
  * @param <M> type of the message message parameters
  */
-public interface UntypedResponseMessageHeaders<R extends RequestBody, M extends MessageParameters> extends RestHandlerSpecification {
+public interface UntypedResponseMessageHeaders<R extends RequestBody,
+							M extends MessageParameters>
+							extends RestHandlerSpecification {
 	/**
 	 * Returns the class of the request message.
 	 *
 	 * @return class of the request message
+	 * request类型
 	 */
 	Class<R> getRequestClass();
 
@@ -38,6 +41,7 @@ public interface UntypedResponseMessageHeaders<R extends RequestBody, M extends 
 	 * Returns a new {@link MessageParameters} object.
 	 *
 	 * @return new message parameters object
+	 * 参数对象,用于生产url的动态key替换
 	 */
 	M getUnresolvedMessageParameters();
 
@@ -45,6 +49,7 @@ public interface UntypedResponseMessageHeaders<R extends RequestBody, M extends 
 	 * Returns whether this header allows file uploads.
 	 *
 	 * @return whether this header allows file uploads
+	 * 是否允许上传文件
 	 */
 	default boolean acceptsFileUploads() {
 		return false;

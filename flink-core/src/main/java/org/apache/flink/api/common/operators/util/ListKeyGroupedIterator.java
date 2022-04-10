@@ -30,21 +30,23 @@ import java.util.NoSuchElementException;
 
 /**
  * The KeyValueIterator returns a key and all values that belong to the key (share the same key).
+ * 参见 OuterJoinOperatorBase
+ * 返回一个key与对应的value集合
  */
 @Internal
 public final class ListKeyGroupedIterator<E> {
 
-	private final List<E> input;
+	private final List<E> input;//数据源集合 --- 要求按照key已经排序好
 
 	private final TypeSerializer<E> serializer;  // != null if the elements should be copied
 	
-	private final TypeComparator<E> comparator;
+	private final TypeComparator<E> comparator;//如何根据数据源的核心key字段,去生产排序信息
 
-	private ValuesIterator valuesIterator;
+	private ValuesIterator valuesIterator;//key对应的value迭代器
 
 	private int currentPosition = 0;
 
-	private E lookahead;
+	private E lookahead;//下一个key第一次出现的值
 	
 	private boolean done;
 
@@ -71,13 +73,14 @@ public final class ListKeyGroupedIterator<E> {
 	 * iterator created by the {@link #getValues()} method. Hence, if called multiple times it "removes" key groups.
 	 *
 	 * @return true, if the input iterator has an other group of records with the same key.
+	 * 是否找到下一个key
 	 */
 	public boolean nextKey() throws IOException {
 
 		if (lookahead != null) {
 			// common case: whole value-iterator was consumed and a new key group is available.
-			this.comparator.setReference(this.lookahead);
-			this.valuesIterator.next = this.lookahead;
+			this.comparator.setReference(this.lookahead);//设置下一个key的比较器
+			this.valuesIterator.next = this.lookahead;//设置下一个key
 			this.lookahead = null;
 			this.valuesIterator.iteratorAvailable = true;
 			return true;
@@ -112,11 +115,11 @@ public final class ListKeyGroupedIterator<E> {
 			}
 		}
 		else {
-			// first element
+			// first element 第一个元素会走这个逻辑
 			// get the next element
-			E first = input.get(currentPosition++);
+			E first = input.get(currentPosition++);//找到当前的数据
 			if (first != null) {
-				this.comparator.setReference(first);
+				this.comparator.setReference(first);//设置当前的key
 				this.valuesIterator = new ValuesIterator(first, serializer);
 				return true;
 			}
@@ -128,14 +131,15 @@ public final class ListKeyGroupedIterator<E> {
 		}
 	}
 
+	//返回相同key的下一个元素,如果返回是null,说明当前key相同的值已经不存在了,或者done了
 	private E advanceToNext() {
 		if (currentPosition < input.size()) {
 			E next = input.get(currentPosition++);
-			if (comparator.equalToReference(next)) {
+			if (comparator.equalToReference(next)) {//判断key没有发生变化
 				// same key
 				return next;
 			} else {
-				// moved to the next key, no more values here
+				// moved to the next key, no more values here 此时说明要移动key,因为当前key已经没有value值了
 				lookahead = next;
 				return null;
 			}
@@ -153,6 +157,7 @@ public final class ListKeyGroupedIterator<E> {
 	 * always a non-null value, if a previous call to {@link #nextKey()} return <code>true</code>.
 	 *
 	 * @return Iterator over all values that belong to the current key.
+	 * 当前key对应的value集合
 	 */
 	public ValuesIterator getValues() {
 		return this.valuesIterator;
@@ -162,7 +167,7 @@ public final class ListKeyGroupedIterator<E> {
 
 	public final class ValuesIterator implements Iterator<E>, Iterable<E> {
 
-		private E next;
+		private E next;//当前的key(第一次出现该key时) 或者 一行具体的信息
 
 		private boolean iteratorAvailable = true;
 
@@ -181,8 +186,8 @@ public final class ListKeyGroupedIterator<E> {
 		@Override
 		public E next() {
 			if (this.next != null) {
-				E current = this.next;
-				this.next = ListKeyGroupedIterator.this.advanceToNext();
+				E current = this.next;//获取下一个元素
+				this.next = ListKeyGroupedIterator.this.advanceToNext();//获取下一条数据
 				return serializer.copy(current);
 			} else {
 				throw new NoSuchElementException();

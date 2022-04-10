@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The gateway for calls on the {@link SlotPool}.
+ * SlotPool的网关对象,对外提供了什么能力
  */
 public interface SlotPoolGateway extends AllocatedSlotActions, RpcGateway {
 
@@ -79,6 +80,7 @@ public interface SlotPoolGateway extends AllocatedSlotActions, RpcGateway {
 	 *
 	 * @param resourceID identifying the TaskExecutor to register
 	 * @return Future acknowledge which is completed after the TaskExecutor has been registered
+	 * 记录好task节点id,该task节点可以提供slot运行任务
 	 */
 	CompletableFuture<Acknowledge> registerTaskManager(ResourceID resourceID);
 
@@ -88,6 +90,7 @@ public interface SlotPoolGateway extends AllocatedSlotActions, RpcGateway {
 	 * @param resourceId identifying the TaskExecutor which shall be released from the SlotPool
 	 * @param cause for the releasing of the TaskManager
 	 * @return Future acknowledge which is completed after the TaskExecutor has been released
+	 * 与某一个task节点不在有联系,即该task节点不会在给job提供slot
 	 */
 	CompletableFuture<Acknowledge> releaseTaskManager(final ResourceID resourceId, final Exception cause);
 

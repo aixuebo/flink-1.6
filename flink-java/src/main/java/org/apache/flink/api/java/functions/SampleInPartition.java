@@ -33,12 +33,13 @@ import java.util.Iterator;
  * sample algorithm). It executes the partition side sample logic in a mapPartition function.
  *
  * @param <T> The type of input data
+ * 属于mapPartition函数,每一个mapPartition中抽样numSample个数据
  */
 @Internal
 public class SampleInPartition<T> extends RichMapPartitionFunction<T, IntermediateSampleData<T>> {
 
-	private boolean withReplacement;
-	private int numSample;
+	private boolean withReplacement;//是否重复抽样
+	private int numSample;//抽样数量
 	private long seed;
 
 	/**

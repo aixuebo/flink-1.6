@@ -206,7 +206,7 @@ public class NetworkEnvironment {
 		BufferPool bufferPool = null;
 
 		try {
-			int maxNumberOfMemorySegments = partition.getPartitionType().isBounded() ?
+			int maxNumberOfMemorySegments = partition.getPartitionType().isBounded() ? //是否有界
 				partition.getNumberOfSubpartitions() * networkBuffersPerChannel +
 					extraNetworkBuffersPerGate : Integer.MAX_VALUE;
 			bufferPool = networkBufferPool.createBufferPool(partition.getNumberOfSubpartitions(),

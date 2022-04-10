@@ -292,7 +292,8 @@ public abstract class TypeComparator<T> implements Serializable {
 	 * @param record The record that contains the key(s)
 	 * @param target The array to write the key(s) into.
 	 * @param index The offset of the target array to start writing into.
-	 * @return the number of keys added to target.
+	 * @return the number of keys added to target.返回向target中添加了多少个结果
+	 * 即从record中提取数据,将其添加到target数组中，从index位置开始追加数据
 	 */
 	public abstract int extractKeys(Object record, Object[] target, int index);
 

@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Task manager gateway interface to communicate with the task manager.
+ * 如何与TaskManager进行交流
  */
 public interface TaskManagerGateway {
 
@@ -178,6 +179,7 @@ public interface TaskManagerGateway {
 	 *
 	 * @param timeout for the request
 	 * @return Future blob key under which the task manager log has been stored
+	 * 请求task网关,让task把相关日志上传到blob服务
 	 */
 	CompletableFuture<TransientBlobKey> requestTaskManagerLog(final Time timeout);
 
@@ -186,6 +188,7 @@ public interface TaskManagerGateway {
 	 *
 	 * @param timeout for the request
 	 * @return Future blob key under which the task manager stdout file has been stored
+	 * 请求task网关,让task把相关日志上传到blob服务
 	 */
 	CompletableFuture<TransientBlobKey> requestTaskManagerStdout(final Time timeout);
 

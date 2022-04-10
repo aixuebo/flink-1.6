@@ -29,18 +29,21 @@ import org.apache.flink.types.LongValue;
 public class LongSumAggregator implements Aggregator<LongValue> {
 
 	private long sum;	// the sum
-	
+
+	//返回聚合的结果
 	@Override
 	public LongValue getAggregate() {
 		return new LongValue(sum);
 	}
 
+	//参与聚合累加
 	@Override
 	public void aggregate(LongValue element) {
 		sum += element.getValue();
 	}
 	
 	/**
+	 * 参与聚合累加
 	 * Adds the given value to the current aggregate.
 	 * 
 	 * @param value The value to add to the aggregate.

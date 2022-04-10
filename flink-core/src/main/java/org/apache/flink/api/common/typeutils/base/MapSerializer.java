@@ -52,10 +52,10 @@ public final class MapSerializer<K, V> extends TypeSerializer<Map<K, V>> {
 	private static final long serialVersionUID = -6885593032367050078L;
 	
 	/** The serializer for the keys in the map */
-	private final TypeSerializer<K> keySerializer;
+	private final TypeSerializer<K> keySerializer;//如何序列化key
 
 	/** The serializer for the values in the map */
-	private final TypeSerializer<V> valueSerializer;
+	private final TypeSerializer<V> valueSerializer;//如何序列化value
 
 	/**
 	 * Creates a map serializer that uses the given serializers to serialize the key-value pairs in the map.

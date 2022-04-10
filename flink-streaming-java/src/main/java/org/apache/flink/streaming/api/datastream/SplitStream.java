@@ -31,12 +31,15 @@ import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
  * call the transformation on the SplitStream
  *
  * @param <OUT> The type of the elements in the Stream
+ *
+ * 将自己流本身输出到多个name输出流中  DataStream.split方法转换成该流
+ *
  */
-
 @PublicEvolving
 public class SplitStream<OUT> extends DataStream<OUT> {
 
 	protected SplitStream(DataStream<OUT> dataStream, OutputSelector<OUT> outputSelector) {
+		//SplitTransformation  相当于map操作,为每一个流 追加tag信息
 		super(dataStream.getExecutionEnvironment(), new SplitTransformation<OUT>(dataStream.getTransformation(), outputSelector));
 	}
 
@@ -47,11 +50,14 @@ public class SplitStream<OUT> extends DataStream<OUT> {
 	 *            The output names for which the operator will receive the
 	 *            input.
 	 * @return Returns the selected DataStream
+	 *
+	 * 基于OutputSelector的标签,输出子流
 	 */
 	public DataStream<OUT> select(String... outputNames) {
 		return selectOutput(outputNames);
 	}
 
+	//基于多个OutputSelector的标签,输出子流
 	private DataStream<OUT> selectOutput(String[] outputNames) {
 		for (String outName : outputNames) {
 			if (outName == null) {

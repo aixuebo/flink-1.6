@@ -22,12 +22,14 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * Summary for a column of values.
+ * 列信息的元数据统计
  */
 @PublicEvolving
 public abstract class ColumnSummary {
 
 	/**
 	 * The number of all rows in this column including both nulls and non-nulls.
+	 * 全部数量
 	 */
 	public long getTotalCount() {
 		return getNullCount() + getNonNullCount();
@@ -35,16 +37,19 @@ public abstract class ColumnSummary {
 
 	/**
 	 * The number of non-null values in this column.
+	 * 非null的数量
 	 */
 	public abstract long getNonNullCount();
 
 	/**
 	 * The number of null values in this column.
+	 * null的数量
 	 */
 	public abstract long getNullCount();
 
 	/**
 	 * True if this column contains any null values.
+	 * 是否包含null
 	 */
 	public boolean containsNull() {
 		return getNullCount() > 0L;
@@ -52,6 +57,7 @@ public abstract class ColumnSummary {
 
 	/**
 	 * True if this column contains any non-null values.
+	 * 是否有非null
 	 */
 	public boolean containsNonNull() {
 		return getNonNullCount() > 0L;

@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
  * {@link org.apache.flink.streaming.runtime.tasks.StreamIterationHead} and
  * {@link org.apache.flink.streaming.runtime.tasks.StreamIterationTail} for implementing feedback
  * streams.
+ * 阻塞队列
  */
 @Internal
 public class BlockingQueueBroker extends Broker<BlockingQueue<?>> {

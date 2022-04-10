@@ -39,11 +39,11 @@ public abstract class CsvInputFormat<OUT> extends GenericCsvInputFormat<OUT> {
 
 	private static final long serialVersionUID = 1L;
 
-	public static final String DEFAULT_LINE_DELIMITER = "\n";
+	public static final String DEFAULT_LINE_DELIMITER = "\n";//换行符
 
-	public static final String DEFAULT_FIELD_DELIMITER = ",";
+	public static final String DEFAULT_FIELD_DELIMITER = ",";//属性拆分符
 
-	protected transient Object[] parsedValues;
+	protected transient Object[] parsedValues;//存储解析后的一行数据值
 
 	protected CsvInputFormat(Path filePath) {
 		super(filePath);
@@ -82,7 +82,7 @@ public abstract class CsvInputFormat<OUT> extends GenericCsvInputFormat<OUT> {
 		OUT returnRecord = null;
 		do {
 			returnRecord = super.nextRecord(record);
-		} while (returnRecord == null && !reachedEnd());
+		} while (returnRecord == null && !reachedEnd());//null可能是备注
 
 		return returnRecord;
 	}
@@ -93,7 +93,7 @@ public abstract class CsvInputFormat<OUT> extends GenericCsvInputFormat<OUT> {
 		 * Fix to support windows line endings in CSVInputFiles with standard delimiter setup = \n
 		 */
 		// Found window's end line, so find carriage return before the newline
-		if (this.lineDelimiterIsLinebreak && numBytes > 0 && bytes[offset + numBytes - 1] == '\r') {
+		if (this.lineDelimiterIsLinebreak && numBytes > 0 && bytes[offset + numBytes - 1] == '\r') {//如果换行符为\n,则要在原始数据中考虑删除\r的问题
 			//reduce the number of bytes so that the Carriage return is not taken as data
 			numBytes--;
 		}
@@ -101,7 +101,7 @@ public abstract class CsvInputFormat<OUT> extends GenericCsvInputFormat<OUT> {
 		if (commentPrefix != null && commentPrefix.length <= numBytes) {
 			//check record for comments
 			boolean isComment = true;
-			for (int i = 0; i < commentPrefix.length; i++) {
+			for (int i = 0; i < commentPrefix.length; i++) {//全部命中,则说明是备注行
 				if (commentPrefix[i] != bytes[offset + i]) {
 					isComment = false;
 					break;
@@ -113,20 +113,22 @@ public abstract class CsvInputFormat<OUT> extends GenericCsvInputFormat<OUT> {
 			}
 		}
 
-		if (parseRecord(parsedValues, bytes, offset, numBytes)) {
-			return fillRecord(reuse, parsedValues);
+		if (parseRecord(parsedValues, bytes, offset, numBytes)) {//填充数据值
+			return fillRecord(reuse, parsedValues);//将数据填充成对象
 		} else {
 			this.invalidLineCount++;
 			return null;
 		}
 	}
 
+	//填充数据  reuse表示最终的对象,可以重复用。  parsedValues表示解析的每一行数据
 	protected abstract OUT fillRecord(OUT reuse, Object[] parsedValues);
 
 	public Class<?>[] getFieldTypes() {
 		return super.getGenericFieldTypes();
 	}
 
+	//全部数字都是true
 	protected static boolean[] createDefaultMask(int size) {
 		boolean[] includedMask = new boolean[size];
 		for (int x = 0; x < includedMask.length; x++) {

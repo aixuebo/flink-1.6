@@ -27,6 +27,7 @@ public interface AsyncExceptionHandler {
 	/**
 	 * Handles an exception thrown by another thread (e.g. a TriggerTask),
 	 * other than the one executing the main task.
+	 * 如何处理其他线程产生的异常
 	 */
 	void handleAsyncException(String message, Throwable exception);
 }

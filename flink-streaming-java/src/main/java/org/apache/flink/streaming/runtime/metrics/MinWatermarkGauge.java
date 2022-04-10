@@ -22,6 +22,7 @@ import org.apache.flink.metrics.Gauge;
 
 /**
  * A {@link Gauge} for exposing the minimum watermark of a {@link WatermarkGauge} pair.
+ * 计算最小水印
  */
 public class MinWatermarkGauge implements Gauge<Long> {
 

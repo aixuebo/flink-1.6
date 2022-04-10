@@ -56,6 +56,8 @@ import static java.util.Objects.requireNonNull;
  *     .window(TumblingEventTimeWindows.of(Time.of(5, TimeUnit.SECONDS)))
  *     .apply(new MyJoinFunction());
  * } </pre>
+ *
+ * 代表两个流可以做join操作
  */
 @Public
 public class JoinedStreams<T1, T2> {
@@ -81,6 +83,7 @@ public class JoinedStreams<T1, T2> {
 	 * Specifies a {@link KeySelector} for elements from the first input.
 	 *
 	 * @param keySelector The KeySelector to be used for extracting the key for partitioning.
+	 * 将元素转换成key
 	 */
 	public <KEY> Where<KEY> where(KeySelector<T1, KEY> keySelector)  {
 		requireNonNull(keySelector);
@@ -93,6 +96,7 @@ public class JoinedStreams<T1, T2> {
 	 *
 	 * @param keySelector The KeySelector to be used for extracting the first input's key for partitioning.
 	 * @param keyType The type information describing the key type.
+	 * 将元素转换成key
 	 */
 	public <KEY> Where<KEY> where(KeySelector<T1, KEY> keySelector, TypeInformation<KEY> keyType)  {
 		requireNonNull(keySelector);
@@ -110,8 +114,8 @@ public class JoinedStreams<T1, T2> {
 	@Public
 	public class Where<KEY> {
 
-		private final KeySelector<T1, KEY> keySelector1;
-		private final TypeInformation<KEY> keyType;
+		private final KeySelector<T1, KEY> keySelector1;//转换器
+		private final TypeInformation<KEY> keyType;//key类型
 
 		Where(KeySelector<T1, KEY> keySelector1, TypeInformation<KEY> keyType) {
 			this.keySelector1 = keySelector1;
@@ -151,6 +155,7 @@ public class JoinedStreams<T1, T2> {
 
 		/**
 		 * A join operation that has {@link KeySelector KeySelectors} defined for both inputs.
+		 *
 		 */
 		@Public
 		public class EqualTo {
@@ -412,7 +417,7 @@ public class JoinedStreams<T1, T2> {
 	 * CoGroup function that does a nested-loop join to get the join result.
 	 */
 	private static class JoinCoGroupFunction<T1, T2, T>
-			extends WrappingFunction<JoinFunction<T1, T2, T>>
+			extends WrappingFunction<JoinFunction<T1, T2, T>> //仅用于拿到每一个流的一个元素,转换成输出
 			implements CoGroupFunction<T1, T2, T> {
 		private static final long serialVersionUID = 1L;
 
@@ -420,6 +425,7 @@ public class JoinedStreams<T1, T2> {
 			super(wrappedFunction);
 		}
 
+		//相同key,对应两个流的集合
 		@Override
 		public void coGroup(Iterable<T1> first, Iterable<T2> second, Collector<T> out) throws Exception {
 			for (T1 val1: first) {

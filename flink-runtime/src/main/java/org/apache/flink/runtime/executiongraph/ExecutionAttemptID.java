@@ -25,6 +25,7 @@ import org.apache.flink.shaded.netty4.io.netty.buffer.ByteBuf;
 /**
  * Unique identifier for the attempt to execute a tasks. Multiple attempts happen
  * in cases of failures and recovery.
+ * 尝试执行的任务ID
  */
 public class ExecutionAttemptID extends AbstractID {
 

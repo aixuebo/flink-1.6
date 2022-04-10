@@ -48,6 +48,9 @@ import java.util.List;
  * <p><b>NOTE:</b> This source has a parallelism of 1.
  *
  * @param <T> The type of elements returned by this function.
+ *
+ * 为什么先序列化，在反序列化，多此一举呢？不太清楚，按照注解的方式说，防止是java serialization造成的影响。。。但不重要了。
+ * 反正是发送给定的数组，可以跳过数组的一部分元素，从中间开始发送数据。
  */
 @PublicEvolving
 public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedFunction {
@@ -55,37 +58,38 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 	private static final long serialVersionUID = 1L;
 
 	/** The (de)serializer to be used for the data elements. */
-	private final TypeSerializer<T> serializer;
+	private final TypeSerializer<T> serializer;//如何序列化数组
 
 	/** The actual data elements, in serialized form. */
-	private final byte[] elementsSerialized;
+	private final byte[] elementsSerialized;//数组序列化后存储到字节数组中
 
 	/** The number of serialized elements. */
-	private final int numElements;
+	private final int numElements;//数组元素数量
 
 	/** The number of elements emitted already. */
-	private volatile int numElementsEmitted;
+	private volatile int numElementsEmitted;//已经发送了多少个元素,注意:包含跳过的元素
 
 	/** The number of elements to skip initially. */
-	private volatile int numElementsToSkip;
+	private volatile int numElementsToSkip;//发送前要先跳过N个元素,应用在checkpoint前。即不是所有的数组元素都会被发送
 
 	/** Flag to make the source cancelable. */
 	private volatile boolean isRunning = true;
 
 	private transient ListState<Integer> checkpointedState;
 
+	//参数数组内容，如何对数组元素序列化
 	public FromElementsFunction(TypeSerializer<T> serializer, T... elements) throws IOException {
 		this(serializer, Arrays.asList(elements));
 	}
 
 	public FromElementsFunction(TypeSerializer<T> serializer, Iterable<T> elements) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		DataOutputViewStreamWrapper wrapper = new DataOutputViewStreamWrapper(baos);
+		DataOutputViewStreamWrapper wrapper = new DataOutputViewStreamWrapper(baos);//用于存储序列化后的结果
 
 		int count = 0;
 		try {
 			for (T element : elements) {
-				serializer.serialize(element, wrapper);
+				serializer.serialize(element, wrapper);//序列化每一个数组元素
 				count++;
 			}
 		}
@@ -130,11 +134,11 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 		final DataInputView input = new DataInputViewStreamWrapper(bais);
 
 		// if we are restored from a checkpoint and need to skip elements, skip them now.
-		int toSkip = numElementsToSkip;
+		int toSkip = numElementsToSkip;//跳过一部分元素
 		if (toSkip > 0) {
 			try {
 				while (toSkip > 0) {
-					serializer.deserialize(input);
+					serializer.deserialize(input);//反序列化
 					toSkip--;
 				}
 			}
@@ -144,15 +148,15 @@ public class FromElementsFunction<T> implements SourceFunction<T>, CheckpointedF
 						"serialization functions.\nSerializer is " + serializer);
 			}
 
-			this.numElementsEmitted = this.numElementsToSkip;
+			this.numElementsEmitted = this.numElementsToSkip;//跳过元素数量 也算到发送数量里
 		}
 
 		final Object lock = ctx.getCheckpointLock();
 
-		while (isRunning && numElementsEmitted < numElements) {
+		while (isRunning && numElementsEmitted < numElements) {//依次发送数据
 			T next;
 			try {
-				next = serializer.deserialize(input);
+				next = serializer.deserialize(input);//反序列化后发送
 			}
 			catch (Exception e) {
 				throw new IOException("Failed to deserialize an element from the source. " +

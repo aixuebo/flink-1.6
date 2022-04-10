@@ -45,7 +45,7 @@ public abstract class Tuple implements java.io.Serializable {
 	/**
 	 * Gets the field at the specified position.
 	 *
-	 * @param pos The position of the field, zero indexed.
+	 * @param pos The position of the field, zero indexed. 从0开始计数
 	 * @return The field at the specified position.
 	 * @throws IndexOutOfBoundsException Thrown, if the position is negative, or equal to, or larger than the number of fields.
 	 */
@@ -98,6 +98,7 @@ public abstract class Tuple implements java.io.Serializable {
 	 *
 	 * @param arity The arity of the tuple class to get.
 	 * @return The tuple class with the given arity.
+	 * 返回Tuple具体类 --- 根据元素数量
 	 */
 	@SuppressWarnings("unchecked")
 	public static Class<? extends Tuple> getTupleClass(int arity) {

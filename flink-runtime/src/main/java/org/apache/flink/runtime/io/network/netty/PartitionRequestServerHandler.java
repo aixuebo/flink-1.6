@@ -43,7 +43,7 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
 
 	private static final Logger LOG = LoggerFactory.getLogger(PartitionRequestServerHandler.class);
 
-	private final ResultPartitionProvider partitionProvider;
+	private final ResultPartitionProvider partitionProvider;//如何读取分区内的数据
 
 	private final TaskEventDispatcher taskEventDispatcher;
 
@@ -73,6 +73,7 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
 		super.channelUnregistered(ctx);
 	}
 
+	//接收客户端的请求
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, NettyMessage msg) throws Exception {
 		try {
@@ -99,6 +100,7 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
 							outboundQueue);
 					}
 
+					//读取一个子分区数据
 					reader.requestSubpartitionView(
 						partitionProvider,
 						request.partitionId,
@@ -136,10 +138,12 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
 		}
 	}
 
+	//返回ErrorResponse对象
 	private void respondWithError(ChannelHandlerContext ctx, Throwable error) {
 		ctx.writeAndFlush(new NettyMessage.ErrorResponse(error));
 	}
 
+	//返回ErrorResponse对象
 	private void respondWithError(ChannelHandlerContext ctx, Throwable error, InputChannelID sourceId) {
 		LOG.debug("Responding with error: {}.", error.getClass());
 

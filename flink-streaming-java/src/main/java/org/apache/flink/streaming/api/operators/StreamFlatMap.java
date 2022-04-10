@@ -38,15 +38,16 @@ public class StreamFlatMap<IN, OUT>
 		chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
+	//重写open函数,因为flatMap会产生多个结果,因此需要有共享同一个时间戳的output
 	@Override
 	public void open() throws Exception {
 		super.open();
-		collector = new TimestampedCollector<>(output);
+		collector = new TimestampedCollector<>(output);//需要公用时间戳,因此封装out
 	}
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
-		collector.setTimestamp(element);
+		collector.setTimestamp(element);//设置时间戳
 		userFunction.flatMap(element.getValue(), collector);
 	}
 }

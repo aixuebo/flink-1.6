@@ -40,38 +40,39 @@ import scala.concurrent.duration.Duration;
 
 /**
  * Configuration object for {@link TaskExecutor}.
+ * 从配置文件中组装TaskManagerConfiguration对象
  */
 public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskManagerConfiguration.class);
 
-	private final int numberSlots;
+	private final int numberSlots;//服务节点提供的slot数量
 
-	private final String[] tmpDirectories;
+	private final String[] tmpDirectories;//服务节点的临时目录文件集合
 
-	private final Time timeout;
+	private final Time timeout;//配置akka的超时时间
 
 	// null indicates an infinite duration
 	@Nullable
-	private final Time maxRegistrationDuration;
+	private final Time maxRegistrationDuration;//taskmanager.registration.timeout
 
-	private final Time initialRegistrationPause;
+	private final Time initialRegistrationPause;//taskmanager.registration.initial-backoff
 	private final Time maxRegistrationPause;
 	private final Time refusedRegistrationPause;
 
 	private final UnmodifiableConfiguration configuration;
 
-	private final boolean exitJvmOnOutOfMemory;
+	private final boolean exitJvmOnOutOfMemory;//OOM时,是否退出JVM
 
 	private final FlinkUserCodeClassLoaders.ResolveOrder classLoaderResolveOrder;
 
 	private final String[] alwaysParentFirstLoaderPatterns;
 
 	@Nullable
-	private final String taskManagerLogPath;
+	private final String taskManagerLogPath;//taskmanager.log.path 日志输出目录
 
 	@Nullable
-	private final String taskManagerStdoutPath;
+	private final String taskManagerStdoutPath;//日志输出目录--标准out文件输出目录
 
 	public TaskManagerConfiguration(
 		int numberSlots,
@@ -165,18 +166,21 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 	// --------------------------------------------------------------------------------------------
 	//  Static factory methods
 	// --------------------------------------------------------------------------------------------
-
+    //从配置文件中组装TaskManagerConfiguration对象
 	public static TaskManagerConfiguration fromConfiguration(Configuration configuration) {
+
+		//该节点上slot数量
 		int numberSlots = configuration.getInteger(TaskManagerOptions.NUM_TASK_SLOTS, 1);
 
 		if (numberSlots == -1) {
 			numberSlots = 1;
 		}
 
+		//获取服务器临时目录集合
 		final String[] tmpDirPaths = ConfigurationUtils.parseTempDirectories(configuration);
 
+		//akka超时时间
 		final Time timeout;
-
 		try {
 			timeout = Time.milliseconds(AkkaUtils.getTimeout(configuration).toMillis());
 		} catch (Exception e) {
@@ -187,8 +191,8 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 
 		LOG.info("Messages have a max timeout of " + timeout);
 
+		//taskmanager.registration.timeout
 		final Time finiteRegistrationDuration;
-
 		try {
 			Duration maxRegistrationDuration = Duration.create(configuration.getString(TaskManagerOptions.REGISTRATION_TIMEOUT));
 			if (maxRegistrationDuration.isFinite()) {
@@ -241,6 +245,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 				TaskManagerOptions.INITIAL_REGISTRATION_BACKOFF.key(), e);
 		}
 
+		//OOM时,是否退出JVM
 		final boolean exitOnOom = configuration.getBoolean(TaskManagerOptions.KILL_ON_OUT_OF_MEMORY);
 
 		final String classLoaderResolveOrder =
@@ -248,6 +253,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
 
 		final String[] alwaysParentFirstLoaderPatterns = CoreOptions.getParentFirstLoaderPatterns(configuration);
 
+		//日志输出目录
 		final String taskManagerLogPath = configuration.getString(ConfigConstants.TASK_MANAGER_LOG_PATH_KEY, System.getProperty("log.file"));
 		final String taskManagerStdoutPath;
 

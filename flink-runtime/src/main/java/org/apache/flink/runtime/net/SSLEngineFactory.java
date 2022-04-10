@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Creates and configures {@link SSLEngine} instances.
+ * 套一层ssl安全引擎
  */
 public class SSLEngineFactory {
 

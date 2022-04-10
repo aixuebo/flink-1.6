@@ -30,6 +30,8 @@ import org.apache.flink.annotation.Internal;
  * @param <TO>
  *            The output type of the second extractor and the output type of the
  *            over all extraction.
+ *
+ *  函数表达式 --- 一层一层嵌套下去
  */
 @Internal
 public class ConcatenatedExtract<FROM, OVER, TO> implements Extractor<FROM, TO> {
@@ -61,6 +63,7 @@ public class ConcatenatedExtract<FROM, OVER, TO> implements Extractor<FROM, TO> 
 		return e2.extract(e1.extract(in));
 	}
 
+	//创建函数表达式,this当前函数的输出,是e3函数的输入
 	public <OUT> ConcatenatedExtract<FROM, TO, OUT> add(Extractor<TO, OUT> e3) {
 		return new ConcatenatedExtract<FROM, TO, OUT>(this, e3);
 	}

@@ -41,19 +41,25 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * {@link TaskExecutor} RPC gateway interface.
+ * task节点对外提供的接口能力
  */
 public interface TaskExecutorGateway extends RpcGateway {
 
 	/**
 	 * Requests a slot from the TaskManager.
+	 * 在task manager上的一个slot去执行任务
+	 * 执行的任务是 jobid 在某一次请求id(allocationId)申请的资源。
 	 *
-	 * @param slotId slot id for the request
+	 * 与job manager通信，通过jobmanager的请求id--allocationId，就知道需要执行哪部分任务了。
+	 * @param slotId slot id for the request 该task manager上的slot id，使用该slot去执行任务
 	 * @param jobId for which to request a slot
-	 * @param allocationId id for the request
-	 * @param targetAddress to which to offer the requested slots
-	 * @param resourceManagerId current leader id of the ResourceManager
-	 * @param timeout for the operation
+	 * @param allocationId id for the request //slot唯一ID
+	 * @param targetAddress to which to offer the requested slots 要知道job manager的地址，方便与job manager通信
+	 * @param resourceManagerId current leader id of the ResourceManager 知道ResourceManager的id
+	 * @param timeout for the operation 连接到taskmanager的请求超时时间
 	 * @return answer to the slot request
+	 *
+	 * 由resourceManager发起调用,从resourceManagerId上,收到一个slot请求,将该slot分配给job
 	 */
 	CompletableFuture<Acknowledge> requestSlot(
 		SlotID slotId,
@@ -148,14 +154,16 @@ public interface TaskExecutorGateway extends RpcGateway {
 	/**
 	 * Heartbeat request from the job manager.
 	 *
-	 * @param heartbeatOrigin unique id of the job manager
+	 * @param heartbeatOrigin unique id of the job manager 标识job manager
+	 * 接受jobmanager心跳请求 && response回复信息给对方
 	 */
 	void heartbeatFromJobManager(ResourceID heartbeatOrigin);
 
 	/**
 	 * Heartbeat request from the resource manager.
 	 *
-	 * @param heartbeatOrigin unique id of the resource manager
+	 * @param heartbeatOrigin unique id of the resource manager 标识resource manager
+	 * 接受ResourceManager心跳请求 && response回复信息给对方
 	 */
 	void heartbeatFromResourceManager(ResourceID heartbeatOrigin);
 
@@ -193,6 +201,8 @@ public interface TaskExecutorGateway extends RpcGateway {
 	 * @param fileType to upload
 	 * @param timeout for the asynchronous operation
 	 * @return Future which is completed with the {@link TransientBlobKey} of the uploaded file.
+	 * resourceManager请求task网关,让task把相关日志上传到blob服务
+	 * 将文件上传到blob服务器上,返回上传成功后的MD5
 	 */
 	CompletableFuture<TransientBlobKey> requestFileUpload(FileType fileType, @RpcTimeout Time timeout);
 }

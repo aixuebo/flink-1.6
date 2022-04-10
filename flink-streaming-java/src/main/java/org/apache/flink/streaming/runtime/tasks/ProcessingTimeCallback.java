@@ -23,6 +23,7 @@ import org.apache.flink.annotation.Internal;
 /**
  * Interface for processing-time callbacks that can be registered at a
  * {@link ProcessingTimeService}.
+ * 回调函数
  */
 @Internal
 public interface ProcessingTimeCallback {
@@ -34,7 +35,7 @@ public interface ProcessingTimeCallback {
 	 * due to a garbage collection), the timestamp supplied to this function will still be the
 	 * original timestamp for which the trigger was scheduled.
 	 *
-	 * @param timestamp The timestamp for which the trigger event was scheduled.
+	 * @param timestamp The timestamp for which the trigger event was scheduled.当时设置的时候,设置到哪个时间点触发回调该函数,因此参数要把该时间点传回来
 	 */
 	void onProcessingTime(long timestamp) throws Exception;
 }

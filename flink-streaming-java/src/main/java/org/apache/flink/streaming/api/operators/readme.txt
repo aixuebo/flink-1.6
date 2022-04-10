@@ -1,0 +1,10 @@
+一、InternalTimerService
+无论是windowOperator还是KeyedProcessOperator都持有InternalTimerService具体实现的对象，
+通过这个对象用户可以注册EventTime及ProcessTime的timer，当watermark 越过这些timer的时候，调用回调函数执行一定的操作。
+
+二、
+Join、CoGroup和CoFlatMap这三个运算符都能够将双数据流转换为单个数据流。
+Join和CoGroup会根据指定的条件进行数据配对操作，不同的是Join只输出匹配成功的数据对，
+CoGroup无论是否有匹配都会输出。
+CoFlatMap没有匹配操作，只是分别去接收两个流的输入。
+大家可以根据具体的业务需求，选择不同的双流操作。

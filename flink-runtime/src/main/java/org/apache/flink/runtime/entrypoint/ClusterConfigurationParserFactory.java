@@ -39,17 +39,17 @@ public class ClusterConfigurationParserFactory implements ParserResultFactory<Cl
 	@Override
 	public Options getOptions() {
 		final Options options = new Options();
-		options.addOption(CONFIG_DIR_OPTION);
-		options.addOption(DYNAMIC_PROPERTY_OPTION);
+		options.addOption(CONFIG_DIR_OPTION);//configDir
+		options.addOption(DYNAMIC_PROPERTY_OPTION);//-D动态参数
 
 		return options;
 	}
 
 	@Override
 	public ClusterConfiguration createResult(@Nonnull CommandLine commandLine) {
-		final String configDir = commandLine.getOptionValue(CONFIG_DIR_OPTION.getOpt());
+		final String configDir = commandLine.getOptionValue(CONFIG_DIR_OPTION.getOpt());//configDir
 
-		final Properties dynamicProperties = commandLine.getOptionProperties(DYNAMIC_PROPERTY_OPTION.getOpt());
+		final Properties dynamicProperties = commandLine.getOptionProperties(DYNAMIC_PROPERTY_OPTION.getOpt());//动态参数
 
 		return new ClusterConfiguration(configDir, dynamicProperties, commandLine.getArgs());
 	}

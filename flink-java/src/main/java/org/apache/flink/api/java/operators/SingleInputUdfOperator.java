@@ -49,13 +49,17 @@ import static java.util.Objects.requireNonNull;
  * through configuration objects, and semantic properties.
  * @param <IN> The data type of the input data set.
  * @param <OUT> The data type of the returned data set.
+ *
+ *
+ * O extends SingleInputUdfOperator<IN, OUT, O> 表示传入参数是SingleInputUdfOperator的子类
  */
 @Public
 public abstract class SingleInputUdfOperator<IN, OUT, O extends SingleInputUdfOperator<IN, OUT, O>>
 	extends SingleInputOperator<IN, OUT, O> implements UdfOperator<O> {
-	private Configuration parameters;
 
-	private Map<String, DataSet<?>> broadcastVariables;
+	private Configuration parameters;//环境信息
+
+	private Map<String, DataSet<?>> broadcastVariables;//广播数据,存储每一个key对应的集合信息
 
 	// NOTE: only set this variable via setSemanticProperties()
 	private SingleInputSemanticProperties udfSemantics;
@@ -90,6 +94,7 @@ public abstract class SingleInputUdfOperator<IN, OUT, O extends SingleInputUdfOp
 		return returnType;
 	}
 
+	//设置广播数据
 	@Override
 	public O withBroadcastSet(DataSet<?> data, String name) {
 		if (data == null) {

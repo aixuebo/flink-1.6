@@ -30,6 +30,10 @@ import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
+/**
+ * 通用包装类型
+ * @param <T>
+ */
 @Public
 public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType<T> {
 

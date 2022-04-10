@@ -55,25 +55,31 @@ import java.util.UUID;
  * to a job manager.
  *
  * <p>Before the task slot table can be used, it must be started via the {@link #start} method.
+ *
+ * 管理所有的slot
  */
 public class TaskSlotTable implements TimeoutListener<AllocationID> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskSlotTable.class);
 
 	/** Timer service used to time out allocated slots. */
-	private final TimerService<AllocationID> timerService;
+	private final TimerService<AllocationID> timerService;//关注slot的超时情况
 
 	/** The list of all task slots. */
-	private final List<TaskSlot> taskSlots;
+	private final List<TaskSlot> taskSlots;//管理所有的slot
 
-	/** Mapping from allocation id to task slot. */
+	/** Mapping from allocation id to task slot.slot的id与slot的映射 */
 	private final Map<AllocationID, TaskSlot> allocationIDTaskSlotMap;
 
-	/** Mapping from execution attempt id to task and task slot. */
-	private final Map<ExecutionAttemptID, TaskSlotMapping> taskSlotMappings;
-
-	/** Mapping from job id to allocated slots for a job. */
+	/** Mapping from job id to allocated slots for a job.
+	 * job有哪些任务集合
+	 **/
 	private final Map<JobID, Set<AllocationID>> slotsPerJob;
+
+	/** Mapping from execution attempt id to task and task slot.
+	 * task尝试任务id  --> task执行在哪个slot上
+	 **/
+	private final Map<ExecutionAttemptID, TaskSlotMapping> taskSlotMappings;
 
 	/** Interface for slot actions, such as freeing them or timing them out. */
 	private SlotActions slotActions;
@@ -138,6 +144,8 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 *
 	 * @param jobId for which to return the set of {@link AllocationID}.
 	 * @return Set of {@link AllocationID} for the given job
+	 *
+	 * 返回job的所有slotId
 	 */
 	public Set<AllocationID> getAllocationIdsPerJob(JobID jobId) {
 		final Set<AllocationID> allocationIds = slotsPerJob.get(jobId);
@@ -152,7 +160,8 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	// ---------------------------------------------------------------------
 	// Slot report methods
 	// ---------------------------------------------------------------------
-
+	//将task节点上的slot信息收集好,报告给resourceManager
+	//resourceId表示slot所在task节点的唯一ID
 	public SlotReport createSlotReport(ResourceID resourceId) {
 		final int numberSlots = taskSlots.size();
 
@@ -160,7 +169,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 
 		for (int i = 0; i < numberSlots; i++) {
 			TaskSlot taskSlot = taskSlots.get(i);
-			SlotID slotId = new SlotID(resourceId, taskSlot.getIndex());
+			SlotID slotId = new SlotID(resourceId, taskSlot.getIndex());//这样resourceManager就知道该slot属于哪个task节点了
 
 			SlotStatus slotStatus = new SlotStatus(
 				slotId,
@@ -189,6 +198,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 * @param allocationId identifying the allocation
 	 * @param slotTimeout until the slot times out
 	 * @return True if the task slot could be allocated; otherwise false
+	 * 将slot分配给job,同时resouceManager会生产一个allocationId,通过allocationId可以确定resouceManager把这个slot分配给了哪个job
 	 */
 	public boolean allocateSlot(int index, JobID jobId, AllocationID allocationId, Time slotTimeout) {
 		checkInit();
@@ -202,7 +212,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 			allocationIDTaskSlotMap.put(allocationId, taskSlot);
 
 			// register a timeout for this slot since it's in state allocated
-			timerService.registerTimeout(allocationId, slotTimeout.getSize(), slotTimeout.getUnit());
+			timerService.registerTimeout(allocationId, slotTimeout.getSize(), slotTimeout.getUnit());//在超时范围内,要完成slot分配给job的过程
 
 			// add this slot to the set of job slots
 			Set<AllocationID> slots = slotsPerJob.get(jobId);
@@ -225,11 +235,12 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 * @param allocationId to identify the task slot to mark as active
 	 * @throws SlotNotFoundException if the slot could not be found for the given allocation id
 	 * @return True if the slot could be marked active; otherwise false
+	 * true 表示任务id所在的slot是活着的
 	 */
 	public boolean markSlotActive(AllocationID allocationId) throws SlotNotFoundException {
 		checkInit();
 
-		TaskSlot taskSlot = getTaskSlot(allocationId);
+		TaskSlot taskSlot = getTaskSlot(allocationId);//任务id在哪个slot上
 
 		if (taskSlot != null) {
 			if (taskSlot.markActive()) {
@@ -400,6 +411,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 *
 	 * @param index of the task slot
 	 * @return True if the task slot is free; otherwise false
+	 * true表示slot是空闲的状态
 	 */
 	public boolean isSlotFree(int index) {
 		TaskSlot taskSlot = taskSlots.get(index);
@@ -412,6 +424,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 *
 	 * @param jobId for which to check for allocated slots
 	 * @return True if there are allocated slots for the given job id.
+	 * true表示job有ALLOCATED状态的slot
 	 */
 	public boolean hasAllocatedSlots(JobID jobId) {
 		return getAllocatedSlots(jobId).hasNext();
@@ -422,6 +435,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 *
 	 * @param jobId for which to return the allocated slots
 	 * @return Iterator of allocated slots.
+	 * 返回job名下,所有ALLOCATED状态的slot集合
 	 */
 	public Iterator<TaskSlot> getAllocatedSlots(JobID jobId) {
 		return new TaskSlotIterator(jobId, TaskSlotState.ALLOCATED);
@@ -432,6 +446,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 *
 	 * @param jobId for which to return the active slots
 	 * @return Iterator of allocation ids of active slots
+	 * '返回job名下,所有ACTIVE状态的slot集合
 	 */
 	public Iterator<AllocationID> getActiveSlots(JobID jobId) {
 		return new AllocationIDIterator(jobId, TaskSlotState.ACTIVE);
@@ -444,6 +459,8 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	 * @param allocationId identifying the slot for which to retrieve the owning job
 	 * @return Owning job of the specified {@link TaskSlot} or null if there is no slot for
 	 * the given allocation id or if the slot has no owning job assigned
+	 *
+	 * 获取该id对应归属于哪个job
 	 */
 	@Nullable
 	public JobID getOwningJob(AllocationID allocationId) {
@@ -558,7 +575,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	// ---------------------------------------------------------------------
 	// TimeoutListener methods
 	// ---------------------------------------------------------------------
-
+	//说明slot超时了,去执行slot的一些超时动作
 	@Override
 	public void notifyTimeout(AllocationID key, UUID ticket) {
 		checkInit();
@@ -642,6 +659,7 @@ public class TaskSlotTable implements TimeoutListener<AllocationID> {
 	/**
 	 * Iterator over {@link TaskSlot} which fulfill a given state condition and belong to the given
 	 * job.
+	 * 循环,找到某一个job = TaskSlotState的所有slot
 	 */
 	private final class TaskSlotIterator implements Iterator<TaskSlot> {
 		private final Iterator<AllocationID> allSlots;

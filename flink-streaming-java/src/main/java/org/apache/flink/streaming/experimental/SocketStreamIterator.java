@@ -40,24 +40,25 @@ import java.util.NoSuchElementException;
  * for more information.
  *
  * @param <T> The type of elements returned from the iterator.
+ * 服务端---接受客户端请求中,获取字节数组,反序列化成对象
  */
 @Experimental
 public class SocketStreamIterator<T> implements Iterator<T> {
 
 	/** Server socket to listen at. */
-	private final ServerSocket socket;
+	private final ServerSocket socket;//服务端
 
 	/** Serializer to deserialize stream. */
-	private final TypeSerializer<T> serializer;
+	private final TypeSerializer<T> serializer;//如何反序列化对象
 
 	/** Set by the same thread that reads it. */
-	private DataInputViewStreamWrapper inStream;
+	private DataInputViewStreamWrapper inStream;//读取客户端请求
 
 	/** Next element, handover from hasNext() to next(). */
-	private T next;
+	private T next;//获取客户端发来的对象
 
 	/** The socket for the specific stream. */
-	private Socket connectedSocket;
+	private Socket connectedSocket;//接受流
 
 	/** Async error, for example by the executor of the program that produces the stream. */
 	private volatile Throwable error;
@@ -83,7 +84,7 @@ public class SocketStreamIterator<T> implements Iterator<T> {
 	public SocketStreamIterator(int port, InetAddress address, TypeSerializer<T> serializer) throws IOException {
 		this.serializer = serializer;
 		try {
-			socket = new ServerSocket(port, 1, address);
+			socket = new ServerSocket(port, 1, address);//创建服务
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Could not open socket to receive back stream results");
@@ -131,7 +132,7 @@ public class SocketStreamIterator<T> implements Iterator<T> {
 	public boolean hasNext() {
 		if (next == null) {
 			try {
-				next = readNextFromStream();
+				next = readNextFromStream();//读取下一行数据对象
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to receive next element: " + e.getMessage(), e);
 			}
@@ -148,8 +149,8 @@ public class SocketStreamIterator<T> implements Iterator<T> {
 	@Override
 	public T next() {
 		if (hasNext()) {
-			T current = next;
-			next = null;
+			T current = next;//获取下一行数据
+			next = null;//这样就可以hasNext有数据了
 			return current;
 		} else {
 			throw new NoSuchElementException();
@@ -164,11 +165,11 @@ public class SocketStreamIterator<T> implements Iterator<T> {
 	private T readNextFromStream() throws Exception {
 		try {
 			if (inStream == null) {
-				connectedSocket = socket.accept();
+				connectedSocket = socket.accept();//接受流
 				inStream = new DataInputViewStreamWrapper(connectedSocket.getInputStream());
 			}
 
-			return serializer.deserialize(inStream);
+			return serializer.deserialize(inStream);//反序列化成对象
 		}
 		catch (EOFException e) {
 			try {

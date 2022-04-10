@@ -32,6 +32,7 @@ import java.util.Map;
 
 /**
  * Serialization and deserialization the different state types and namespaces.
+ * 序列化/反序列化 -- key、命名空间、正常对象value、listvalue、mapvalue
  */
 public final class KvStateSerializer {
 
@@ -53,6 +54,7 @@ public final class KvStateSerializer {
 	 * @param <N>                 Namespace type
 	 * @return Buffer holding the serialized key and namespace
 	 * @throws IOException Serialization errors are forwarded
+	 * 对key和命名空间内容一起序列化成字节数组
 	 */
 	public static <K, N> byte[] serializeKeyAndNamespace(
 			K key,
@@ -79,6 +81,7 @@ public final class KvStateSerializer {
 	 * @param <N>                       Namespace
 	 * @return Tuple2 holding deserialized key and namespace
 	 * @throws IOException              if the deserialization fails for any reason
+	 * 将字节数组 转换成 <key,命名空间>
 	 */
 	public static <K, N> Tuple2<K, N> deserializeKeyAndNamespace(
 			byte[] serializedKeyAndNamespace,
@@ -88,15 +91,15 @@ public final class KvStateSerializer {
 		DataInputDeserializer dis = new DataInputDeserializer(
 				serializedKeyAndNamespace,
 				0,
-				serializedKeyAndNamespace.length);
+				serializedKeyAndNamespace.length);//设置待序列化的字节数组范围
 
 		try {
-			K key = keySerializer.deserialize(dis);
+			K key = keySerializer.deserialize(dis);//反序列化key
 			byte magicNumber = dis.readByte();
-			if (magicNumber != 42) {
+			if (magicNumber != 42) {//获取分隔符
 				throw new IOException("Unexpected magic number " + magicNumber + ".");
 			}
-			N namespace = namespaceSerializer.deserialize(dis);
+			N namespace = namespaceSerializer.deserialize(dis);//反序列化命名空间
 
 			if (dis.available() > 0) {
 				throw new IOException("Unconsumed bytes in the serialized key and namespace.");
@@ -118,6 +121,7 @@ public final class KvStateSerializer {
 	 * @param <T>        Type of the value
 	 * @return Serialized value or <code>null</code> if value <code>null</code>
 	 * @throws IOException On failure during serialization
+	 * 对value进行序列化成字节数组
 	 */
 	public static <T> byte[] serializeValue(T value, TypeSerializer<T> serializer) throws IOException {
 		if (value != null) {
@@ -139,6 +143,7 @@ public final class KvStateSerializer {
 	 * @return Deserialized value or <code>null</code> if the serialized value
 	 * is <code>null</code>
 	 * @throws IOException On failure during deserialization
+	 * 将字节数组 反序列化成 value对象
 	 */
 	public static <T> T deserializeValue(byte[] serializedValue, TypeSerializer<T> serializer) throws IOException {
 		if (serializedValue == null) {
@@ -166,6 +171,7 @@ public final class KvStateSerializer {
 	 * @return Deserialized list or <code>null</code> if the serialized value
 	 * is <code>null</code>
 	 * @throws IOException On failure during deserialization
+	 * 将字节数组 反序列化成 List<Value>
 	 */
 	public static <T> List<T> deserializeList(byte[] serializedValue, TypeSerializer<T> serializer) throws IOException {
 		if (serializedValue != null) {
@@ -210,6 +216,7 @@ public final class KvStateSerializer {
 	 * @param <UV>            Type of the values
 	 * @return Serialized values or <code>null</code> if values <code>null</code> or empty
 	 * @throws IOException On failure during serialization
+	 * 序列化Map对象 --> 字节数组
 	 */
 	public static <UK, UV> byte[] serializeMap(Iterable<Map.Entry<UK, UV>> entries, TypeSerializer<UK> keySerializer, TypeSerializer<UV> valueSerializer) throws IOException {
 		if (entries != null) {
@@ -244,6 +251,7 @@ public final class KvStateSerializer {
 	 * @return Deserialized map or <code>null</code> if the serialized value
 	 * is <code>null</code>
 	 * @throws IOException On failure during deserialization
+	 * 反序列化字节数组 --> Map
 	 */
 	public static <UK, UV> Map<UK, UV> deserializeMap(byte[] serializedValue, TypeSerializer<UK> keySerializer, TypeSerializer<UV> valueSerializer) throws IOException {
 		if (serializedValue != null) {

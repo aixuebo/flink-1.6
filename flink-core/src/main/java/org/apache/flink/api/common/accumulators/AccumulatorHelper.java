@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 
 /**
  * Helper functions for the interaction with {@link Accumulator}.
+ * 聚合函数的工具类
  */
 @Internal
 public class AccumulatorHelper {
@@ -79,6 +80,7 @@ public class AccumulatorHelper {
 
 	/**
 	 * Workaround method for type safety.
+	 * target.merge(toMerge),即将toMerge的数据复制到target中
 	 */
 	private static <V, R extends Serializable> Accumulator<V, R> mergeSingle(Accumulator<?, ?> target,
 																			 Accumulator<?, ?> toMerge) {
@@ -96,6 +98,7 @@ public class AccumulatorHelper {
 	/**
 	 * Compare both classes and throw {@link UnsupportedOperationException} if
 	 * they differ.
+	 * 属于校验方式,确保两个class是同一个类出来的
 	 */
 	@SuppressWarnings("rawtypes")
 	public static void compareAccumulatorTypes(
@@ -107,11 +110,11 @@ public class AccumulatorHelper {
 		}
 
 		if (first != second) {
-			if (!first.getName().equals(second.getName())) {
+			if (!first.getName().equals(second.getName())) {//class都不相同,抛异常
 				throw new UnsupportedOperationException("The accumulator object '" + name
 					+ "' was created with two different types: " + first.getName() + " and " + second.getName());
 			} else {
-				// damn, name is the same, but different classloaders
+				// damn, name is the same, but different classloaders, class的名字虽然相同,但不是同一个classloaders --- 不清楚怎么判断不是同一个classloaders的
 				throw new UnsupportedOperationException("The accumulator object '" + name
 						+ "' was created with two different classes: " + first + " and " + second
 						+ " Both have the same type (" + first.getName() + ") but different classloaders: "
@@ -123,6 +126,8 @@ public class AccumulatorHelper {
 	/**
 	 * Transform the Map with accumulators into a Map containing only the
 	 * results.
+	 * 对多个聚合器的结果进行统一输出。
+	 * 输出的Map,key是聚合器的名字,value是聚合器的结果值
 	 */
 	public static Map<String, OptionalFailure<Object>> toResultMap(Map<String, Accumulator<?, ?>> accumulators) {
 		Map<String, OptionalFailure<Object>> resultMap = new HashMap<>();
@@ -132,6 +137,7 @@ public class AccumulatorHelper {
 		return resultMap;
 	}
 
+	//包装器 -- 要么返回值,要么返回异常
 	private static <R> OptionalFailure<R> wrapUnchecked(String name, Supplier<R> supplier) {
 		return OptionalFailure.createFrom(() -> {
 			try {
@@ -143,6 +149,7 @@ public class AccumulatorHelper {
 		});
 	}
 
+	//打印输出map的数据情况 --- 即数据转换成字符串形式
 	public static String getResultsFormatted(Map<String, Object> map) {
 		StringBuilder builder = new StringBuilder();
 		for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -153,7 +160,7 @@ public class AccumulatorHelper {
 				.append(entry.getValue().getClass().getName())
 				.append(")");
 			if (entry.getValue() instanceof Collection) {
-				builder.append(" [").append(((Collection) entry.getValue()).size()).append(" elements]");
+				builder.append(" [").append(((Collection) entry.getValue()).size()).append(" elements]");//如果是集合,只需要打印集合包含了多少个元素即可
 			} else {
 				builder.append(": ").append(entry.getValue().toString());
 			}
@@ -162,6 +169,7 @@ public class AccumulatorHelper {
 		return builder.toString();
 	}
 
+	//聚合数据复制
 	public static Map<String, Accumulator<?, ?>> copy(Map<String, Accumulator<?, ?>> accumulators) {
 		Map<String, Accumulator<?, ?>> result = new HashMap<String, Accumulator<?, ?>>();
 

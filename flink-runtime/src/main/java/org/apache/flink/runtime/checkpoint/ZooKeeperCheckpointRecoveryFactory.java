@@ -48,6 +48,7 @@ public class ZooKeeperCheckpointRecoveryFactory implements CheckpointRecoveryFac
 		this.executor = checkNotNull(executor, "Executor");
 	}
 
+	//先进先出的方式,保存所有已完成的checkpoint对象的存储容器
 	@Override
 	public CompletedCheckpointStore createCheckpointStore(JobID jobId, int maxNumberOfCheckpointsToRetain, ClassLoader userClassLoader)
 			throws Exception {

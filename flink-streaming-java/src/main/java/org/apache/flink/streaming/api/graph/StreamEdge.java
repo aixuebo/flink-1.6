@@ -28,21 +28,23 @@ import java.util.List;
  * An edge in the streaming topology. One edge like this does not necessarily
  * gets converted to a connection between two job vertices (due to
  * chaining/optimization).
+ *
+ * 记录当前操作
  */
 @Internal
 public class StreamEdge implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private final String edgeId;
+	private final String edgeId;//边的唯一ID
 
-	private final StreamNode sourceVertex;
-	private final StreamNode targetVertex;
+	private final StreamNode sourceVertex;//上游操作ID
+	private final StreamNode targetVertex;//下游操作ID
 
 	/**
 	 * The type number of the input for co-tasks.
 	 */
-	private final int typeNumber;
+	private final int typeNumber;//匹配当前入边操作是第几个输入，用于join场景识别该操作应对第几个流
 
 	/**
 	 * A list of output names that the target vertex listens to (if there is

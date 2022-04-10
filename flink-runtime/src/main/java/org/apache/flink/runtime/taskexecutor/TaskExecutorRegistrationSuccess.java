@@ -29,18 +29,19 @@ import java.io.Serializable;
 /**
  * Base class for responses from the ResourceManager to a registration attempt by a
  * TaskExecutor.
+ * 代表task连接resourceManager成功,注册成功,resourceManager返回给从节点的信息
  */
 public final class TaskExecutorRegistrationSuccess extends RegistrationResponse.Success implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private final InstanceID registrationId;
+	private final InstanceID registrationId;//注册的taskExecutor从节点id
 
-	private final ResourceID resourceManagerResourceId;
+	private final ResourceID resourceManagerResourceId;//resourceManager的资源id
 
-	private final long heartbeatInterval;
+	private final long heartbeatInterval;//心跳间隔
 
-	private final ClusterInformation clusterInformation;
+	private final ClusterInformation clusterInformation;//集群信息
 
 	/**
 	 * Create a new {@code TaskExecutorRegistrationSuccess} message.

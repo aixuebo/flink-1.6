@@ -25,13 +25,17 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * A concurrent data structure that allows the hand-over of an object between a pair of threads.
+ * 在多线程中共享同一个对象
+ * Broker 代理人
  */
 public class Broker<V> {
 
+	//每一个key对应一个公共阻塞队列
 	private final ConcurrentMap<String, BlockingQueue<V>> mediations = new ConcurrentHashMap<String, BlockingQueue<V>>();
 
 	/**
 	 * Hand in the object to share.
+	 * 将obj添加到key对应的公共阻塞队列
 	 */
 	public void handIn(String key, V obj) {
 		if (!retrieveSharedQueue(key).offer(obj)) {
@@ -39,7 +43,9 @@ public class Broker<V> {
 		}
 	}
 
-	/** Blocking retrieval and removal of the object to share. */
+	/** Blocking retrieval and removal of the object to share.
+	 * 获取key队列的一个元素,同时删除该队列
+	 **/
 	public V getAndRemove(String key) {
 		try {
 			V objToShare = retrieveSharedQueue(key).take();
@@ -50,17 +56,21 @@ public class Broker<V> {
 		}
 	}
 
-	/** Blocking retrieval and removal of the object to share. */
+	/** Blocking retrieval and removal of the object to share.
+	 * 移除key队列
+	 **/
 	public void remove(String key) {
 		mediations.remove(key);
 	}
 
-	/** Blocking retrieval and removal of the object to share. */
+	/** Blocking retrieval and removal of the object to share.
+	 * 获取key队列的下一个值
+	 **/
 	public V get(String key) {
 		try {
 			BlockingQueue<V> queue = retrieveSharedQueue(key);
 			V objToShare = queue.take();
-			if (!queue.offer(objToShare)) {
+			if (!queue.offer(objToShare)) {//怎么又存放进去了? 难道删除用getAndRemove?可能有具体的业务逻辑
 				throw new RuntimeException("Error: Concurrent modification of the broker slot for key '" + key + "'.");
 			}
 			return objToShare;
@@ -71,6 +81,7 @@ public class Broker<V> {
 
 	/**
 	 * Thread-safe call to get a shared {@link BlockingQueue}.
+	 * 获取key对应的公共阻塞队列 -- 如果没有,则创建一个
 	 */
 	private BlockingQueue<V> retrieveSharedQueue(String key) {
 		BlockingQueue<V> queue = mediations.get(key);

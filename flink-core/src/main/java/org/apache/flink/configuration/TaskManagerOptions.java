@@ -48,6 +48,7 @@ public class TaskManagerOptions {
 	 * JVM heap size (in megabytes) for the TaskManagers.
 	 *
 	 * @deprecated use {@link #TASK_MANAGER_HEAP_MEMORY}
+	 * TaskManagers的堆内存
 	 */
 	@Deprecated
 	public static final ConfigOption<Integer> TASK_MANAGER_HEAP_MEMORY_MB =
@@ -59,6 +60,7 @@ public class TaskManagerOptions {
 
 	/**
 	 * Whether to kill the TaskManager when the task thread throws an OutOfMemoryError.
+	 * OOM时,是否退出JVM
 	 */
 	public static final ConfigOption<Boolean> KILL_ON_OUT_OF_MEMORY =
 			key("taskmanager.jvm-exit-on-oom")
@@ -161,6 +163,7 @@ public class TaskManagerOptions {
 
 	/**
 	 * The config parameter defining the number of task slots of a task manager.
+	 * 一个task manager配置多少个task slots
 	 */
 	@Documentation.CommonOption(position = Documentation.CommonOption.POSITION_PARALLELISM_SLOTS)
 	public static final ConfigOption<Integer> NUM_TASK_SLOTS =
@@ -191,6 +194,7 @@ public class TaskManagerOptions {
 
 	/**
 	 * Size of memory buffers used by the network stack and the memory manager (in bytes).
+	 * 内存缓冲区 -- 默认4K
 	 */
 	public static final ConfigOption<String> MEMORY_SEGMENT_SIZE =
 			key("taskmanager.memory.segment-size")
@@ -224,6 +228,7 @@ public class TaskManagerOptions {
 	/**
 	 * Memory allocation method (JVM heap or off-heap), used for managed memory of the TaskManager
 	 * as well as the network buffers.
+	 * 是否使用堆外内存
 	 **/
 	public static final ConfigOption<Boolean> MEMORY_OFF_HEAP =
 			key("taskmanager.memory.off-heap")
@@ -249,6 +254,7 @@ public class TaskManagerOptions {
 	 *
 	 * @deprecated use {@link #NETWORK_BUFFERS_MEMORY_FRACTION}, {@link #NETWORK_BUFFERS_MEMORY_MIN},
 	 * and {@link #NETWORK_BUFFERS_MEMORY_MAX} instead
+	 * 缓冲区大小,用于缓冲网络接收的字节
 	 */
 	@Deprecated
 	public static final ConfigOption<Integer> NETWORK_NUM_BUFFERS =

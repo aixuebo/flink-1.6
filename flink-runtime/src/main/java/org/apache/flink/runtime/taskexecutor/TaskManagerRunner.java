@@ -80,6 +80,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * This class is the executable entry point for the task manager in yarn or standalone mode.
  * It constructs the related components (network, I/O manager, memory manager, RPC service, HA service)
  * and starts them.
+ *
+ * 节点启动的入口 -- main函数
  */
 public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync {
 
@@ -87,30 +89,30 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 
 	private static final long FATAL_ERROR_SHUTDOWN_TIMEOUT_MS = 10000L;
 
-	private static final int STARTUP_FAILURE_RETURN_CODE = 1;
+	private static final int STARTUP_FAILURE_RETURN_CODE = 1;//启动失败返回状态码 ---- 说明task节点是启动时就失败了
 
-	private static final int RUNTIME_FAILURE_RETURN_CODE = 2;
+	private static final int RUNTIME_FAILURE_RETURN_CODE = 2;//运行中JVM失败返回状态码 --- 说明task节点是运行中失败的
 
 	private final Object lock = new Object();
 
-	private final Configuration configuration;
+	private final Configuration configuration;//本地task节点的配置信息
 
-	private final ResourceID resourceId;
+	private final ResourceID resourceId;//本地task节点的唯一资源ID
 
-	private final Time timeout;
+	private final Time timeout;//配置文件解析  akka超时时间
 
-	private final RpcService rpcService;
+	private final RpcService rpcService;//在taskManager本节点, host+port上开启一个RPC服务
 
-	private final HighAvailabilityServices highAvailabilityServices;
+	private final HighAvailabilityServices highAvailabilityServices;//高可用服务
 
 	private final MetricRegistryImpl metricRegistry;
 
-	private final BlobCacheService blobCacheService;
+	private final BlobCacheService blobCacheService;//开启缓存文件服务,此时还尚未连接resourceManager,因此不知道blob服务中心地址,等连接resourceMnager后,就可以设置服务中心地址
 
 	/** Executor used to run future callbacks. */
-	private final ExecutorService executor;
+	private final ExecutorService executor;//本地CPU数量相同的线程池
 
-	private final TaskExecutor taskManager;
+	private final TaskExecutor taskManager;//创建本地节点服务 = 开启若干个子服务,即配置文件+resourceId+本节点的RPC服务器+高可用服务+心跳服务+blob文件服务
 
 	private final CompletableFuture<Void> terminationFuture;
 
@@ -120,19 +122,23 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 		this.configuration = checkNotNull(configuration);
 		this.resourceId = checkNotNull(resourceId);
 
-		timeout = AkkaUtils.getTimeoutAsTime(configuration);
+		timeout = AkkaUtils.getTimeoutAsTime(configuration);//akka超时时间
 
+		//本地CPU数量相同的线程池
 		this.executor = java.util.concurrent.Executors.newScheduledThreadPool(
 			Hardware.getNumberCPUCores(),
 			new ExecutorThreadFactory("taskmanager-future"));
 
+		//高可用服务
 		highAvailabilityServices = HighAvailabilityServicesUtils.createHighAvailabilityServices(
 			configuration,
 			executor,
 			HighAvailabilityServicesUtils.AddressResolution.TRY_ADDRESS_RESOLUTION);
 
+		//在taskManager本节点, host+port上开启一个RPC服务
 		rpcService = createRpcService(configuration, highAvailabilityServices);
 
+		//开启心跳服务
 		HeartbeatServices heartbeatServices = HeartbeatServices.fromConfiguration(configuration);
 
 		metricRegistry = new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(configuration));
@@ -145,6 +151,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 			configuration, highAvailabilityServices.createBlobStore(), null
 		);
 
+		//配置文件+resourceId+本节点的RPC服务器+高可用服务+心跳服务+blob文件服务, 创建本地节点服务 = 开启若干个子服务
 		taskManager = startTaskManager(
 			this.configuration,
 			this.resourceId,
@@ -351,7 +358,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 
 		LOG.info("Starting TaskManager with ResourceID: {}", resourceID);
 
-		InetAddress remoteAddress = InetAddress.getByName(rpcService.getAddress());
+		InetAddress remoteAddress = InetAddress.getByName(rpcService.getAddress());//本地服务器地址
 
 		TaskManagerServicesConfiguration taskManagerServicesConfiguration =
 			TaskManagerServicesConfiguration.fromConfiguration(
@@ -359,6 +366,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 				remoteAddress,
 				localCommunicationOnly);
 
+		//task节点特殊的服务
 		TaskManagerServices taskManagerServices = TaskManagerServices.fromConfiguration(
 			taskManagerServicesConfiguration,
 			resourceID,
@@ -371,6 +379,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 			taskManagerServices.getTaskManagerLocation(),
 			taskManagerServices.getNetworkEnvironment());
 
+		//task节点的一些基础配置
 		TaskManagerConfiguration taskManagerConfiguration = TaskManagerConfiguration.fromConfiguration(configuration);
 
 		return new TaskExecutor(
@@ -389,6 +398,8 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 	 *
 	 * @param configuration The configuration for the TaskManager.
 	 * @param haServices to use for the task manager hostname retrieval
+	 *
+	 * 在taskManager的节点, host+port上开启一个服务
 	 */
 	public static RpcService createRpcService(
 		final Configuration configuration,
@@ -397,6 +408,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 		checkNotNull(configuration);
 		checkNotNull(haServices);
 
+		//获取合法的本地host+port
 		String taskManagerHostname = configuration.getString(ConfigConstants.TASK_MANAGER_HOSTNAME_KEY, null);
 
 		if (taskManagerHostname != null) {
@@ -426,6 +438,7 @@ public class TaskManagerRunner implements FatalErrorHandler, AutoCloseableAsync 
 
 		while (portsIterator.hasNext()) {
 			try {
+				//针对合法的host+port,开启本地的一个rpc服务
 				return AkkaRpcServiceUtils.createRpcService(taskManagerHostname, portsIterator.next(), configuration);
 			}
 			catch (Exception e) {

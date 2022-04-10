@@ -29,6 +29,7 @@ public abstract class SumFunction implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	//两个值相加
 	public abstract Object add(Object o1, Object o2);
 
 	public static SumFunction getForClass(Class<?> clazz) {

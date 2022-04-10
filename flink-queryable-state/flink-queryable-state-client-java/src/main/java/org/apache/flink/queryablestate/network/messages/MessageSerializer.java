@@ -59,10 +59,10 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 	private static final int VERSION = 0x79a1b710;
 
 	/** Byte length of the header. */
-	private static final int HEADER_LENGTH = 2 * Integer.BYTES;
+	private static final int HEADER_LENGTH = 2 * Integer.BYTES;//2个int字节  存储version+MessageType
 
 	/** Byte length of the request id. */
-	private static final int REQUEST_ID_SIZE = Long.BYTES;
+	private static final int REQUEST_ID_SIZE = Long.BYTES;//存储requestId
 
 	/** The constructor of the {@link MessageBody client requests}. Used for deserialization. */
 	private final MessageDeserializer<REQ> requestDeserializer;
@@ -87,6 +87,7 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 	 * @param requestId		The id of the request to which the message refers to.
 	 * @param request		The request to be serialized.
 	 * @return A {@link ByteBuf} containing the serialized message.
+	 * 序列化
 	 */
 	public static <REQ extends MessageBody> ByteBuf serializeRequest(
 			final ByteBufAllocator alloc,
@@ -195,6 +196,8 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 	 * @param messageType	The {@link MessageType type of the message}.
 	 * @param payload		The serialized version of the message.
 	 * @return A {@link ByteBuf} containing the serialized message.
+	 *
+	 * 请求类型、请求id、请求内容
 	 */
 	private static ByteBuf writePayload(
 			final ByteBufAllocator alloc,
@@ -205,10 +208,10 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 		final int frameLength = HEADER_LENGTH + REQUEST_ID_SIZE + payload.length;
 		final ByteBuf buf = alloc.ioBuffer(frameLength + Integer.BYTES);
 
-		buf.writeInt(frameLength);
-		writeHeader(buf, messageType);
-		buf.writeLong(requestId);
-		buf.writeBytes(payload);
+		buf.writeInt(frameLength);//存储总共字节数量
+		writeHeader(buf, messageType);//version(int)+MessageType(int)
+		buf.writeLong(requestId);//存储requestId
+		buf.writeBytes(payload);//存储body字节内容
 		return buf;
 	}
 
@@ -224,6 +227,7 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 	 * @param buf						The {@link ByteBuf} containing the serialized header.
 	 * @return							The message type.
 	 * @throws IllegalStateException	If unexpected message version or message type.
+	 * 从buf中获取请求类型
 	 */
 	public static MessageType deserializeHeader(final ByteBuf buf) {
 
@@ -232,7 +236,7 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 		Preconditions.checkState(version == VERSION,
 				"Version Mismatch:  Found " + version + ", Expected: " + VERSION + '.');
 
-		// fetching the message type
+		// fetching the message type 请求类型
 		int msgType = buf.readInt();
 		MessageType[] values = MessageType.values();
 		Preconditions.checkState(msgType >= 0 && msgType < values.length,
@@ -247,6 +251,7 @@ public final class MessageSerializer<REQ extends MessageBody, RESP extends Messa
 	 * </pre>
 	 * @param buf	The {@link ByteBuf} containing the serialized request id.
 	 * @return		The request id.
+	 * 获取请求id
 	 */
 	public static long getRequestId(final ByteBuf buf) {
 		return buf.readLong();

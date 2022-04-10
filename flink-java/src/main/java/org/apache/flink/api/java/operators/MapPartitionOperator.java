@@ -34,6 +34,7 @@ import org.apache.flink.api.java.DataSet;
  * @param <OUT> The type of the data set created by the operator.
  *
  * @see MapPartitionFunction
+ * 创建MapPartition函数
  */
 @Public
 public class MapPartitionOperator<IN, OUT> extends SingleInputUdfOperator<IN, OUT, MapPartitionOperator<IN, OUT>> {

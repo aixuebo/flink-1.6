@@ -25,6 +25,7 @@ import java.util.List;
 
 /**
  * Exception which is thrown if validation of {@link RequiredParameters} fails.
+ * 参数解析异常
  */
 @PublicEvolving
 public class RequiredParametersException extends Exception {

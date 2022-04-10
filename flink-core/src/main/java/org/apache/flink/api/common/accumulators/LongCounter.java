@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that sums up {@code long} values.
+ * sum方法 --- long类型
  */
 @PublicEvolving
 public class LongCounter implements SimpleAccumulator<Long> {

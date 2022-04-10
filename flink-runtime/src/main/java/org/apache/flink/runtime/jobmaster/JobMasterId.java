@@ -26,6 +26,11 @@ import java.util.UUID;
 
 /**
  * The {@link JobMaster} fencing token.
+ * 随机产生一个uuid,表示jobMaster的Id
+ *
+ * 因为一个节点上可能存在多个job，即是同一个jobId也有多个leader节点在HA，因此需要为每一个运行的job都有一个id，即JobMasterId。
+ *
+ * 即一个jobId可以允许多个HA节点允许，因此每一个最小单位就是JobMasterId。
  */
 public class JobMasterId extends AbstractID {
 

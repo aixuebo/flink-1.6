@@ -45,6 +45,8 @@ import static java.util.Objects.requireNonNull;
  *            The output type of the operator
  * @param <F>
  *            The type of the user function
+ *
+ * 用户定义基础udf函数
  */
 @PublicEvolving
 public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
@@ -55,7 +57,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
 
 
 	/** The user function. */
-	protected final F userFunction;
+	protected final F userFunction;//处理的函数
 
 	/** Flag to prevent duplicate function.close() calls in close() and dispose(). */
 	private transient boolean functionsClosed = false;
@@ -80,7 +82,7 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function>
 	@Override
 	public void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output) {
 		super.setup(containingTask, config, output);
-		FunctionUtils.setFunctionRuntimeContext(userFunction, getRuntimeContext());
+		FunctionUtils.setFunctionRuntimeContext(userFunction, getRuntimeContext());//为富函数设置上下文对象
 
 	}
 

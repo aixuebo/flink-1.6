@@ -28,6 +28,7 @@ import java.io.Serializable;
  * Rich functions have additional methods for initialization ({@link #open(Configuration)}) and
  * teardown ({@link #close()}), as well as access to their runtime execution context via
  * {@link #getRuntimeContext()}.
+ * 富函数 -- 提供了上下文信息
  */
 @Public
 public abstract class AbstractRichFunction implements RichFunction, Serializable {
@@ -40,6 +41,7 @@ public abstract class AbstractRichFunction implements RichFunction, Serializable
 
 	private transient RuntimeContext runtimeContext;
 
+	//为函数传入上下文对象
 	@Override
 	public void setRuntimeContext(RuntimeContext t) {
 		this.runtimeContext = t;

@@ -28,7 +28,7 @@ import org.apache.flink.util.OutputTag;
 /**
  * Base abstract class for functions that are evaluated over keyed (grouped) windows using a context
  * for retrieving extra information.
- *
+ * 针对一个key在一个window内的所有数据进行处理,产生输出Collector;ProcessWindowFunction<IN, OUT, KEY, W extends Window>
  * @param <IN> The type of the input value.
  * @param <OUT> The type of the output value.
  * @param <KEY> The type of the key.

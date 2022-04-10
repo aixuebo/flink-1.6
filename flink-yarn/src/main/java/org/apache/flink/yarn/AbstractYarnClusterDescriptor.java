@@ -107,28 +107,30 @@ import static org.apache.flink.yarn.cli.FlinkYarnSessionCli.getDynamicProperties
 
 /**
  * The descriptor with deployment information for spawning or resuming a {@link YarnClusterClient}.
+ * 对yarn集群信息的描述
  */
 public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor<ApplicationId> {
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractYarnClusterDescriptor.class);
 
 	/**
 	 * Minimum memory requirements, checked by the Client.
+	 * 设置最小内存,单位M
 	 */
 	private static final int MIN_JM_MEMORY = 768; // the minimum memory should be higher than the min heap cutoff
 	private static final int MIN_TM_MEMORY = 768;
 
-	private final YarnConfiguration yarnConfiguration;
+	private final YarnConfiguration yarnConfiguration;//yarn的配置文件
 
-	private final YarnClient yarnClient;
+	private final YarnClient yarnClient;//yarn的客户端
 
 	/** True if the descriptor must not shut down the YarnClient. */
-	private final boolean sharedYarnClient;
+	private final boolean sharedYarnClient;//true表示是否共享yarnClient
 
-	private String yarnQueue;
+	private String yarnQueue;//yarn操作的队列
 
 	private String configurationDirectory;
 
-	private Path flinkJarPath;
+	private Path flinkJarPath;//本地要执行的jar
 
 	private String dynamicPropertiesEncoded;
 
@@ -266,6 +268,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		return this.dynamicPropertiesEncoded;
 	}
 
+	//校验yarn支持申请的solt数量的cpu
 	private void isReadyForDeployment(ClusterSpecification clusterSpecification) throws YarnDeploymentException {
 
 		if (clusterSpecification.getNumberTaskManagers() <= 0) {
@@ -283,7 +286,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 		// Check if we don't exceed YARN's maximum virtual cores.
 		// Fetch numYarnMaxVcores from all the RUNNING nodes via yarnClient
-		final int numYarnMaxVcores;
+		final int numYarnMaxVcores;//资源允许最大申请多少个cpu
 		try {
 			numYarnMaxVcores = yarnClient.getNodeReports(NodeState.RUNNING)
 				.stream()
@@ -294,7 +297,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			throw new YarnDeploymentException("Couldn't get cluster description, please check on the YarnConfiguration", e);
 		}
 
-		int configuredVcores = flinkConfiguration.getInteger(YarnConfigOptions.VCORES, clusterSpecification.getSlotsPerTaskManager());
+		int configuredVcores = flinkConfiguration.getInteger(YarnConfigOptions.VCORES, clusterSpecification.getSlotsPerTaskManager());//申请yarn的container时候，申请多少个核
 		// don't configure more than the maximum configured number of vcores
 		if (configuredVcores > numYarnMaxVcores) {
 			throw new IllegalConfigurationException(
@@ -314,6 +317,8 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//true表示有一个节点的内存是可以包含待分配的内存的
+	//注意：数组是引用传递，因此数组的值减少会被传到方法上游的
 	private static boolean allocateResource(int[] nodeManagers, int toAllocate) {
 		for (int i = 0; i < nodeManagers.length; i++) {
 			if (nodeManagers[i] >= toAllocate) {
@@ -370,7 +375,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 	// -------------------------------------------------------------
 	// ClusterClient overrides
 	// -------------------------------------------------------------
-
+    //重新找到applicationId对应的yarn容器任务 --- applicationMaster容器
 	@Override
 	public ClusterClient<ApplicationId> retrieve(ApplicationId applicationId) throws ClusterRetrieveException {
 
@@ -416,6 +421,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//核心方法，为job创建一个集群
 	@Override
 	public ClusterClient<ApplicationId> deploySessionCluster(ClusterSpecification clusterSpecification) throws ClusterDeploymentException {
 		try {
@@ -449,6 +455,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 	 * @param clusterSpecification cluster specification to check against the configuration of the
 	 *                             AbstractYarnClusterDescriptor
 	 * @throws FlinkException if the cluster cannot be started with the provided {@link ClusterSpecification}
+	 * 校验堆内内存的有效性，设置堆内内存、堆外内存大小
 	 */
 	private void validateClusterSpecification(ClusterSpecification clusterSpecification) throws FlinkException {
 		try {
@@ -456,8 +463,8 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			// We do the validation by calling the calculation methods here
 			// Internally these methods will check whether the cluster can be started with the provided
 			// ClusterSpecification and the configured memory requirements
-			final long cutoff = ContaineredTaskManagerParameters.calculateCutoffMB(flinkConfiguration, taskManagerMemorySize);
-			TaskManagerServices.calculateHeapSizeMB(taskManagerMemorySize - cutoff, flinkConfiguration);
+			final long cutoff = ContaineredTaskManagerParameters.calculateCutoffMB(flinkConfiguration, taskManagerMemorySize);//计算堆外内存
+			TaskManagerServices.calculateHeapSizeMB(taskManagerMemorySize - cutoff, flinkConfiguration);//设置堆内内存
 		} catch (IllegalArgumentException iae) {
 			throw new FlinkException("Cannot fulfill the minimum memory requirements with the provided " +
 				"cluster specification. Please increase the memory of the cluster.", iae);
@@ -466,7 +473,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 	/**
 	 * This method will block until the ApplicationMaster/JobManager have been deployed on YARN.
-	 *
+	 * 这个方法会阻塞，直到yarn被部署成
 	 * @param clusterSpecification Initial cluster specification for the Flink cluster to be deployed
 	 * @param applicationName name of the Yarn application to start
 	 * @param yarnClusterEntrypoint Class name of the Yarn cluster entry point.
@@ -481,7 +488,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			boolean detached) throws Exception {
 
 		// ------------------ Check if configuration is valid --------------------
-		validateClusterSpecification(clusterSpecification);
+		validateClusterSpecification(clusterSpecification);//设置 && 校验内存大小
 
 		if (UserGroupInformation.isSecurityEnabled()) {
 			// note: UGI::hasKerberosCredentials inaccurately reports false
@@ -516,8 +523,9 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		final YarnClientApplication yarnApplication = yarnClient.createApplication();
 		final GetNewApplicationResponse appResponse = yarnApplication.getNewApplicationResponse();
 
-		Resource maxRes = appResponse.getMaximumResourceCapability();
+		Resource maxRes = appResponse.getMaximumResourceCapability();//集群能提供的最大资源
 
+		//统计集群可用内存数据
 		final ClusterResourceDescription freeClusterMem;
 		try {
 			freeClusterMem = getCurrentFreeClusterResources(yarnClient);
@@ -548,6 +556,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 		flinkConfiguration.setString(ClusterEntrypoint.EXECUTION_MODE, executionMode.toString());
 
+		//阻塞,让yarn申请一个容器作为applicationMaster节点，启动jobmanager等任务。
 		ApplicationReport report = startAppMaster(
 			flinkConfiguration,
 			applicationName,
@@ -557,6 +566,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			yarnApplication,
 			clusterSpecification);
 
+		//设置jobmaster节点的ip+port信息，返回一个yarn上applicationMaster节点的客户端
 		String host = report.getHost();
 		int port = report.getRpcPort();
 
@@ -577,11 +587,13 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			true);
 	}
 
+	//准备向集群申请确定的资源信息:jobmanager、taskmanager的内存、需要多少个taskmanager、每一个taskmanager需要多少个slot
 	protected ClusterSpecification validateClusterResources(
-		ClusterSpecification clusterSpecification,
-		int yarnMinAllocationMB,
-		Resource maximumResourceCapability,
-		ClusterResourceDescription freeClusterResources) throws YarnDeploymentException {
+		ClusterSpecification clusterSpecification,//需要待申请集群资源情况
+		int yarnMinAllocationMB,//集群最小内存资源
+		Resource maximumResourceCapability,//集群最大的资源
+		ClusterResourceDescription freeClusterResources) //集群当前节点内存空闲资源统计情况
+		throws YarnDeploymentException {
 
 		int taskManagerCount = clusterSpecification.getNumberTaskManagers();
 		int jobManagerMemoryMb = clusterSpecification.getMasterMemoryMB();
@@ -627,13 +639,14 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			"connecting from the beginning because the resources are currently not available in the cluster. " +
 			"The allocation might take more time than usual because the Flink YARN client needs to wait until " +
 			"the resources become available.";
-		int totalMemoryRequired = jobManagerMemoryMb + taskManagerMemoryMb * taskManagerCount;
+		int totalMemoryRequired = jobManagerMemoryMb + taskManagerMemoryMb * taskManagerCount;//等待提交的总内存需求
 
 		if (freeClusterResources.totalFreeMemory < totalMemoryRequired) {
 			LOG.warn("This YARN session requires " + totalMemoryRequired + "MB of memory in the cluster. "
 				+ "There are currently only " + freeClusterResources.totalFreeMemory + "MB available." + noteRsc);
-
 		}
+
+		//单个内存需求,已经超过了集群节点可用内存的最大值
 		if (taskManagerMemoryMb > freeClusterResources.containerLimit) {
 			LOG.warn("The requested amount of memory for the TaskManagers (" + taskManagerMemoryMb + "MB) is more than "
 				+ "the largest possible YARN container: " + freeClusterResources.containerLimit + noteRsc);
@@ -663,6 +676,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			}
 		}
 
+		//准备向集群申请确定的资源信息:jobmanager、taskmanager的内存、需要多少个taskmanager、每一个taskmanager需要多少个slot
 		return new ClusterSpecification.ClusterSpecificationBuilder()
 			.setMasterMemoryMB(jobManagerMemoryMb)
 			.setTaskManagerMemoryMB(taskManagerMemoryMb)
@@ -702,6 +716,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	////核心方法,申请yarn上一个容器,作为applicationMaster节点，启动java命令,执行class入口,启动jobmanager的主任务
 	public ApplicationReport startAppMaster(
 			Configuration configuration,
 			String applicationName,
@@ -734,12 +749,15 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 					+ "The Flink YARN client needs to store its files in a distributed file system");
 		}
 
-		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();
+		ApplicationSubmissionContext appContext = yarnApplication.getApplicationSubmissionContext();//提交对象
+
+		//等待上传的文件 --- 比如log配置文件等
 		Set<File> systemShipFiles = new HashSet<>(shipFiles.size());
 		for (File file : shipFiles) {
 			systemShipFiles.add(file.getAbsoluteFile());
 		}
 
+		//存储log4j文件
 		//check if there is a logback or log4j file
 		File logbackFile = new File(configurationDirectory + File.separator + CONFIG_FILE_LOGBACK_NAME);
 		final boolean hasLogback = logbackFile.exists();
@@ -762,7 +780,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 		// Set-up ApplicationSubmissionContext for the application
 
-		final ApplicationId appId = appContext.getApplicationId();
+		final ApplicationId appId = appContext.getApplicationId();//创建应用id
 
 		// ------------------ Add Zookeeper namespace to local flinkConfiguraton ------
 		String zkNamespace = getZookeeperNamespace();
@@ -776,7 +794,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		configuration.setString(HighAvailabilityOptions.HA_CLUSTER_ID, zkNamespace);
 
 		if (HighAvailabilityMode.isHighAvailabilityModeActivated(configuration)) {
-			// activate re-execution of failed applications
+			// activate re-execution of failed applications  设置最大尝试次数
 			appContext.setMaxAppAttempts(
 				configuration.getInteger(
 					YarnConfigOptions.APPLICATION_ATTEMPTS.key(),
@@ -894,6 +912,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 		// write job graph to tmp file and add it to local resource
 		// TODO: server use user main method to generate job graph
+		//上传job.graph文件存储jobGraph对象
 		if (jobGraph != null) {
 			try {
 				File fp = File.createTempFile(appId.toString(), null);
@@ -988,7 +1007,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			Utils.setTokensFor(amContainer, paths, yarnConfiguration);
 		}
 
-		amContainer.setLocalResources(localResources);
+		amContainer.setLocalResources(localResources);//设置每一个文件名称 与 文件信息（包含如何下载该文件的路径等信息）
 		fs.close();
 
 		// Setup CLASSPATH and environment variables for ApplicationMaster
@@ -1064,6 +1083,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		final long startTime = System.currentTimeMillis();
 		ApplicationReport report;
 		YarnApplicationState lastAppState = YarnApplicationState.NEW;
+		//同步阻塞等待
 		loop: while (true) {
 			try {
 				report = yarnClient.getApplicationReport(appId);
@@ -1135,6 +1155,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 	 * 		map of resources
 	 *
 	 * @return the remote path to the uploaded resource
+	 * 本都数据上传到hdfs上
 	 */
 	private static Path setupSingleLocalResource(
 			String key,
@@ -1177,6 +1198,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 	 * 		list of shipped files in a format understood by {@link Utils#createTaskExecutorContext}
 	 *
 	 * @return list of class paths with the the proper resource keys from the registration
+	 * 上传本地数据到hdfs
 	 */
 	static List<String> uploadAndRegisterFiles(
 			Collection<File> shipFiles,
@@ -1264,10 +1286,11 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		yarnClient.stop();
 	}
 
+	//统计集群可用资源情况
 	private static class ClusterResourceDescription {
-		public final int totalFreeMemory;
-		public final int containerLimit;
-		public final int[] nodeManagersFree;
+		public final int totalFreeMemory;//总可用内存
+		public final int containerLimit;//某一个节点最大内存资源
+		public final int[] nodeManagersFree;//每一个节点可用内存
 
 		public ClusterResourceDescription(int totalFreeMemory, int containerLimit, int[] nodeManagersFree) {
 			this.totalFreeMemory = totalFreeMemory;
@@ -1276,12 +1299,13 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//统计集群可用资源情况
 	private ClusterResourceDescription getCurrentFreeClusterResources(YarnClient yarnClient) throws YarnException, IOException {
 		List<NodeReport> nodes = yarnClient.getNodeReports(NodeState.RUNNING);
 
-		int totalFreeMemory = 0;
-		int containerLimit = 0;
-		int[] nodeManagersFree = new int[nodes.size()];
+		int totalFreeMemory = 0;//总内存可用数
+		int containerLimit = 0;//可用内存最大的节点 --- 内存数
+		int[] nodeManagersFree = new int[nodes.size()];//存储每一个节点的内存可用数
 
 		for (int i = 0; i < nodes.size(); i++) {
 			NodeReport rep = nodes.get(i);
@@ -1295,6 +1319,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		return new ClusterResourceDescription(totalFreeMemory, containerLimit, nodeManagersFree);
 	}
 
+	//输出Yarn集群的信息
 	@Override
 	public String getClusterDescription() {
 
@@ -1536,6 +1561,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//申请yarn上的applicationMaster失败时,如何处理,此时是钩子方法
 	private class DeploymentFailureHook extends Thread {
 
 		private final YarnClient yarnClient;
@@ -1567,6 +1593,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//添加lib文件夹
 	protected void addLibFolderToShipFiles(Collection<File> effectiveShipFiles) {
 		// Add lib folder to the ship files if the environment variable is set.
 		// This is for convenience when running from the command-line.
@@ -1586,8 +1613,9 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		}
 	}
 
+	//启动java命令，开启任务
 	protected ContainerLaunchContext setupApplicationMasterContainer(
-			String yarnClusterEntrypoint,
+			String yarnClusterEntrypoint,//要执行的class入口类
 			boolean hasLogback,
 			boolean hasLog4j,
 			boolean hasKrb5,
@@ -1595,6 +1623,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		// ------------------ Prepare Application Master Container  ------------------------------
 
 		// respect custom JVM options in the YAML file
+		//java运行环境参数
 		String javaOpts = flinkConfiguration.getString(CoreOptions.FLINK_JVM_OPTIONS);
 		if (flinkConfiguration.getString(CoreOptions.FLINK_JM_JVM_OPTIONS).length() > 0) {
 			javaOpts += " " + flinkConfiguration.getString(CoreOptions.FLINK_JM_JVM_OPTIONS);
@@ -1612,7 +1641,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 		startCommandValues.put("java", "$JAVA_HOME/bin/java");
 		startCommandValues.put("jvmmem", "-Xmx" +
 			Utils.calculateHeapSize(jobManagerMemoryMb, flinkConfiguration) +
-			"m");
+			"m");//JVM堆信息设置
 		startCommandValues.put("jvmopts", javaOpts);
 		String logging = "";
 
@@ -1635,6 +1664,7 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 			"2> " + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/jobmanager.err");
 		startCommandValues.put("args", "");
 
+		//java命令行模式，按照什么命令行执行代码
 		final String commandTemplate = flinkConfiguration
 			.getString(ConfigConstants.YARN_CONTAINER_START_COMMAND_TEMPLATE,
 				ConfigConstants.DEFAULT_YARN_CONTAINER_START_COMMAND_TEMPLATE);
@@ -1663,13 +1693,15 @@ public abstract class AbstractYarnClusterDescriptor implements ClusterDescriptor
 
 	/**
 	 * Creates a YarnClusterClient; may be overriden in tests.
+	 * 完成applicationMaster节点的启动
+	 * 连接集群后，创建了applicationMaster后，本地节点持有一个客户端，可以随时掌握applicationMaster节点的jobmanager等信息
 	 */
 	protected abstract ClusterClient<ApplicationId> createYarnClusterClient(
-			AbstractYarnClusterDescriptor descriptor,
-			int numberTaskManagers,
-			int slotsPerTaskManager,
-			ApplicationReport report,
-			org.apache.flink.configuration.Configuration flinkConfiguration,
+			AbstractYarnClusterDescriptor descriptor,//客户端上持有的集群信息对象,该对象功能很多,可以连接集群
+			int numberTaskManagers,//需要多少个taskmanager
+			int slotsPerTaskManager,//每一个taskmanager需要多少个slot
+			ApplicationReport report,//上报applicationMaster节点的信息
+			org.apache.flink.configuration.Configuration flinkConfiguration,//flink环境信息
 			boolean perJobCluster) throws Exception;
 }
 

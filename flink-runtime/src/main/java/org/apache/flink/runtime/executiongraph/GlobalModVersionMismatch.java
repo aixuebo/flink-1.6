@@ -21,14 +21,15 @@ package org.apache.flink.runtime.executiongraph;
 /**
  * An exception that indicates a mismatch between the expected global modification version
  * of the execution graph, and the actual modification version.
+ * 一个异常,标识起到的与真实的版本号不一致
  */
 public class GlobalModVersionMismatch extends Exception {
 
 	private static final long serialVersionUID = 6643688395797045098L;
 
-	private final long expectedModVersion;
+	private final long expectedModVersion;//期待的版本号
 
-	private final long actualModVersion;
+	private final long actualModVersion;//真实的版本号
 
 	public GlobalModVersionMismatch(long expectedModVersion, long actualModVersion) {
 		super("expected=" + expectedModVersion + ", actual=" + actualModVersion);

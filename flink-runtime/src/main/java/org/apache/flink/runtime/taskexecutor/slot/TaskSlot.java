@@ -47,22 +47,23 @@ import java.util.Map;
  *
  * <p>An allocated or active slot can only be freed if it is empty. If it is not empty, then it's state
  * can be set to releasing indicating that it can be freed once it becomes empty.
+ * 表示task上的一个slot
  */
 public class TaskSlot {
 
 	/** Index of the task slot. */
-	private final int index;
+	private final int index;//第几个slot
 
 	/** Resource characteristics for this slot. */
-	private final ResourceProfile resourceProfile;
+	private final ResourceProfile resourceProfile;//该slot的资源信息
 
 	/** Tasks running in this slot. */
-	private final Map<ExecutionAttemptID, Task> tasks;
+	private final Map<ExecutionAttemptID, Task> tasks;//该slot上的任务集合
 
 	/** State of this slot. */
 	private TaskSlotState state;
 
-	/** Job id to which the slot has been allocated; null if not allocated. */
+	/** Job id to which the slot has been allocated; null if not allocated. 持有该slot的job*/
 	private JobID jobId;
 
 	/** Allocation id of this slot; null if not allocated. */
@@ -108,10 +109,12 @@ public class TaskSlot {
 		return tasks.isEmpty();
 	}
 
+	//确定当前状态是否是空闲
 	public boolean isFree() {
 		return TaskSlotState.FREE == state;
 	}
 
+	//确定当前slot状态是ACTIVE 并且是为该job和AllocationId负责的
 	public boolean isActive(JobID activeJobId, AllocationID activeAllocationId) {
 		Preconditions.checkNotNull(activeJobId);
 		Preconditions.checkNotNull(activeAllocationId);
@@ -121,6 +124,7 @@ public class TaskSlot {
 			activeAllocationId.equals(allocationId);
 	}
 
+	//确定当前slot状态是ACTIVE/ALLOCATED 并且是为该job和AllocationId负责的
 	public boolean isAllocated(JobID jobIdToCheck, AllocationID allocationIDToCheck) {
 		Preconditions.checkNotNull(jobIdToCheck);
 		Preconditions.checkNotNull(allocationIDToCheck);
@@ -204,6 +208,9 @@ public class TaskSlot {
 	 * @param newJobId to allocate the slot for
 	 * @param newAllocationId to identify the slot allocation
 	 * @return True if the slot was allocated for the given job and allocation id; otherwise false
+	 * 该slot分配给某个job
+	 *
+	 * 将slot分配给job,同时resouceManager会生产一个allocationId,通过allocationId可以确定resouceManager把这个slot分配给了哪个job
 	 */
 	public boolean allocate(JobID newJobId, AllocationID newAllocationId) {
 		if (TaskSlotState.FREE == state) {
@@ -233,6 +240,7 @@ public class TaskSlot {
 	 * <p>The method returns true if the slot was set to active. Otherwise it returns false.
 	 *
 	 * @return True if the new state of the slot is active; otherwise false
+	 * 标记slot状态为active
 	 */
 	public boolean markActive() {
 		if (TaskSlotState.ALLOCATED == state || TaskSlotState.ACTIVE == state) {
@@ -249,6 +257,7 @@ public class TaskSlot {
 	 * in state allocated or active.
 	 *
 	 * @return True if the new state of the slot is allocated; otherwise false
+	 * 标记slot状态为ALLOCATED
 	 */
 	public boolean markInactive() {
 		if (TaskSlotState.ACTIVE == state || TaskSlotState.ALLOCATED == state) {
@@ -264,6 +273,7 @@ public class TaskSlot {
 	 * Mark the slot as free. A slot can only marked as free if it's empty.
 	 *
 	 * @return True if the new state is free; otherwise false
+	 * 标记slot为空闲
 	 */
 	public boolean markFree() {
 		if (isEmpty()) {
@@ -281,6 +291,7 @@ public class TaskSlot {
 	 * Mark this slot as releasing. A slot can always be marked as releasing.
 	 *
 	 * @return True
+	 * 标记slot正在释放中
 	 */
 	public boolean markReleasing() {
 		state = TaskSlotState.RELEASING;
@@ -291,6 +302,7 @@ public class TaskSlot {
 	 * Generate the slot offer from this TaskSlot.
 	 *
 	 * @return The sot offer which this task slot can provide
+	 * 产生可序列化的描述slot的对象,用于给jobManager传输信息
 	 */
 	public SlotOffer generateSlotOffer() {
 		Preconditions.checkState(TaskSlotState.ACTIVE == state || TaskSlotState.ALLOCATED == state,

@@ -90,6 +90,7 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 			return currentWatermark;
 		}
 
+		//返回数据的时间戳
 		@Override
 		public Long timestamp() {
 			if (element.hasTimestamp()) {

@@ -26,6 +26,7 @@ import java.util.Objects;
 
 /**
  * Current address and fencing token of the leading ResourceManager.
+ * 记录ResourceManager的地址信息
  */
 public class ResourceManagerAddress {
 
@@ -33,7 +34,7 @@ public class ResourceManagerAddress {
 	private final String address;
 
 	@Nonnull
-	private final ResourceManagerId resourceManagerId;
+	private final ResourceManagerId resourceManagerId;//ResourceManager上选举成功后产生的uuid
 
 	public ResourceManagerAddress(@Nonnull String address, @Nonnull ResourceManagerId resourceManagerId) {
 		this.address = address;

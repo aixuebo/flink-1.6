@@ -32,7 +32,7 @@ abstract class AbstractStateTableSnapshot<K, N, S, T extends StateTable<K, N, S>
 	/**
 	 * The {@link StateTable} from which this snapshot was created.
 	 */
-	final T owningStateTable;
+	final T owningStateTable;//存储数据的table对象
 
 	/**
 	 * Creates a new {@link AbstractStateTableSnapshot} for and owned by the given table.

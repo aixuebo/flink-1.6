@@ -47,21 +47,24 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * A {@link TypeInformation} for the tuple types of the Java API.
  *
- * @param <T> The type of the tuple.
+ * @param <T> The type of the tuple.存储的T肯定是一个tuple对象
  */
 @Public
 public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 	
 	private static final long serialVersionUID = 1L;
 
-	protected final String[] fieldNames;
+	protected final String[] fieldNames;//每一个元素用f+数字命名,也可以自定义,从f0开始计数
 
+	//通过类型,构造一个Tuple对象
 	@SuppressWarnings("unchecked")
 	@PublicEvolving
 	public TupleTypeInfo(TypeInformation<?>... types) {
+		//根据tuple元素数量,构建tuple的具体class
 		this((Class<T>) Tuple.getTupleClass(types.length), types);
 	}
 
+	//tupleType对象,每一个对象的类型由TypeInformation控制
 	@PublicEvolving
 	public TupleTypeInfo(Class<T> tupleType, TypeInformation<?>... types) {
 		super(tupleType, types);
@@ -83,6 +86,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		return fieldNames;
 	}
 
+	//通过名字返回tuple第几个字段
 	@Override
 	@PublicEvolving
 	public int getFieldIndex(String fieldName) {
@@ -102,6 +106,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 			return (TupleSerializer<T>) Tuple0Serializer.INSTANCE;
 		}
 
+		//若干个序列化类
 		TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[getArity()];
 		for (int i = 0; i < types.length; i++) {
 			fieldSerializers[i] = types[i].createSerializer(executionConfig);
@@ -112,6 +117,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		return new TupleSerializer<T>(tupleClass, fieldSerializers);
 	}
 
+	//创造复杂对象的比较器
 	@Override
 	protected TypeComparatorBuilder<T> createTypeComparatorBuilder() {
 		return new TupleTypeComparatorBuilder();
@@ -119,8 +125,8 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 	private class TupleTypeComparatorBuilder implements TypeComparatorBuilder<T> {
 
-		private final ArrayList<TypeComparator> fieldComparators = new ArrayList<TypeComparator>();
-		private final ArrayList<Integer> logicalKeyFields = new ArrayList<Integer>();
+		private final ArrayList<TypeComparator> fieldComparators = new ArrayList<TypeComparator>();//每一个属性对应的比较器
+		private final ArrayList<Integer> logicalKeyFields = new ArrayList<Integer>();//比如2 8 5 ，表示第2 8 5 使用三个属性进行排序，注从0 开始计数
 
 		@Override
 		public void initializeTypeComparatorBuilder(int size) {
@@ -172,6 +178,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		}
 	}
 
+	//从0开始计数,记录每一个字段名字与类型的映射
 	@Override
 	public Map<String, TypeInformation<?>> getGenericParameters() {
 		Map<String, TypeInformation<?>> m = new HashMap<>(types.length);
@@ -213,6 +220,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 	// --------------------------------------------------------------------------------------------
 
+	//传入基础类型,生产Tuple，比如long.class
 	@PublicEvolving
 	public static <X extends Tuple> TupleTypeInfo<X> getBasicTupleTypeInfo(Class<?>... basicTypes) {
 		if (basicTypes == null || basicTypes.length == 0) {
@@ -238,6 +246,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 		return tupleInfo;
 	}
 
+	//必须是基础类型,同时也可以是value类型,生产Tuple
 	@SuppressWarnings("unchecked")
 	@PublicEvolving
 	public static <X extends Tuple> TupleTypeInfo<X> getBasicAndBasicValueTupleTypeInfo(Class<?>... basicTypes) {
@@ -269,7 +278,8 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
 
 		return (TupleTypeInfo<X>) new TupleTypeInfo<>(infos);
 	}
-	
+
+	//list转换成数组
 	private static int[] listToPrimitives(ArrayList<Integer> ints) {
 		int[] result = new int[ints.size()];
 		for (int i = 0; i < result.length; i++) {

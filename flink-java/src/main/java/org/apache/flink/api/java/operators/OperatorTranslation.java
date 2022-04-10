@@ -45,6 +45,7 @@ public class OperatorTranslation {
 	/** The already translated operations. */
 	private Map<DataSet<?>, Operator<?>> translated = new HashMap<>();
 
+	//核心入口
 	public Plan translateToPlan(List<DataSink<?>> sinks, String jobName) {
 		List<GenericDataSinkBase<?>> planSinks = new ArrayList<>();
 

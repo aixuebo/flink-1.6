@@ -32,6 +32,7 @@ import java.util.Iterator;
  *
  * @param <IN> Type of the input elements.
  * @param <OUT> Type of the returned elements.
+ * FlatMap的实现方式 --- 将I转换成迭代器
  */
 @PublicEvolving
 public abstract class FlatMapIterator<IN, OUT> extends RichFlatMapFunction<IN, OUT> {
@@ -47,6 +48,7 @@ public abstract class FlatMapIterator<IN, OUT> extends RichFlatMapFunction<IN, O
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
+	 * 将一个输入源,转换成迭代器
 	 */
 	public abstract Iterator<OUT> flatMap(IN value) throws Exception;
 
@@ -57,7 +59,7 @@ public abstract class FlatMapIterator<IN, OUT> extends RichFlatMapFunction<IN, O
 	 */
 	@Override
 	public final void flatMap(IN value, Collector<OUT> out) throws Exception {
-		for (Iterator<OUT> iter = flatMap(value); iter.hasNext(); ) {
+		for (Iterator<OUT> iter = flatMap(value); iter.hasNext(); ) {//针对迭代器做输出
 			out.collect(iter.next());
 		}
 	}

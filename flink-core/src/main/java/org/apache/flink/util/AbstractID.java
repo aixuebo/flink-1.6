@@ -24,6 +24,7 @@ import java.util.Random;
 
 /**
  * A statistically unique identification number.
+ * ID由两个long组成
  */
 @PublicEvolving
 public class AbstractID implements Comparable<AbstractID>, java.io.Serializable {
@@ -36,7 +37,7 @@ public class AbstractID implements Comparable<AbstractID>, java.io.Serializable 
 	private static final int SIZE_OF_LONG = 8;
 
 	/** The size of the ID in byte. */
-	public static final int SIZE = 2 * SIZE_OF_LONG;
+	public static final int SIZE = 2 * SIZE_OF_LONG;//ID由两个long组成 因此是16个字节
 
 	// ------------------------------------------------------------------------
 
@@ -89,6 +90,7 @@ public class AbstractID implements Comparable<AbstractID>, java.io.Serializable 
 
 	/**
 	 * Constructs a new random ID from a uniform distribution.
+	 * 随机产生id
 	 */
 	public AbstractID() {
 		this.lowerPart = RND.nextLong();

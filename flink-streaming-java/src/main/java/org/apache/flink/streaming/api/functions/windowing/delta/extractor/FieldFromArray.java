@@ -24,15 +24,16 @@ import java.lang.reflect.Array;
 /**
  * Extracts a single field out of an array.
  *
- * @param <OUT>
- *            The type of the extracted field.
+ * @param <OUT> The type of the extracted field.
+ *
+ * 输入object一定是数组类型数据,输出数组中某一个元素
  */
 @Internal
 public class FieldFromArray<OUT> implements Extractor<Object, OUT> {
 
 	private static final long serialVersionUID = -5161386546695574359L;
 
-	private int fieldId = 0;
+	private int fieldId = 0;//数组的下标
 
 	/**
 	 * Extracts the first field (id 0) from the array.
@@ -51,6 +52,7 @@ public class FieldFromArray<OUT> implements Extractor<Object, OUT> {
 		this.fieldId = fieldId;
 	}
 
+	//直接获取数组in的第fieldId下标数据
 	@SuppressWarnings("unchecked")
 	@Override
 	public OUT extract(Object in) {

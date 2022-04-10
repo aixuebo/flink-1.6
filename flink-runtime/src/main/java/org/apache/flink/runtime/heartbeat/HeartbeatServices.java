@@ -59,9 +59,9 @@ public class HeartbeatServices {
 	 * @return A new HeartbeatManager instance
 	 */
 	public <I, O> HeartbeatManager<I, O> createHeartbeatManager(
-		ResourceID resourceId,
-		HeartbeatListener<I, O> heartbeatListener,
-		ScheduledExecutor scheduledExecutor,
+		ResourceID resourceId,//监听谁,比如taskexecutor的uuid
+		HeartbeatListener<I, O> heartbeatListener,//监听到心跳后如何操作
+		ScheduledExecutor scheduledExecutor,//线程池
 		Logger log) {
 
 		return new HeartbeatManagerImpl<>(

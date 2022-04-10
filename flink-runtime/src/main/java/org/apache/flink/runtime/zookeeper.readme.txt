@@ -1,0 +1,13 @@
+
+一、LeaderElectionService 解决的问题 ---- LeaderContender
+选举出来是leader后，该如何做。
+当leader变成非leader，该如何做
+
+二、LeaderRetrievalService解决的问题 --- LeaderRetrievalListener
+当leader有新的变化，该如何处理
+
+
+三、zookeeper目录
+1.启动zookeeper。
+2.向zookeeper的某个path，存储T对象数据。
+完成对T对象的序列化与反序列化。

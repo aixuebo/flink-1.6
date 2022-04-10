@@ -37,6 +37,7 @@ import java.util.List;
  * @param <IN1> The type of the elements in the first input {@code StreamTransformation}
  * @param <IN2> The type of the elements in the second input {@code StreamTransformation}
  * @param <OUT> The type of the elements that result from this {@code TwoInputTransformation}
+ * 两个数据源 --> 产生一个OUT
  */
 @Internal
 public class TwoInputTransformation<IN1, IN2, OUT> extends StreamTransformation<OUT> {
@@ -46,11 +47,10 @@ public class TwoInputTransformation<IN1, IN2, OUT> extends StreamTransformation<
 
 	private final TwoInputStreamOperator<IN1, IN2, OUT> operator;
 
+	//用于shuffle,每一个流的元素如何转换成key
 	private KeySelector<IN1, ?> stateKeySelector1;
-
 	private KeySelector<IN2, ?> stateKeySelector2;
-
-	private TypeInformation<?> stateKeyType;
+	private TypeInformation<?> stateKeyType;//key的输出类型
 
 	/**
 	 * Creates a new {@code TwoInputTransformation} from the given inputs and operator.
@@ -116,6 +116,8 @@ public class TwoInputTransformation<IN1, IN2, OUT> extends StreamTransformation<
 	 *
 	 * @param stateKeySelector1 The {@code KeySelector} to set for the first input
 	 * @param stateKeySelector2 The {@code KeySelector} to set for the first input
+	 *
+	 * 用于shuffle,每一个流的元素如何转换成key
 	 */
 	public void setStateKeySelectors(KeySelector<IN1, ?> stateKeySelector1, KeySelector<IN2, ?> stateKeySelector2) {
 		this.stateKeySelector1 = stateKeySelector1;

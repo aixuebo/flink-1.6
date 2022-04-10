@@ -28,25 +28,26 @@ import java.util.Map;
 
 /**
  * This class describes the basic parameters for launching a TaskManager process.
+ * 容器需要的资源
  */
 public class ContaineredTaskManagerParameters implements java.io.Serializable {
 
 	private static final long serialVersionUID = -3096987654278064670L;
 
 	/** Total container memory, in bytes. */
-	private final long totalContainerMemoryMB;
+	private final long totalContainerMemoryMB;//容器总内存
 
 	/** Heap size to be used for the Java process. */
-	private final long taskManagerHeapSizeMB;
+	private final long taskManagerHeapSizeMB;//堆内内存
 
 	/** Direct memory limit for the Java process. */
-	private final long taskManagerDirectMemoryLimitMB;
+	private final long taskManagerDirectMemoryLimitMB;//堆外内存
 
 	/** The number of slots per TaskManager. */
-	private final int numSlots;
+	private final int numSlots;//每一个taskManager有多少个slot
 
 	/** Environment variables to add to the Java process. */
-	private final HashMap<String, String> taskManagerEnv;
+	private final HashMap<String, String> taskManagerEnv;//容器的环境信息
 
 	public ContaineredTaskManagerParameters(
 			long totalContainerMemoryMB,
@@ -110,6 +111,7 @@ public class ContaineredTaskManagerParameters implements java.io.Serializable {
 	 * @param containerMemoryMB The size of the complete container, in megabytes.
 	 *
 	 * @return cutoff memory size used by container.
+	 * 计算需要容器预留多少内存给其他使用
 	 */
 	public static long calculateCutoffMB(Configuration config, long containerMemoryMB) {
 		Preconditions.checkArgument(containerMemoryMB > 0);
@@ -154,7 +156,7 @@ public class ContaineredTaskManagerParameters implements java.io.Serializable {
 			long containerMemoryMB,
 			int numSlots) {
 		// (1) try to compute how much memory used by container
-		final long cutoffMB = calculateCutoffMB(config, containerMemoryMB);
+		final long cutoffMB = calculateCutoffMB(config, containerMemoryMB);//计算需要容器预留多少内存给其他使用
 
 		// (2) split the remaining Java memory between heap and off-heap
 		final long heapSizeMB = TaskManagerServices.calculateHeapSizeMB(containerMemoryMB - cutoffMB, config);
@@ -162,6 +164,7 @@ public class ContaineredTaskManagerParameters implements java.io.Serializable {
 		final long offHeapSizeMB = containerMemoryMB - heapSizeMB;
 
 		// (3) obtain the additional environment variables from the configuration
+		//容器需要的上下文环境
 		final HashMap<String, String> envVars = new HashMap<>();
 		final String prefix = ResourceManagerOptions.CONTAINERIZED_TASK_MANAGER_ENV_PREFIX;
 

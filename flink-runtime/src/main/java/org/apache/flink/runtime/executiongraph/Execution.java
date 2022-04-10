@@ -102,6 +102,10 @@ import static org.apache.flink.util.Preconditions.checkState;
  * may even result in distributed deadlocks (unless carefully avoided). We therefore use atomic state updates and
  * occasional double-checking to ensure that the state after a completed call is as expected, and trigger correcting
  * actions if it is not. Many actions are also idempotent (like canceling).
+ *
+ * Execution 是对 ExecutionVertex 的一次执行，通过 ExecutionAttemptId 来唯一标识
+ *
+ * 具体要执行的一个任务
  */
 public class Execution implements AccessExecution, Archiveable<ArchivedExecution>, LogicalSlot.Payload {
 
@@ -125,7 +129,7 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 	private final Executor executor;
 
 	/** The execution vertex whose task this execution executes. */
-	private final ExecutionVertex vertex;
+	private final ExecutionVertex vertex;//尝试任务归属于哪个具体的并行度任务
 
 	/** The unique ID marking the specific execution instant of the task. */
 	private final ExecutionAttemptID attemptId;

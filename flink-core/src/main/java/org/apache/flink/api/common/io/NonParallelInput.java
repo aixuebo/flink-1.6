@@ -26,6 +26,7 @@ import org.apache.flink.annotation.Public;
  * of one.
  * 
  * @see InputFormat
+ * 不需要并行执行的输入
  */
 @Public
 public interface NonParallelInput {

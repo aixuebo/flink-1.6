@@ -120,6 +120,7 @@ public class YarnJobClusterEntrypoint extends JobClusterEntrypoint {
 			jobManagerMetricGroup);
 	}
 
+	//还原JobGraph对象 --- 读取反序列化文件即可
 	@Override
 	protected JobGraph retrieveJobGraph(Configuration configuration) throws FlinkException {
 		String jobGraphFile = configuration.getString(JOB_GRAPH_FILE_PATH, "job.graph");
@@ -149,7 +150,7 @@ public class YarnJobClusterEntrypoint extends JobClusterEntrypoint {
 
 	public static void main(String[] args) {
 		// startup checks and logging
-		EnvironmentInformation.logEnvironmentInfo(LOG, YarnJobClusterEntrypoint.class.getSimpleName(), args);
+		EnvironmentInformation.logEnvironmentInfo(LOG, YarnJobClusterEntrypoint.class.getSimpleName(), args);//打印环境信息
 		SignalHandler.register(LOG);
 		JvmShutdownSafeguard.installAsShutdownHook(LOG);
 

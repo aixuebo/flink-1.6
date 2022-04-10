@@ -29,6 +29,7 @@ import java.io.InputStream;
  * This class wraps an {@link java.io.InputStream} and exposes it as {@link org.apache.flink.core.fs.FSDataInputStream}.
  * <br>
  * <i>NB: {@link #seek(long)} and {@link #getPos()} are currently not supported.</i>
+ * 解压缩流
  */
 @Public
 public class InputStreamFSInputWrapper extends FSDataInputStream {
@@ -37,6 +38,7 @@ public class InputStreamFSInputWrapper extends FSDataInputStream {
 
 	private long pos = 0;
 
+	//参数inStream 已经被解压缩了
 	public InputStreamFSInputWrapper(InputStream inStream) {
 		this.inStream = inStream;
 	}

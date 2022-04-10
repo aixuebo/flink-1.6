@@ -48,7 +48,9 @@ public abstract class PlanExecutor {
 	//  Config Options
 	// ------------------------------------------------------------------------
 	
-	/** If true, all execution progress updates are not only logged, but also printed to System.out */
+	/** If true, all execution progress updates are not only logged, but also printed to System.out
+	 * true 表示日志不仅打印到log,也要打印到sysout
+	 **/
 	private boolean printUpdatesToSysout = true;
 
 	/**
@@ -204,7 +206,8 @@ public abstract class PlanExecutor {
 					+ REMOTE_EXECUTOR_CLASS + ").", t);
 		}
 	}
-	
+
+	//返回执行器class
 	private static Class<? extends PlanExecutor> loadExecutorClass(String className) {
 		try {
 			Class<?> leClass = Class.forName(className);

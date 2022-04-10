@@ -42,12 +42,13 @@ import java.util.Collections;
  * } </pre>
  *
  * @param <T> The type of the input elements
+ * 自定义动态的设置每一个元素对应的session超时时长
  */
 @PublicEvolving
 public class DynamicEventTimeSessionWindows<T> extends MergingWindowAssigner<T, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 
-	protected SessionWindowTimeGapExtractor<T> sessionWindowTimeGapExtractor;
+	protected SessionWindowTimeGapExtractor<T> sessionWindowTimeGapExtractor;//从元素内容中提取session超时时长
 
 	protected DynamicEventTimeSessionWindows(SessionWindowTimeGapExtractor<T> sessionWindowTimeGapExtractor) {
 		this.sessionWindowTimeGapExtractor = sessionWindowTimeGapExtractor;
@@ -59,7 +60,7 @@ public class DynamicEventTimeSessionWindows<T> extends MergingWindowAssigner<T, 
 		if (sessionTimeout <= 0) {
 			throw new IllegalArgumentException("Dynamic session time gap must satisfy 0 < gap");
 		}
-		return Collections.singletonList(new TimeWindow(timestamp, timestamp + sessionTimeout));
+		return Collections.singletonList(new TimeWindow(timestamp, timestamp + sessionTimeout));//自定义动态的session超时时长
 	}
 
 	@SuppressWarnings("unchecked")

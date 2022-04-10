@@ -41,6 +41,7 @@ public interface Output<T> extends Collector<T> {
 	 *
 	 * <p>A watermark specifies that no element with a timestamp lower or equal to the watermark
 	 * timestamp will be emitted in the future.
+	 * 发射水印
 	 */
 	void emitWatermark(Watermark mark);
 
@@ -48,8 +49,10 @@ public interface Output<T> extends Collector<T> {
 	 * Emits a record the side output identified by the given {@link OutputTag}.
 	 *
 	 * @param record The record to collect.
+	 * 向一个tag输出一条数据
 	 */
 	<X> void collect(OutputTag<X> outputTag, StreamRecord<X> record);
 
+	//发射延迟元素
 	void emitLatencyMarker(LatencyMarker latencyMarker);
 }

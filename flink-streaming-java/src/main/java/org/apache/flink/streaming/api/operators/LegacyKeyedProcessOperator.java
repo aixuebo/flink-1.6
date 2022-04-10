@@ -58,10 +58,10 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 	@Override
 	public void open() throws Exception {
 		super.open();
-		collector = new TimestampedCollector<>(output);
+		collector = new TimestampedCollector<>(output);//可能是类似flatMap形式,因此N条数据需要共享同一个时间戳
 
 		InternalTimerService<VoidNamespace> internalTimerService =
-				getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);
+				getInternalTimerService("user-timers", VoidNamespaceSerializer.INSTANCE, this);//this 处理回调
 
 		TimerService timerService = new SimpleTimerService(internalTimerService);
 
@@ -69,30 +69,33 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 		onTimerContext = new OnTimerContextImpl(userFunction, timerService);
 	}
 
+	//处理EventTime回调
 	@Override
 	public void onEventTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
-		collector.setAbsoluteTimestamp(timer.getTimestamp());
+		collector.setAbsoluteTimestamp(timer.getTimestamp());//设置time被触发的时间戳
 		invokeUserFunction(TimeDomain.EVENT_TIME, timer);
 	}
 
+	//处理ProcessingTime回调
 	@Override
 	public void onProcessingTime(InternalTimer<K, VoidNamespace> timer) throws Exception {
-		collector.eraseTimestamp();
+		collector.eraseTimestamp();//擦除时间戳
 		invokeUserFunction(TimeDomain.PROCESSING_TIME, timer);
 	}
 
+	//处理每一条元素
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		collector.setTimestamp(element);
-		context.element = element;
-		userFunction.processElement(element.getValue(), context, collector);
+		context.element = element;//上下文从element中获取element的事件时间戳
+		userFunction.processElement(element.getValue(), context, collector);//element.getValue()只获取value的值
 		context.element = null;
 	}
 
 	private void invokeUserFunction(
 			TimeDomain timeDomain,
 			InternalTimer<K, VoidNamespace> timer) throws Exception {
-		onTimerContext.timeDomain = timeDomain;
+		onTimerContext.timeDomain = timeDomain;//时间戳类型
 		onTimerContext.timer = timer;
 		userFunction.onTimer(timer.getTimestamp(), onTimerContext, collector);
 		onTimerContext.timeDomain = null;
@@ -110,6 +113,7 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 			this.timerService = checkNotNull(timerService);
 		}
 
+		//获取事件时间戳
 		@Override
 		public Long timestamp() {
 			checkState(element != null);
@@ -140,7 +144,7 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 
 		private final TimerService timerService;
 
-		private TimeDomain timeDomain;
+		private TimeDomain timeDomain;//时间戳类型
 
 		private InternalTimer<?, VoidNamespace> timer;
 
@@ -169,6 +173,7 @@ public class LegacyKeyedProcessOperator<K, IN, OUT>
 			output.collect(outputTag, new StreamRecord<>(value, timer.getTimestamp()));
 		}
 
+		//返回时间戳类型
 		@Override
 		public TimeDomain timeDomain() {
 			checkState(timeDomain != null);

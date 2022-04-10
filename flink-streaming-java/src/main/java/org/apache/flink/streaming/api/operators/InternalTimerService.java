@@ -27,19 +27,29 @@ import org.apache.flink.annotation.Internal;
  * that allows to specify a key and a namespace to which timers should be scoped.
  *
  * @param <N> Type of the namespace to which timers are scoped.
+ *
+ * 时间服务,每一个N命名空间,独立存在,比如time点要产生回调,必须声明是N空间+time点产生回调
+ *
+ * 无论是windowOperator还是KeyedProcessOperator都持有InternalTimerService具体实现的对象，
+ * 通过这个对象用户可以注册EventTime及ProcessTime的timer，当watermark 越过这些timer的时候，调用回调函数执行一定的操作。
  */
 @Internal
 public interface InternalTimerService<N> {
 
-	/** Returns the current processing time. */
+	/** Returns the current processing time.
+	 * 获取当前时间戳
+	 **/
 	long currentProcessingTime();
 
-	/** Returns the current event-time watermark. */
+	/** Returns the current event-time watermark.
+	 * 获取水印
+	 **/
 	long currentWatermark();
 
 	/**
 	 * Registers a timer to be fired when processing time passes the given time. The namespace
 	 * you pass here will be provided when the timer fires.
+	 * 注册回调函数
 	 */
 	void registerProcessingTimeTimer(N namespace, long time);
 

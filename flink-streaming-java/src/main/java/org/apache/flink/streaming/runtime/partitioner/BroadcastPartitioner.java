@@ -25,14 +25,15 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * Partitioner that selects all the output channels.
  *
  * @param <T> Type of the elements in the Stream being broadcast
+ * 广播分区,数据在所有分区都要有
  */
 @Internal
 public class BroadcastPartitioner<T> extends StreamPartitioner<T> {
 	private static final long serialVersionUID = 1L;
 
-	int[] returnArray;
-	boolean set;
-	int setNumber;
+	int[] returnArray;//所有分区号组成的数组，即为所有分区都分配数据
+	boolean set;//true表示已经returnArray完成初始化
+	int setNumber;//set时,初始化returnArray的size
 
 	@Override
 	public int[] selectChannels(SerializationDelegate<StreamRecord<T>> record,

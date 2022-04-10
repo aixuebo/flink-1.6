@@ -31,6 +31,15 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * @param <IN1> The input type of the operator
  * @param <IN2> The input type of the operator
  * @param <OUT> The output type of the operator
+ *
+ * stream1.coGroup(stream2)
+ * 简单理解就是当stream1数据到来时，会调用flatMap1方法，stream2收到数据之时，会调用flatMap2方法
+ *
+ * Join、CoGroup和CoFlatMap这三个运算符都能够将双数据流转换为单个数据流。
+ * Join和CoGroup会根据指定的条件进行数据配对操作，不同的是Join只输出匹配成功的数据对，
+ * CoGroup无论是否有匹配都会输出。
+ * CoFlatMap没有匹配操作，只是分别去接收两个流的输入。
+ * 大家可以根据具体的业务需求，选择不同的双流操作。
  */
 @PublicEvolving
 public interface TwoInputStreamOperator<IN1, IN2, OUT> extends StreamOperator<OUT> {

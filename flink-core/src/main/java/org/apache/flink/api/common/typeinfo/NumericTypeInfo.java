@@ -46,8 +46,9 @@ public abstract class NumericTypeInfo<T> extends BasicTypeInfo<T> {
 				Float.class,
 				Character.class));
 
-	protected NumericTypeInfo(Class<T> clazz, Class<?>[] possibleCastTargetTypes, TypeSerializer<T> serializer, Class<? extends
-			TypeComparator<T>> comparatorClass) {
+	protected NumericTypeInfo(Class<T> clazz, Class<?>[] possibleCastTargetTypes,
+							  TypeSerializer<T> serializer,
+							  Class<? extends TypeComparator<T>> comparatorClass) {
 		super(clazz, possibleCastTargetTypes, serializer, comparatorClass);
 
 		checkArgument(numericalTypes.contains(clazz),

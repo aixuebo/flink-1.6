@@ -23,6 +23,9 @@ import java.util.UUID;
 /**
  * Listener for timeout events by the {@link TimerService}.
  * @param <K> Type of the timeout key
+ * 接口实现类,统一管理所有key的超时情况
+ *
+ * 注意:k为slot的id,关注slot是否超时
  */
 public interface TimeoutListener<K> {
 
@@ -32,6 +35,7 @@ public interface TimeoutListener<K> {
 	 *
 	 * @param key identifying the timed out event
 	 * @param ticket used to check whether the timeout is still valid
+	 * 当key超时的时候,调用该方法
 	 */
 	void notifyTimeout(K key, UUID ticket);
 }

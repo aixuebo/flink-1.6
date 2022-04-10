@@ -48,7 +48,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 	
 	private static final boolean[] EMPTY_INCLUDED = new boolean[0];
 	
-	private static final byte[] DEFAULT_FIELD_DELIMITER = new byte[] {','};
+	private static final byte[] DEFAULT_FIELD_DELIMITER = new byte[] {','};//属性分隔符字节数组
 
 	private static final byte BACKSLASH = 92;
 
@@ -57,40 +57,39 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 	//  They are all transient, because we do not want them so be serialized 
 	// --------------------------------------------------------------------------------------------
 
-	private transient FieldParser<?>[] fieldParsers;
+	private transient FieldParser<?>[] fieldParsers;//具体每一个字段的类型解析器,与fieldTypes定义一一对应
 
 	// To speed up readRecord processing. Used to find windows line endings.
 	// It is set when open so that readRecord does not have to evaluate it
-	protected boolean lineDelimiterIsLinebreak = false;
+	protected boolean lineDelimiterIsLinebreak = false;//true表示\n为换行符
 
-	protected transient int commentCount;
-	protected transient int invalidLineCount;
+	protected transient int commentCount;//备注的行数
+	protected transient int invalidLineCount;//解析失败的行数
 	
 	
 	// --------------------------------------------------------------------------------------------
 	//  The configuration parameters. Configured on the instance and serialized to be shipped.
 	// --------------------------------------------------------------------------------------------
 	
-	private Class<?>[] fieldTypes = EMPTY_TYPES;
+	private Class<?>[] fieldTypes = EMPTY_TYPES;//定义每一个需要的字段的类型
 	
-	protected boolean[] fieldIncluded = EMPTY_INCLUDED;
+	protected boolean[] fieldIncluded = EMPTY_INCLUDED; //所有属性,true为需要的字段
 
 	// The byte representation of the delimiter is updated consistent with
 	// current charset.
-	private byte[] fieldDelim = DEFAULT_FIELD_DELIMITER;
-	private String fieldDelimString = null;
+	private byte[] fieldDelim = DEFAULT_FIELD_DELIMITER;//属性分隔符字节数组
+	private String fieldDelimString = null;//属性分隔符
 
-	private boolean lenient;
+	private boolean lenient;//是否允许解析失败
 	
-	private boolean skipFirstLineAsHeader;
+	private boolean skipFirstLineAsHeader;//是否跳过首行
 
-	private boolean quotedStringParsing = false;
-
-	private byte quoteCharacter;
+	private boolean quotedStringParsing = false;//true表示设置了引用转义字符 默认是\
+	private byte quoteCharacter;//具体的引用转义字符
 
 	// The byte representation of the comment prefix is updated consistent with
 	// current charset.
-	protected byte[] commentPrefix = null;
+	protected byte[] commentPrefix = null;//注释前缀分隔符字节数组
 	private String commentPrefixString = null;
 
 
@@ -264,11 +263,13 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 
 		this.fieldTypes = types.toArray(new Class<?>[types.size()]);
 	}
-	
+
+	//设置每一个属性对应的类型
 	protected void setFieldsGeneric(boolean[] includedMask, Class<?>[] fieldTypes) {
 		checkNotNull(includedMask);
 		checkNotNull(fieldTypes);
 
+		//存储每一个includedMask中是true的字段类型
 		ArrayList<Class<?>> types = new ArrayList<Class<?>>();
 
 		// check if types are valid for included fields
@@ -303,7 +304,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 	
 	@Override
 	public void open(FileInputSplit split) throws IOException {
-		super.open(split);
+		super.open(split);//定位到新行
 
 		// instantiate the parsers
 		FieldParser<?>[] parsers = new FieldParser<?>[fieldTypes.length];
@@ -332,6 +333,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		this.fieldParsers = parsers;
 		
 		// skip the first line, if we are at the beginning of a file and have the option set
+		//跳过首行
 		if (this.skipFirstLineAsHeader && this.splitStart == 0) {
 			readLine(); // read and ignore
 		}
@@ -353,6 +355,10 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		super.close();
 	}
 
+	/**
+	 * 将属性值填充好
+	 * @param holders 表示用于存储每一个属性值的集合
+	 */
 	protected boolean parseRecord(Object[] holders, byte[] bytes, int offset, int numBytes) throws ParseException {
 		
 		boolean[] fieldIncluded = this.fieldIncluded;
@@ -360,7 +366,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		int startPos = offset;
 		final int limit = offset + numBytes;
 		
-		for (int field = 0, output = 0; field < fieldIncluded.length; field++) {
+		for (int field = 0, output = 0; field < fieldIncluded.length; field++) {//循环每一个字段
 			
 			// check valid start position
 			if (startPos > limit || (startPos == limit && field != fieldIncluded.length - 1)) {
@@ -375,7 +381,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 				// parse field
 				@SuppressWarnings("unchecked")
 				FieldParser<Object> parser = (FieldParser<Object>) this.fieldParsers[output];
-				Object reuse = holders[output];
+				Object reuse = holders[output];//获取对象实例
 				startPos = parser.resetErrorStateAndParse(bytes, startPos, limit, this.fieldDelim, reuse);
 				holders[output] = parser.getLastResult();
 
@@ -433,7 +439,8 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		}
 		return true;
 	}
-	
+
+	//输出每一个字段的类型字符串
 	private String fieldTypesToString() {
 		StringBuilder string = new StringBuilder();
 		string.append(this.fieldTypes[0].toString());
@@ -445,6 +452,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		return string.toString();
 	}
 
+	//跳过一个属性值,通过delim识别是否产生了一个空的域值
 	protected int skipFields(byte[] bytes, int startPos, int limit, byte[] delim) {
 
 		int i = startPos;
@@ -488,6 +496,7 @@ public abstract class GenericCsvInputFormat<OT> extends DelimitedInputFormat<OT>
 		}
 	}
 
+	//校验每一个位置都要有类型
 	@SuppressWarnings("unused")
 	protected static void checkAndCoSort(int[] positions, Class<?>[] types) {
 		if (positions.length != types.length) {

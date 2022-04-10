@@ -26,6 +26,7 @@ import java.util.Iterator;
 /**
  * This class defines a range of key-group indexes. Key-groups are the granularity into which the keyspace of a job
  * is partitioned for keyed state-handling in state backends. The boundaries of the range are inclusive.
+ * 定义key的partition序号范围 -- 假设有5个范围,说明该task节点上允许有5个分区数据。每一个单独存储(虽在在同一个节点上,但要保存5个不同的文件中)
  */
 public class KeyGroupRange implements KeyGroupsList, Serializable {
 
@@ -35,7 +36,7 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 	public static final KeyGroupRange EMPTY_KEY_GROUP_RANGE = new KeyGroupRange();
 
 	private final int startKeyGroup;
-	private final int endKeyGroup;
+	private final int endKeyGroup;//-1表示无穷,没有结束的end
 
 	/**
 	 * Empty KeyGroup Constructor
@@ -65,6 +66,7 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 	 *
 	 * @param keyGroup Key-group to check for inclusion.
 	 * @return True, only if the key-group is in the range.
+	 * 参数是否在该对象范围内
 	 */
 	@Override
 	public boolean contains(int keyGroup) {
@@ -76,6 +78,7 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 	 *
 	 * @param other A KeyGroupRange to intersect.
 	 * @return Key-group range that is the intersection between this and the given key-group range.
+	 * 交集
 	 */
 	public KeyGroupRange getIntersection(KeyGroupRange other) {
 		int start = Math.max(startKeyGroup, other.startKeyGroup);
@@ -86,6 +89,9 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 	/**
 	 *
 	 * @return The number of key-groups in the range
+	 * 允许存放的key范围数量
+	 *
+	 * 1+完全是适配end=-1的场景,正常就是end-start就是范围
 	 */
 	@Override
 	public int getNumberOfKeyGroups() {
@@ -108,6 +114,7 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 		return endKeyGroup;
 	}
 
+	//在范围内的位置 --- 参数是相对位置,返回绝对位置
 	@Override
 	public int getKeyGroupId(int idx) {
 		if (idx < 0 || idx > getNumberOfKeyGroups()) {
@@ -150,6 +157,7 @@ public class KeyGroupRange implements KeyGroupsList, Serializable {
 		return new KeyGroupIterator();
 	}
 
+	//返回每一个序号
 	private final class KeyGroupIterator implements Iterator<Integer> {
 
 		public KeyGroupIterator() {

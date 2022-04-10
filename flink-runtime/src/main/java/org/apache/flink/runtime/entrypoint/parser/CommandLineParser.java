@@ -31,6 +31,7 @@ import javax.annotation.Nonnull;
 /**
  * Command line parser which produces a result from the given
  * command line arguments.
+ * 帮助类,打印需要的命令行，以及 通过命令行具体的参数值解析配置信息
  */
 public class CommandLineParser<T> {
 

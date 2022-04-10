@@ -88,8 +88,8 @@ class HeapAggregatingState<K, N, IN, ACC, OUT>
 
 	@Override
 	public OUT get() {
-		ACC accumulator = getInternal();
-		return accumulator != null ? aggregateTransformation.aggFunction.getResult(accumulator) : null;
+		ACC accumulator = getInternal();//获取state中间存储的状态值。
+		return accumulator != null ? aggregateTransformation.aggFunction.getResult(accumulator) : null;//使用中间存储状态值,转换成最终数据类型值
 	}
 
 	@Override

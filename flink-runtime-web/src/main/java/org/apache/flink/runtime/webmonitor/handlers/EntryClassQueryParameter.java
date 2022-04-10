@@ -23,6 +23,7 @@ import java.io.File;
 /**
  * Query parameter specifying the name of the entry point class.
  * @see org.apache.flink.client.program.PackagedProgram#PackagedProgram(File, String, String...)
+ * 参数值是参数值是list<String>
  */
 public class EntryClassQueryParameter extends StringQueryParameter {
 	public EntryClassQueryParameter() {

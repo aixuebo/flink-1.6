@@ -31,9 +31,12 @@ import org.apache.flink.util.Preconditions;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 为该task分配要读取的数据源
+ */
 public class RpcInputSplitProvider implements InputSplitProvider {
 	private final JobMasterGateway jobMasterGateway;
-	private final JobVertexID jobVertexID;
+	private final JobVertexID jobVertexID;//哪个操作ID
 	private final ExecutionAttemptID executionAttemptID;
 	private final Time timeout;
 
@@ -48,7 +51,7 @@ public class RpcInputSplitProvider implements InputSplitProvider {
 		this.timeout = Preconditions.checkNotNull(timeout);
 	}
 
-
+	//获取该操作要读取的数据源
 	@Override
 	public InputSplit getNextInputSplit(ClassLoader userCodeClassLoader) throws InputSplitProviderException {
 		Preconditions.checkNotNull(userCodeClassLoader);

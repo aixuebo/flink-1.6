@@ -35,12 +35,14 @@ import org.apache.flink.util.Visitor;
  * @param <IN2> Second input type of the user function
  * @param <OUT> Output type of the user function
  * @param <FT> Type of the user function
+ * 用于join等2部分数据源
  */
 @Internal
 public abstract class DualInputOperator<IN1, IN2, OUT, FT extends Function> extends AbstractUdfOperator<OUT, FT> {
 	
 	/**
 	 * The operator producing the first input.
+	 * 数据源操作
 	 */
 	protected Operator<IN1> input1;
 	
@@ -51,6 +53,7 @@ public abstract class DualInputOperator<IN1, IN2, OUT, FT extends Function> exte
 
 	/**
 	 * The positions of the keys in the tuples of the first input.
+	 * 第一个数据源的key位置
 	 */
 	private final int[] keyFields1;
 	
@@ -260,6 +263,7 @@ public abstract class DualInputOperator<IN1, IN2, OUT, FT extends Function> exte
 		return 2;
 	}
 
+	//获取第几个数据源的key集合,从0开始计数
 	@Override
 	public int[] getKeyColumns(int inputNum) {
 		if (inputNum == 0) {

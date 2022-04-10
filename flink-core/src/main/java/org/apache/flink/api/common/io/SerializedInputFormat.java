@@ -34,6 +34,7 @@ public class SerializedInputFormat<T extends IOReadableWritable> extends BinaryI
 
 	private static final long serialVersionUID = 1L;
 
+	//将字节数组,序列化成对象
 	@Override
 	protected T deserialize(T reuse, DataInputView dataInput) throws IOException {
 		reuse.read(dataInput);

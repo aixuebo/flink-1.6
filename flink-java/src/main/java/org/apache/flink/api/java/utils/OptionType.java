@@ -24,6 +24,7 @@ import org.apache.flink.annotation.PublicEvolving;
  * Types the parameters of managed with {@link RequiredParameters} can take.
  *
  * <p>Name maps directly to the corresponding Java type.
+ * 参数类型
  */
 @PublicEvolving
 public enum OptionType {

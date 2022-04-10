@@ -36,6 +36,7 @@ public class IntegerTypeInfo<T> extends NumericTypeInfo<T> {
 
 	private static final long serialVersionUID = -8068827354966766955L;
 
+	//要创建的类型范围
 	private static final HashSet<Class<?>> integerTypes = new HashSet<>(
 			Arrays.asList(
 				Integer.class,
@@ -44,7 +45,10 @@ public class IntegerTypeInfo<T> extends NumericTypeInfo<T> {
 				Short.class,
 				Character.class));
 
-	protected IntegerTypeInfo(Class<T> clazz, Class<?>[] possibleCastTargetTypes, TypeSerializer<T> serializer, Class<? extends TypeComparator<T>> comparatorClass) {
+	protected IntegerTypeInfo(Class<T> clazz, //要创建的基础类型
+							  Class<?>[] possibleCastTargetTypes,
+							  TypeSerializer<T> serializer,
+							  Class<? extends TypeComparator<T>> comparatorClass) {
 		super(clazz, possibleCastTargetTypes, serializer, comparatorClass);
 
 		checkArgument(integerTypes.contains(clazz),

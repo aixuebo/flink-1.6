@@ -39,6 +39,12 @@ import java.io.Serializable;
  *
  * @param <T> The type of elements that this {@code Evictor} can evict.
  * @param <W> The type of {@link Window Windows} on which this {@code Evictor} can operate.
+ *
+ * Evictor的作用是在Flink进行计算之前移除元素
+ *
+ * Evictor 可以在 trigger 触发后、调用窗口函数之前或之后从窗口中删除元素
+ *
+ * 通常来说操作window的类为WindowOperator，它并没有使用evictor。一旦把window指定Evictor，该window会由EvictWindowOperator类来负责操作。
  */
 @PublicEvolving
 public interface Evictor<T, W extends Window> extends Serializable {
@@ -50,6 +56,7 @@ public interface Evictor<T, W extends Window> extends Serializable {
 	 * @param size The current number of elements in the pane.
 	 * @param window The {@link Window}
 	 * @param evictorContext The context for the Evictor
+	 * 在计算操作执行前执行evict操作
      */
 	void evictBefore(Iterable<TimestampedValue<T>> elements, int size, W window, EvictorContext evictorContext);
 
@@ -71,6 +78,7 @@ public interface Evictor<T, W extends Window> extends Serializable {
 
 		/**
 		 * Returns the current processing time.
+		 * 返回当前处理元素的时间戳
 		 */
 		long getCurrentProcessingTime();
 

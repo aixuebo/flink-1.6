@@ -26,6 +26,8 @@ import java.io.IOException;
 /**
  * The connection manager manages physical connections for the (logical) remote
  * input channels at runtime.
+ *
+ * 一个物理的网络连接
  */
 public interface ConnectionManager {
 
@@ -44,8 +46,10 @@ public interface ConnectionManager {
 
 	int getNumberOfActiveConnections();
 
+	//返回服务端端口
 	int getDataPort();
 
+	//关闭连接
 	void shutdown() throws IOException;
 
 }

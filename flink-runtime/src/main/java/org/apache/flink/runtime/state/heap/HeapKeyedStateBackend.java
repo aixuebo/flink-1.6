@@ -106,6 +106,7 @@ public class HeapKeyedStateBackend<K> extends AbstractKeyedStateBackend<K> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HeapKeyedStateBackend.class);
 
+	//每一个stage描述 对应的 stage对象
 	private static final Map<Class<? extends StateDescriptor>, StateFactory> STATE_FACTORIES =
 		Stream.of(
 			Tuple2.of(ValueStateDescriptor.class, (StateFactory) HeapValueState::create),

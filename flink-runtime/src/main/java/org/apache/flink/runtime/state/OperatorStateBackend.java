@@ -28,6 +28,7 @@ import java.util.Collection;
  * Interface that combines both, the user facing {@link OperatorStateStore} interface and the system interface
  * {@link Snapshotable}
  *
+ * Source Connector的实现中就会用OperatorState来记录source数据读取的offset。
  */
 public interface OperatorStateBackend extends
 	OperatorStateStore,

@@ -36,6 +36,8 @@ import java.util.Objects;
 
 /**
  * Base class containing information for a {@link TaskExecutor}.
+ * 代表一个task manager的信息
+ * task manager的ResourceID、task manager的网关地址、task manager的网关端口
  */
 public class TaskManagerInfo implements ResponseBody, Serializable {
 
@@ -57,25 +59,25 @@ public class TaskManagerInfo implements ResponseBody, Serializable {
 
 	@JsonProperty(FIELD_NAME_RESOURCE_ID)
 	@JsonSerialize(using = ResourceIDSerializer.class)
-	private final ResourceID resourceId;
+	private final ResourceID resourceId;//task manager的ResourceID
 
 	@JsonProperty(FIELD_NAME_ADDRESS)
-	private final String address;
+	private final String address;//task manager的网关地址
 
 	@JsonProperty(FIELD_NAME_DATA_PORT)
-	private final int dataPort;
+	private final int dataPort;//task manager的网关端口
 
 	@JsonProperty(FIELD_NAME_LAST_HEARTBEAT)
-	private final long lastHeartbeat;
+	private final long lastHeartbeat;//上一次task manager的心跳时间戳
 
 	@JsonProperty(FIELD_NAME_NUMBER_SLOTS)
-	private final int numberSlots;
+	private final int numberSlots;//task manager上有多少个slot
 
 	@JsonProperty(FIELD_NAME_NUMBER_AVAILABLE_SLOTS)
-	private final int numberAvailableSlots;
+	private final int numberAvailableSlots;//task manager上有多少个空闲的slot
 
 	@JsonProperty(FIELD_NAME_HARDWARE)
-	private final HardwareDescription hardwareDescription;
+	private final HardwareDescription hardwareDescription;//task manager的硬件描述
 
 	@JsonCreator
 	public TaskManagerInfo(

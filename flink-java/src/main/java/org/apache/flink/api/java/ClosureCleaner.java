@@ -38,6 +38,7 @@ import java.lang.reflect.Field;
  * of non-static inner classes (created for inline transformation functions). That makes non-static
  * inner classes in many cases serializable, where Java's default behavior renders them non-serializable
  * without good reason.
+ * 判断某一个函数function是否支持序列化
  */
 @Internal
 public class ClosureCleaner {
@@ -50,13 +51,14 @@ public class ClosureCleaner {
 	 *
 	 * @param func The object whose closure should be cleaned.
 	 * @param checkSerializable Flag to indicate whether serializability should be checked after
-	 *                          the closure cleaning attempt.
+	 *                          the closure cleaning attempt.true表示要校验func是否支持序列化
 	 *
 	 * @throws InvalidProgramException Thrown, if 'checkSerializable' is true, and the object was
 	 *                                 not serializable after the closure cleaning.
 	 *
 	 * @throws RuntimeException A RuntimeException may be thrown, if the code of the class could not
 	 *                          be loaded, in order to process during teh closure cleaning.
+	 *
 	 */
 	public static void clean(Object func, boolean checkSerializable) {
 		if (func == null) {
@@ -76,11 +78,11 @@ public class ClosureCleaner {
 			}
 		}
 
-		if (checkSerializable) {
+		if (checkSerializable) {//true表示需要校验func是否支持序列化
 			try {
-				InstantiationUtil.serializeObject(func);
+				InstantiationUtil.serializeObject(func);//不抛异常,说明支持
 			}
-			catch (Exception e) {
+			catch (Exception e) {//提示该函数不能序列化
 				String functionType = getSuperClassOrInterfaceName(func.getClass());
 
 				String msg = functionType == null ?
@@ -101,6 +103,7 @@ public class ClosureCleaner {
 		}
 	}
 
+	//只是确保可以序列化obj对象  --- 如果不能序列化,则抛异常
 	public static void ensureSerializable(Object obj) {
 		try {
 			InstantiationUtil.serializeObject(obj);

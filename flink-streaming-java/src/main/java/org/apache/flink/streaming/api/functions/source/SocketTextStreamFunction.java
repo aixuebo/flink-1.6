@@ -41,6 +41,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *
  * <p>The function can be set to reconnect to the server socket in case that the stream is closed on
  * the server side.
+ *
+ * 连接远程服务器读取数据 --- 读取的数据,按照分隔符拆分数据,每一个部分的字符串作为数据源输出
  */
 @PublicEvolving
 public class SocketTextStreamFunction implements SourceFunction<String> {
@@ -93,21 +95,21 @@ public class SocketTextStreamFunction implements SourceFunction<String> {
 				currentSocket = socket;
 
 				LOG.info("Connecting to server socket " + hostname + ':' + port);
-				socket.connect(new InetSocketAddress(hostname, port), CONNECTION_TIMEOUT_TIME);
+				socket.connect(new InetSocketAddress(hostname, port), CONNECTION_TIMEOUT_TIME);//连接远程服务器,设置timeout
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
 					char[] cbuf = new char[8192];
 					int bytesRead;
-					while (isRunning && (bytesRead = reader.read(cbuf)) != -1) {
+					while (isRunning && (bytesRead = reader.read(cbuf)) != -1) {//读取一个缓冲区数据
 						buffer.append(cbuf, 0, bytesRead);
 						int delimPos;
-						while (buffer.length() >= delimiter.length() && (delimPos = buffer.indexOf(delimiter)) != -1) {
+						while (buffer.length() >= delimiter.length() && (delimPos = buffer.indexOf(delimiter)) != -1) {//识别一行数据
 							String record = buffer.substring(0, delimPos);
 							// truncate trailing carriage return
 							if (delimiter.equals("\n") && record.endsWith("\r")) {
 								record = record.substring(0, record.length() - 1);
 							}
-							ctx.collect(record);
+							ctx.collect(record);//存储一条String数据
 							buffer.delete(0, delimPos + delimiter.length());
 						}
 					}
@@ -115,7 +117,7 @@ public class SocketTextStreamFunction implements SourceFunction<String> {
 			}
 
 			// if we dropped out of this loop due to an EOF, sleep and retry
-			if (isRunning) {
+			if (isRunning) {//尝试再次连接数据
 				attempt++;
 				if (maxNumRetries == -1 || attempt < maxNumRetries) {
 					LOG.warn("Lost connection to server socket. Retrying in " + delayBetweenRetries + " msecs...");

@@ -24,6 +24,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 /**
  * A {@link StreamOperator} for executing projections on streams.
+ * 投影操作
  */
 @Internal
 public class StreamProject<IN, OUT extends Tuple>
@@ -33,8 +34,8 @@ public class StreamProject<IN, OUT extends Tuple>
 	private static final long serialVersionUID = 1L;
 
 	private TypeSerializer<OUT> outSerializer;
-	private int[] fields;
-	private int numFields;
+	private int[] fields;//提取的每一个元素的位置
+	private int numFields;//提取多少个元素
 
 	private transient OUT outTuple;
 
@@ -48,15 +49,15 @@ public class StreamProject<IN, OUT extends Tuple>
 
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
-		for (int i = 0; i < this.numFields; i++) {
-			outTuple.setField(((Tuple) element.getValue()).getField(fields[i]), i);
+		for (int i = 0; i < this.numFields; i++) {//提取多少个元素
+			outTuple.setField(((Tuple) element.getValue()).getField(fields[i]), i);//设置第i和元素,对应的值
 		}
-		output.collect(element.replace(outTuple));
+		output.collect(element.replace(outTuple));//代替原有的tuple,保留原有时间戳信息
 	}
 
 	@Override
 	public void open() throws Exception {
 		super.open();
-		outTuple = outSerializer.createInstance();
+		outTuple = outSerializer.createInstance();//生产一个输出tuple对象
 	}
 }

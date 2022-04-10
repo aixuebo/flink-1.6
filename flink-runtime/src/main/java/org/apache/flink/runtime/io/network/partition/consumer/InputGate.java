@@ -25,12 +25,14 @@ import java.util.Optional;
 
 /**
  * An input gate consumes one or more partitions of a single produced intermediate result.
+ * 一个input gate 可以从多个partition中拉去数据回来 --- 前提多个partition来自于同一个任务生产的结果
  *
  * <p>Each intermediate result is partitioned over its producing parallel subtasks; each of these
  * partitions is furthermore partitioned into one or more subpartitions.
  *
  * <p>As an example, consider a map-reduce program, where the map operator produces data and the
  * reduce operator consumes the produced data.
+ * 比如map生产数据，reduce拉去数据
  *
  * <pre>{@code
  * +-----+              +---------------------+              +--------+
@@ -42,6 +44,7 @@ import java.util.Optional;
  * producing parallel subtasks; each of these partitions is furthermore partitioned into one or more
  * subpartitions.
  *
+ * 每一个任务节点产生的结果集中，包含多个子partition数据，这些结果由属于他的reduce来抓取
  * <pre>{@code
  *                            Intermediate result
  *               +-----------------------------------------+

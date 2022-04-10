@@ -20,6 +20,7 @@ package org.apache.flink.runtime.rest.messages;
 
 /**
  * Empty {@link ResponseBody} implementation.
+ * 不需要返回信息
  */
 public class EmptyResponseBody implements ResponseBody {
 

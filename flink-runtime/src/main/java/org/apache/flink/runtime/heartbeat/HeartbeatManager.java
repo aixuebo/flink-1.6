@@ -26,6 +26,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
  *
  * @param <I> Type of the incoming payload
  * @param <O> Type of the outgoing payload
+ * 管理所有要监听心跳的资源
  */
 public interface HeartbeatManager<I, O> extends HeartbeatTarget<I> {
 
@@ -36,6 +37,7 @@ public interface HeartbeatManager<I, O> extends HeartbeatTarget<I> {
 	 * @param resourceID Resource ID identifying the heartbeat target
 	 * @param heartbeatTarget Interface to send heartbeat requests and responses to the heartbeat
 	 *                        target
+	 * 监听某一个资源resourceID，以及如何与该资源进行通信
 	 */
 	void monitorTarget(ResourceID resourceID, HeartbeatTarget<O> heartbeatTarget);
 
@@ -48,6 +50,7 @@ public interface HeartbeatManager<I, O> extends HeartbeatTarget<I> {
 
 	/**
 	 * Stops the heartbeat manager.
+	 * 停止心跳管理器
 	 */
 	void stop();
 
@@ -56,6 +59,7 @@ public interface HeartbeatManager<I, O> extends HeartbeatTarget<I> {
 	 *
 	 * @param resourceId for which to return the last heartbeat
 	 * @return Last heartbeat received from the given target or -1 if the target is not being monitored.
+	 * 获取上一次某一个资源的心跳时间戳
 	 */
 	long getLastHeartbeatFrom(ResourceID resourceId);
 }

@@ -96,6 +96,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @param <T> The type of elements in the stream.
  * @param <K> The type of the key by which elements are grouped.
  * @param <W> The type of {@code Window} that the {@code WindowAssigner} assigns the elements to.
+ *
+ * 1.WindowedStream内部持有KeyedStream对象。即KeyedStream对象基础上做了一层额外的工作。为KeyedStream赋予了批量的能力。
+ * 2.批量的时间窗口取决于window窗口的大小以及策略
  */
 @Public
 public class WindowedStream<T, K, W extends Window> {
@@ -113,13 +116,13 @@ public class WindowedStream<T, K, W extends Window> {
 	private Evictor<? super T, ? super W> evictor;
 
 	/** The user-specified allowed lateness. */
-	private long allowedLateness = 0L;
+	private long allowedLateness = 0L;//用户自己定义的最晚延迟时间
 
 	/**
 	 * Side output {@code OutputTag} for late data. If no tag is set late data will simply be
 	 * dropped.
  	 */
-	private OutputTag<T> lateDataOutputTag;
+	private OutputTag<T> lateDataOutputTag;//超过最晚延时的数据,要被丢弃到这个输出流中
 
 	@PublicEvolving
 	public WindowedStream(KeyedStream<T, K> input,
@@ -152,6 +155,7 @@ public class WindowedStream<T, K, W extends Window> {
 	 * By default, the allowed lateness is {@code 0L}.
 	 *
 	 * <p>Setting an allowed lateness is only valid for event-time windows.
+	 * 设置最晚延迟时间
 	 */
 	@PublicEvolving
 	public WindowedStream<T, K, W> allowedLateness(Time lateness) {
@@ -171,6 +175,7 @@ public class WindowedStream<T, K, W extends Window> {
 	 * {@link SingleOutputStreamOperator#getSideOutput(OutputTag)} on the
 	 * {@link SingleOutputStreamOperator} resulting from the windowed operation
 	 * with the same {@link OutputTag}.
+	 * 设置超过延迟时间后的数据，丢弃到哪个输出流中
 	 */
 	@PublicEvolving
 	public WindowedStream<T, K, W> sideOutputLateData(OutputTag<T> outputTag) {
@@ -223,6 +228,7 @@ public class WindowedStream<T, K, W extends Window> {
 
 		//clean the closure
 		function = input.getExecutionEnvironment().clean(function);
+		//因为是reduce,所以最终结果只有一个值,因此该值作为输入,直接输出即可,所以使用PassThroughWindowFunction
 		return reduce(function, new PassThroughWindowFunction<K, W, T>());
 	}
 
@@ -282,7 +288,7 @@ public class WindowedStream<T, K, W extends Window> {
 				(TypeSerializer<StreamRecord<T>>) new StreamElementSerializer(input.getType().createSerializer(getExecutionEnvironment().getConfig()));
 
 			ListStateDescriptor<StreamRecord<T>> stateDesc =
-				new ListStateDescriptor<>("window-contents", streamRecordSerializer);
+				new ListStateDescriptor<>("window-contents", streamRecordSerializer);//用List存储全部元素
 
 			operator =
 				new EvictingWindowOperator<>(windowAssigner,
@@ -789,11 +795,11 @@ public class WindowedStream<T, K, W extends Window> {
 	 */
 	@PublicEvolving
 	public <ACC, V, R> SingleOutputStreamOperator<R> aggregate(
-			AggregateFunction<T, ACC, V> aggregateFunction,
-			WindowFunction<V, R, K, W> windowFunction,
-			TypeInformation<ACC> accumulatorType,
-			TypeInformation<V> aggregateResultType,
-			TypeInformation<R> resultType) {
+			AggregateFunction<T, ACC, V> aggregateFunction,//聚合函数
+			WindowFunction<V, R, K, W> windowFunction,//窗口聚合后的值,窗口到期后，发送哪些数据到下游
+			TypeInformation<ACC> accumulatorType,//聚合函数中间结果数据类型,也是fold初始化时候的类型
+			TypeInformation<V> aggregateResultType,//聚合函数的输出结果类型，即通过ACC转换成V
+			TypeInformation<R> resultType) { //通过聚合函数的V类型,转换成向下游输出的R类型
 
 		checkNotNull(aggregateFunction, "aggregateFunction");
 		checkNotNull(windowFunction, "windowFunction");
@@ -1504,7 +1510,7 @@ public class WindowedStream<T, K, W extends Window> {
 	 * the data stream by the given position. If more elements have the same
 	 * maximum value the operator returns either the first or last one depending
 	 * on the parameter setting.
-	 *
+	 *EvictingWindowOperator
 	 * @param positionToMaxBy The position to maximize by
 	 * @param first If true, then the operator return the first element with the maximum value, otherwise returns the last
 	 * @return The transformed DataStream.

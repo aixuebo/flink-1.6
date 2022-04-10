@@ -41,11 +41,13 @@ import java.util.Collections;
  * WindowedStream<Tuple2<String, Integer>, String, TimeWindows> windowed =
  *   keyed.window(EventTimeSessionWindows.withGap(Time.minutes(1)));
  * } </pre>
+ *
+ * 固定session超时时长
  */
 public class EventTimeSessionWindows extends MergingWindowAssigner<Object, TimeWindow> {
 	private static final long serialVersionUID = 1L;
 
-	protected long sessionTimeout;
+	protected long sessionTimeout;//session超时时长固定值
 
 	protected EventTimeSessionWindows(long sessionTimeout) {
 		if (sessionTimeout <= 0) {
@@ -76,6 +78,7 @@ public class EventTimeSessionWindows extends MergingWindowAssigner<Object, TimeW
 	 *
 	 * @param size The session timeout, i.e. the time gap between sessions
 	 * @return The policy.
+	 * 固定的session超时时长
 	 */
 	public static EventTimeSessionWindows withGap(Time size) {
 		return new EventTimeSessionWindows(size.toMilliseconds());
@@ -87,6 +90,7 @@ public class EventTimeSessionWindows extends MergingWindowAssigner<Object, TimeW
 	 *
 	 * @param sessionWindowTimeGapExtractor The extractor to use to extract the time gap from the input elements
 	 * @return The policy.
+	 * 非固定的session超时时长,每一个session超时时长由元素自己决定,元素自行解析
 	 */
 	@PublicEvolving
 	public static <T> DynamicEventTimeSessionWindows<T> withDynamicGap(SessionWindowTimeGapExtractor<T> sessionWindowTimeGapExtractor) {
@@ -105,6 +109,8 @@ public class EventTimeSessionWindows extends MergingWindowAssigner<Object, TimeW
 
 	/**
 	 * Merge overlapping {@link TimeWindow}s.
+	 * 触发List<Window>的合并/拆分操作.比如List的size=10,因此合并后的结果一定<=10,即一定有一些window是可以merge合并的。假设最终是4个。
+	 * 因此这4个真实的独立窗口会触发MergeCallback回调。即循环4次，每次合并归属的可以合并的window集合
 	 */
 	public void mergeWindows(Collection<TimeWindow> windows, MergingWindowAssigner.MergeCallback<TimeWindow> c) {
 		TimeWindow.mergeWindows(windows, c);

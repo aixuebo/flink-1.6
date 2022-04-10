@@ -31,11 +31,12 @@ import java.util.Collections;
  * it is the root {@code StreamTransformation} of any topology.
  *
  * @param <T> The type of the elements that this source produces
+ * 原始数据源
  */
 @Internal
 public class SourceTransformation<T> extends StreamTransformation<T> {
 
-	private final StreamSource<T, ?> operator;
+	private final StreamSource<T, ?> operator;//直接对应操作就是一个流
 
 	/**
 	 * Creates a new {@code SourceTransformation} from the given operator.

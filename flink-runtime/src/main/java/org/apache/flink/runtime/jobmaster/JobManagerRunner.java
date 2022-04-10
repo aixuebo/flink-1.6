@@ -57,6 +57,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * The runner for the job manager. It deals with job level leader election and make underlying job manager
  * properly reacted.
+ *
+ * 每一个jobId，持有一个对象，用于管理整个job的生命周期
  */
 public class JobManagerRunner implements LeaderContender, OnCompletionActions, AutoCloseableAsync {
 
@@ -128,8 +130,7 @@ public class JobManagerRunner implements LeaderContender, OnCompletionActions, A
 			// libraries and class loader first
 			final LibraryCacheManager libraryCacheManager = jobManagerSharedServices.getLibraryCacheManager();
 			try {
-				libraryCacheManager.registerJob(
-						jobGraph.getJobID(), jobGraph.getUserJarBlobKeys(), jobGraph.getClasspaths());
+				libraryCacheManager.registerJob(jobGraph.getJobID(), jobGraph.getUserJarBlobKeys(), jobGraph.getClasspaths());
 			} catch (IOException e) {
 				throw new Exception("Cannot set up the user code libraries: " + e.getMessage(), e);
 			}
@@ -355,6 +356,7 @@ public class JobManagerRunner implements LeaderContender, OnCompletionActions, A
 		}
 	}
 
+	//说明该服务从leader变成非leader
 	@Override
 	public void revokeLeadership() {
 		synchronized (lock) {
@@ -367,7 +369,7 @@ public class JobManagerRunner implements LeaderContender, OnCompletionActions, A
 				jobGraph.getName(), jobGraph.getJobID(), getAddress());
 
 			setNewLeaderGatewayFuture();
-
+			//关闭该服务，因为该服务不再是master了
 			CompletableFuture<Acknowledge>  suspendFuture = jobMaster.suspend(new FlinkException("JobManager is no longer the leader."), rpcTimeout);
 
 			suspendFuture.whenCompleteAsync(

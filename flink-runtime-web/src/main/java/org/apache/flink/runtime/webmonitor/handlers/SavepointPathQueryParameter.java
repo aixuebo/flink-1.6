@@ -20,6 +20,7 @@ package org.apache.flink.runtime.webmonitor.handlers;
 
 /**
  * Query parameter that specifies the savepoint to restore from.
+ * 参数值是参数值是list<String>
  */
 public class SavepointPathQueryParameter  extends StringQueryParameter {
 

@@ -22,6 +22,7 @@ import org.apache.flink.runtime.jobgraph.JobStatus;
 
 /**
  * A checkpoint ID counter.
+ * 为每一次checkpoint起一个ID
  */
 public interface CheckpointIDCounter {
 
@@ -44,6 +45,7 @@ public interface CheckpointIDCounter {
 	 * Atomically increments the current checkpoint ID.
 	 *
 	 * @return The previous checkpoint ID
+	 * 返回老值,并且存储一个新值,新值 = 老值 + 1
 	 */
 	long getAndIncrement() throws Exception;
 

@@ -49,6 +49,7 @@ import java.io.Serializable;
  * @param <IN1> The type of the elements in the first input.
  * @param <IN2> The type of the elements in the second input.
  * @param <OUT> The type of the result elements.
+ * 两个I --> O的转换
  */
 @Public
 @FunctionalInterface

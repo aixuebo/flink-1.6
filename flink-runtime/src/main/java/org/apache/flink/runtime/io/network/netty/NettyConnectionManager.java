@@ -25,6 +25,15 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionProvider;
 
 import java.io.IOException;
 
+/**
+ 一个TaskManager中可能同时运行着很多任务实例，有时某些任务需要消费某远程任务所生产的结果分区，有时某些任务可能会生产结果分区供其他任务消费。
+ 所以对一个TaskManager来说，其职责并非单一的，它既可能充当客户端的角色也可能充当服务端角色。
+ 因此，一个NettyConnectionManager会同时管理着一个Netty客户端（NettyClient）和一个Netty服务器（NettyServer）实例。
+
+ 当然除此之外还有一个Netty缓冲池（NettyBufferPool）以及一个分区请求客户端工厂（PartitionRequestClientFactory，用于创建分区请求客户端PartitionRequestClient），
+ 这些对象都在NettyConnectionManager构造器中被初始化。
+
+ */
 public class NettyConnectionManager implements ConnectionManager {
 
 	private final NettyServer server;
@@ -70,6 +79,7 @@ public class NettyConnectionManager implements ConnectionManager {
 		return partitionRequestClientFactory.getNumberOfActiveClients();
 	}
 
+	//返回服务端端口
 	@Override
 	public int getDataPort() {
 		if (server != null && server.getLocalAddress() != null) {

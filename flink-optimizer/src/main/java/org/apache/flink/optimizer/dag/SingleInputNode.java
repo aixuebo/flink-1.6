@@ -66,7 +66,7 @@ import org.apache.flink.shaded.guava18.com.google.common.collect.Sets;
  */
 public abstract class SingleInputNode extends OptimizerNode {
 	
-	protected final FieldSet keys; 			// The set of key fields
+	protected final FieldSet keys; 			// The set of key fields 规则是哪些列做为key
 	
 	protected DagConnection inConn; 		// the input of the node
 	
@@ -80,10 +80,11 @@ public abstract class SingleInputNode extends OptimizerNode {
 	protected SingleInputNode(SingleInputOperator<?, ?, ?> programOperator) {
 		super(programOperator);
 		
-		int[] k = programOperator.getKeyColumns(0);
+		int[] k = programOperator.getKeyColumns(0);//规则是哪些列做为key
 		this.keys = k == null || k.length == 0 ? null : new FieldSet(k);
 	}
-	
+
+	//无操作
 	protected SingleInputNode(FieldSet keys) {
 		super(NoOpUnaryUdfOp.INSTANCE);
 		this.keys = keys;
@@ -102,6 +103,7 @@ public abstract class SingleInputNode extends OptimizerNode {
 	
 	// --------------------------------------------------------------------------------------------
 
+	//返回具体的操作--比如map
 	@Override
 	public SingleInputOperator<?, ?, ?> getOperator() {
 		return (SingleInputOperator<?, ?, ?>) super.getOperator();

@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Handler which serves the cluster's configuration.
+ * 获取集群的配置信息
  */
 public class ClusterConfigHandler extends AbstractRestHandler<RestfulGateway, EmptyRequestBody, ClusterConfigurationInfo, EmptyMessageParameters> {
 

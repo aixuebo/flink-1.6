@@ -401,7 +401,7 @@ public class CheckpointCoordinator {
 			@Nullable String externalSavepointLocation,
 			boolean isPeriodic) {
 
-		// make some eager pre-checks
+		// make some eager pre-checks 说明目前正在有checkpoint进行中
 		synchronized (lock) {
 			// abort if the coordinator has been shutdown in the meantime
 			if (shutdown) {

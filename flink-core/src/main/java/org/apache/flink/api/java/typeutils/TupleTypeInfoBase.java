@@ -33,19 +33,19 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 
 	private static final long serialVersionUID = 1L;
 	
-	private final static String REGEX_FIELD = "(f?)([0-9]+)";
-	private final static String REGEX_NESTED_FIELDS = "("+REGEX_FIELD+")(\\.(.+))?";
+	private final static String REGEX_FIELD = "(f?)([0-9]+)";//f0 表示一个非嵌套对象
+	private final static String REGEX_NESTED_FIELDS = "("+REGEX_FIELD+")(\\.(.+))?";//匹配嵌套字段 ---> f1.xx
 	private final static String REGEX_NESTED_FIELDS_WILDCARD = REGEX_NESTED_FIELDS
 			+"|\\"+ ExpressionKeys.SELECT_ALL_CHAR
-			+"|\\"+ExpressionKeys.SELECT_ALL_CHAR_SCALA;
+			+"|\\"+ExpressionKeys.SELECT_ALL_CHAR_SCALA;//匹配f1.xx.*  嵌套对象并且带通配符
 
-	private static final Pattern PATTERN_FIELD = Pattern.compile(REGEX_FIELD);
-	private static final Pattern PATTERN_NESTED_FIELDS = Pattern.compile(REGEX_NESTED_FIELDS);
-	private static final Pattern PATTERN_NESTED_FIELDS_WILDCARD = Pattern.compile(REGEX_NESTED_FIELDS_WILDCARD);
+	private static final Pattern PATTERN_FIELD = Pattern.compile(REGEX_FIELD);//匹配非嵌套对象
+	private static final Pattern PATTERN_NESTED_FIELDS = Pattern.compile(REGEX_NESTED_FIELDS);//匹配嵌套对象
+	private static final Pattern PATTERN_NESTED_FIELDS_WILDCARD = Pattern.compile(REGEX_NESTED_FIELDS_WILDCARD);//匹配嵌套对象并且带通配符
 
 	// --------------------------------------------------------------------------------------------
 	
-	protected final TypeInformation<?>[] types;
+	protected final TypeInformation<?>[] types;//tuple每一个元素类型
 	
 	private final int totalFields;
 
@@ -56,6 +56,7 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 
 		int fieldCounter = 0;
 
+		//可能TypeInformation又是一个Tuple或者复杂的组合对象
 		for(TypeInformation<?> type : types) {
 			fieldCounter += type.getTotalFields();
 		}
@@ -90,12 +91,13 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 	@Override
 	public void getFlatFields(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
 
+		//匹配f0.xx.*  嵌套对象并且带通配符
 		Matcher matcher = PATTERN_NESTED_FIELDS_WILDCARD.matcher(fieldExpression);
 		if (!matcher.matches()) {
 			throw new InvalidFieldReferenceException("Invalid tuple field reference \""+fieldExpression+"\".");
 		}
 
-		String field = matcher.group(0);
+		String field = matcher.group(0);//匹配f0这样的第几个对象
 		if (field.equals(ExpressionKeys.SELECT_ALL_CHAR) || field.equals(ExpressionKeys.SELECT_ALL_CHAR_SCALA)) {
 			// handle select all
 			int keyPosition = 0;
@@ -111,7 +113,7 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 			}
 		} else {
 			String fieldStr = matcher.group(1);
-			Matcher fieldMatcher = PATTERN_FIELD.matcher(fieldStr);
+			Matcher fieldMatcher = PATTERN_FIELD.matcher(fieldStr);//说明是tuple.tuple
 
 			if (!fieldMatcher.matches()) {
 				throw new RuntimeException("Invalid matcher pattern");
@@ -245,6 +247,7 @@ public abstract class TupleTypeInfoBase<T> extends CompositeType<T> {
 		return bld.toString();
 	}
 
+	//顺序是固定的
 	@Override
 	public boolean hasDeterministicFieldOrder() {
 		return true;

@@ -167,6 +167,7 @@ public class SpillingAdaptiveSpanningRecordDeserializer<T extends IOReadableWrit
 
 	// -----------------------------------------------------------------------------------------------------------------
 
+	//直接从MemorySegment中读取各种类型的数据
 	private static final class NonSpanningWrapper implements DataInputView {
 
 		private MemorySegment segment;

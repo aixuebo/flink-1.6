@@ -198,7 +198,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	/** All intermediate results that are part of this graph. */
 	private final ConcurrentHashMap<IntermediateDataSetID, IntermediateResult> intermediateResults;
 
-	/** The currently executed tasks, for callbacks. */
+	/** The currently executed tasks, for callbacks. 所有正在执行中的任务集合*/
 	private final ConcurrentHashMap<ExecutionAttemptID, Execution> currentExecutions;
 
 	/** Listeners that receive messages when the entire job switches it status
@@ -291,7 +291,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	private CheckpointStatsTracker checkpointStatsTracker;
 
 	// ------ Fields that are only relevant for archived execution graphs ------------
-	private String jsonPlan;
+	private String jsonPlan;//jobgraph的json信息---参考JsonPlanGenerator
 
 	// --------------------------------------------------------------------------------------------
 	//   Constructors
@@ -807,7 +807,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	// --------------------------------------------------------------------------------------------
 	//  Actions
 	// --------------------------------------------------------------------------------------------
-
+	//参数节点集合是已经排序后的顶点集合 --- 比如数据源一定在最前面
 	public void attachJobGraph(List<JobVertex> topologiallySorted) throws JobException {
 
 		LOG.debug("Attaching {} topologically sorted vertices to existing job graph with {} " +
@@ -1339,10 +1339,12 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	//  State Transitions
 	// ------------------------------------------------------------------------
 
+	//切换新状态
 	private boolean transitionState(JobStatus current, JobStatus newState) {
 		return transitionState(current, newState, null);
 	}
 
+	//切换新状态,并且发送通知
 	private boolean transitionState(JobStatus current, JobStatus newState, Throwable error) {
 		// consistency check
 		if (current.isTerminalState()) {
@@ -1356,7 +1358,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			LOG.info("Job {} ({}) switched from state {} to {}.", getJobName(), getJobID(), current, newState, error);
 
 			stateTimestamps[newState.ordinal()] = System.currentTimeMillis();
-			notifyJobStatusChange(newState, error);
+			notifyJobStatusChange(newState, error);//发送通知
 			return true;
 		}
 		else {
@@ -1621,7 +1623,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	 */
 	public void scheduleOrUpdateConsumers(ResultPartitionID partitionId) throws ExecutionGraphException {
 
-		final Execution execution = currentExecutions.get(partitionId.getProducerId());
+		final Execution execution = currentExecutions.get(partitionId.getProducerId());//获取对应的是哪个任务
 
 		if (execution == null) {
 			throw new ExecutionGraphException("Cannot find execution for execution Id " +
@@ -1631,7 +1633,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			throw new ExecutionGraphException("Execution with execution Id " +
 				partitionId.getPartitionId() + " has no vertex assigned.");
 		} else {
-			execution.getVertex().scheduleOrUpdateConsumers(partitionId);
+			execution.getVertex().scheduleOrUpdateConsumers(partitionId);//获取并行的某一个具体的任务
 		}
 	}
 
@@ -1639,9 +1641,10 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		return Collections.unmodifiableMap(currentExecutions);
 	}
 
+	//注册一个任务
 	void registerExecution(Execution exec) {
 		Execution previous = currentExecutions.putIfAbsent(exec.getAttemptId(), exec);
-		if (previous != null) {
+		if (previous != null) {//重复注册多次
 			failGlobal(new Exception("Trying to register execution " + exec + " for already used ID " + exec.getAttemptId()));
 		}
 	}
@@ -1692,6 +1695,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		}
 	}
 
+	//接收最新状态,以及异常信息,进行通知操作
 	private void notifyJobStatusChange(JobStatus newState, Throwable error) {
 		if (jobStatusListeners.size() > 0) {
 			final long timestamp = System.currentTimeMillis();

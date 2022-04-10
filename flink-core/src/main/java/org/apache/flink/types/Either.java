@@ -28,11 +28,14 @@ import org.apache.flink.api.java.typeutils.runtime.EitherSerializer;
 /**
  * This type represents a value of one two possible types, Left or Right (a
  * disjoint union), inspired by Scala's Either type.
+ * 一个值有2个可能,从2个中选择一个
  *
  * @param <L>
  *            the type of Left
  * @param <R>
  *            the type of Right
+ *  左右2个对象可以不同类型
+ *  有2个实现子类,分别是左边对象和右边对象
  */
 @Public
 @TypeInfo(EitherTypeInfoFactory.class)
@@ -40,6 +43,7 @@ public abstract class Either<L, R> {
 
 	/**
 	 * Create a Left value of Either
+	 * 创建一个左对象
 	 */
 	public static <L, R> Either<L, R> Left(L value) {
 		return new Left<L, R>(value);
@@ -58,6 +62,7 @@ public abstract class Either<L, R> {
 	 * @return the Left value
 	 * @throws IllegalStateException
 	 *             if called on a Right
+	 * 返回左边对象
 	 */
 	public abstract L left() throws IllegalStateException;
 
@@ -73,6 +78,7 @@ public abstract class Either<L, R> {
 	/**
 	 * 
 	 * @return true if this is a Left value, false if this is a Right value
+	 * 判断该对象是左边还是右边对象
 	 */
 	public final boolean isLeft() {
 		return getClass() == Left.class;
@@ -222,7 +228,7 @@ public abstract class Either<L, R> {
 	 * initializes the cross-reference.
 	 *
 	 * @param input container for Left or Right value
-	 * @param leftSerializer for creating an instance of the left type
+	 * @param leftSerializer for creating an instance of the left type 该对象可以创建一个左边对象
 	 * @param <L>
 	 *            the type of Left
 	 * @param <R>
@@ -231,15 +237,15 @@ public abstract class Either<L, R> {
 	 */
 	@Internal
 	public static <L, R> Left<L, R> obtainLeft(Either<L, R> input, TypeSerializer<L> leftSerializer) {
-		if (input.isLeft()) {
+		if (input.isLeft()) {//是左边对象,直接返回即可
 			return (Left<L, R>) input;
 		} else {
-			Right<L, R> right = (Right<L, R>) input;
+			Right<L, R> right = (Right<L, R>) input;//说明是右边对象
 			if (right.left == null) {
-				right.left = Left.of(leftSerializer.createInstance());
-				right.left.right = right;
+				right.left = Left.of(leftSerializer.createInstance());//创建一个左边对象,复制给right
+				right.left.right = right;//将右边对象本身，赋值给新产生的左边对象的right对象
 			}
-			return right.left;
+			return right.left;//返回创建的左边对象---此时该对象内包含right对象
 		}
 	}
 

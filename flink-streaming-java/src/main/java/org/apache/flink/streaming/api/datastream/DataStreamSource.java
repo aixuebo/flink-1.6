@@ -27,11 +27,12 @@ import org.apache.flink.streaming.api.transformations.SourceTransformation;
  * The DataStreamSource represents the starting point of a DataStream.
  *
  * @param <T> Type of the elements in the DataStream created from the this source.
+ * 数据入口，输出SingleOutputStreamOperator
  */
 @Public
 public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 
-	boolean isParallel;
+	boolean isParallel;//true表示支持并行
 
 	public DataStreamSource(StreamExecutionEnvironment environment,
 			TypeInformation<T> outTypeInfo, StreamSource<T, ?> operator,
@@ -39,7 +40,7 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 		super(environment, new SourceTransformation<>(sourceName, operator, outTypeInfo, environment.getParallelism()));
 
 		this.isParallel = isParallel;
-		if (!isParallel) {
+		if (!isParallel) {//不支持并行
 			setParallelism(1);
 		}
 	}

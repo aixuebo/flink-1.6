@@ -30,17 +30,19 @@ import java.io.UTFDataFormatException;
  * The base class for all input views that are backed by multiple memory pages. This base class contains all
  * decoding methods to read data from a page and detect page boundary crossing. The concrete sub classes must
  * implement the methods to provide the next memory page once the boundary is crossed.
+ * input基础类,读取多个memory page页,基础类包含解码 && 识别编码的边界。(具体的方法需要实现如何发现编码边界后,识别下一个内存page页)
  */
 public abstract class AbstractPagedInputView implements DataInputView {
 
-	private MemorySegment currentSegment;
+	private MemorySegment currentSegment;//当前读取的segment内存页
 
-	protected final int headerLength;				// the number of bytes to skip at the beginning of each segment
+	protected final int headerLength;				// the number of bytes to skip at the beginning of each segment 每一个segment中头文件的长度,读取数据时候要跳过这些字节
 
-	private int positionInSegment;					// the offset in the current segment
+	private int positionInSegment;					// the offset in the current segment segment内存页准备要读取的位置
 
-	private int limitInSegment;						// the limit in the current segment before switching to the next
+	private int limitInSegment;						// the limit in the current segment before switching to the next 当前segment内存页的结尾字节位置
 
+	//用于缓存已经读取到的数据
 	private byte[] utfByteBuffer;					// reusable byte buffer for utf-8 decoding
 	private char[] utfCharBuffer;					// reusable char buffer for utf-8 decoding
 
@@ -55,10 +57,10 @@ public abstract class AbstractPagedInputView implements DataInputView {
 	 * limit describes up to which position data may be read from the current segment, before the view must
 	 * advance to the next segment.
 	 *
-	 * @param initialSegment The memory segment to start reading from.
-	 * @param initialLimit The position one after the last valid byte in the initial segment.
+	 * @param initialSegment The memory segment to start reading from.要读取的segment页
+	 * @param initialLimit The position one after the last valid byte in the initial segment. segment页的可读取的limit位置
 	 * @param headerLength The number of bytes to skip at the beginning of each segment for the header. This
-	 *                     length must be the same for all memory segments.
+	 *                     length must be the same for all memory segments. segment页头文件的开始位置
 	 */
 	protected AbstractPagedInputView(MemorySegment initialSegment, int initialLimit, int headerLength) {
 		this.headerLength = headerLength;
@@ -121,6 +123,9 @@ public abstract class AbstractPagedInputView implements DataInputView {
 	 * The method by which concrete subclasses realize page crossing. This method is invoked when the current page
 	 * is exhausted and a new page is required to continue the reading. If no further page is available, this
 	 * method must throw an {@link EOFException}.
+	 *   该方法由具体的子类实现,获取下一个MemorySegment内容的填充.
+	 *   当当前page页内容读取完成后，要求继续读下一个page页时，调用该方法，参数是复用MemorySegment对象。
+	 *   当没有下一个page页的时候,该方法要抛异常EOFException
 	 *
 	 * @param current The current page that was read to its limit. May be {@code null}, if this method is
 	 *                invoked for the first time.
@@ -139,6 +144,7 @@ public abstract class AbstractPagedInputView implements DataInputView {
 	 *
 	 * @param segment The segment to determine the limit for.
 	 * @return The limit for the given memory segment.
+	 * 返回参数page页可读的limit字节位置
 	 */
 	protected abstract int getLimitForSegment(MemorySegment segment);
 
@@ -155,9 +161,9 @@ public abstract class AbstractPagedInputView implements DataInputView {
 	protected final void advance() throws IOException {
 		// note: this code ensures that in case of EOF, we stay at the same position such that
 		// EOF is reproducible (if nextSegment throws a reproducible EOFException)
-		this.currentSegment = nextSegment(this.currentSegment);
-		this.limitInSegment = getLimitForSegment(this.currentSegment);
-		this.positionInSegment = this.headerLength;
+		this.currentSegment = nextSegment(this.currentSegment);//获取到下一个currentSegment
+		this.limitInSegment = getLimitForSegment(this.currentSegment);//获取下一个currentSegment的可读取的最后字节位置
+		this.positionInSegment = this.headerLength;//共享同一个头文件字节数
 	}
 
 	/**
@@ -189,6 +195,7 @@ public abstract class AbstractPagedInputView implements DataInputView {
 	//                               Data Input Specific methods
 	// --------------------------------------------------------------------------------------------
 
+	//自动解码下一个数据块的方式,读取数据
 	@Override
 	public int read(byte[] b) throws IOException{
 		return read(b, 0, b.length);
@@ -200,7 +207,7 @@ public abstract class AbstractPagedInputView implements DataInputView {
 			throw new IndexOutOfBoundsException();
 		}
 
-		int remaining = this.limitInSegment - this.positionInSegment;
+		int remaining = this.limitInSegment - this.positionInSegment;//数据源还有内容可以去读取
 		if (remaining >= len) {
 			this.currentSegment.get(this.positionInSegment, b, off, len);
 			this.positionInSegment += len;
@@ -224,7 +231,7 @@ public abstract class AbstractPagedInputView implements DataInputView {
 				off += toRead;
 				bytesRead += toRead;
 
-				if (len > bytesRead) {
+				if (len > bytesRead) {//读取下一个数据块
 					try {
 						advance();
 					}
@@ -243,6 +250,7 @@ public abstract class AbstractPagedInputView implements DataInputView {
 		}
 	}
 
+	//读取的数据内容必须填满整个参数字节数组
 	@Override
 	public void readFully(byte[] b) throws IOException {
 		readFully(b, 0, b.length);

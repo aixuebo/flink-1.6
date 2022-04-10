@@ -43,6 +43,12 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
  * downstream operations will have a differing number of inputs from upstream operations.
  *
  * @param <T> Type of the elements in the Stream being rescaled
+ *
+ * 轮训,代码上看与RebalancePartitioner相同
+ *
+ * 原因是StreamingJobGraphGenerator类中使用DistributionPattern.POINTWISE方式
+ *
+ * 此时的轮训比较特殊,比如上游2个节点，下游4个节点；因此上游第1个节点，只会发送给下游的前两个节点进行轮训
  */
 @Internal
 public class RescalePartitioner<T> extends StreamPartitioner<T> {
@@ -52,7 +58,7 @@ public class RescalePartitioner<T> extends StreamPartitioner<T> {
 
 	@Override
 	public int[] selectChannels(SerializationDelegate<StreamRecord<T>> record, int numberOfOutputChannels) {
-		int newChannel = ++this.returnArray[0];
+		int newChannel = ++this.returnArray[0];//获取通道 --- 数组内容累加1
 		if (newChannel >= numberOfOutputChannels) {
 			this.returnArray[0] = 0;
 		}

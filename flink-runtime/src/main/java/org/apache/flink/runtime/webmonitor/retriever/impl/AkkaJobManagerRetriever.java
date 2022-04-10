@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * {@link LeaderGatewayRetriever} implementation for Akka based JobManagers.
+ * 如果leader被更新了,如何同步
  */
 public class AkkaJobManagerRetriever extends LeaderGatewayRetriever<JobManagerGateway> {
 

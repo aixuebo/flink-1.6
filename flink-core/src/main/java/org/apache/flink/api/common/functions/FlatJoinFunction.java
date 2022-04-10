@@ -53,6 +53,7 @@ import java.io.Serializable;
  * @param <IN1> The type of the elements in the first input.
  * @param <IN2> The type of the elements in the second input.
  * @param <OUT> The type of the result elements.
+ * FlatJoinFunction,(I1,I2) --> List<O>的转换
  */
 @Public
 @FunctionalInterface
@@ -67,6 +68,9 @@ public interface FlatJoinFunction<IN1, IN2, OUT> extends Function, Serializable 
 	 *
 	 * @throws Exception This method may throw exceptions. Throwing an exception will cause the operation
 	 *                   to fail and may trigger recovery.
+	 * 能进入该方法时,已经确保first和second的数据已经被on条件选中,即可以直接对两条数据做处理了
+	 *
+	 * 注意 由于涉及到left join等情况，因此fitst或者second存在可能是null的情况
 	 */
 	void join (IN1 first, IN2 second, Collector<OUT> out) throws Exception;
 }

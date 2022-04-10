@@ -64,6 +64,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * same program, it is OK to take any valid successful checkpoint as long as the "history" of
  * checkpoints is consistent. Currently, after recovery we start out with only a single
  * checkpoint to circumvent those situations.
+ *
+ * zookeeper上存储CompletedCheckpoint对象
  */
 public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointStore {
 
@@ -73,7 +75,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 	private final CuratorFramework client;
 
 	/** Completed checkpoints in ZooKeeper. */
-	private final ZooKeeperStateHandleStore<CompletedCheckpoint> checkpointsInZooKeeper;
+	private final ZooKeeperStateHandleStore<CompletedCheckpoint> checkpointsInZooKeeper;//zookeeper上存储CompletedCheckpoint对象
 
 	/** The maximum number of checkpoints to retain (at least 1). */
 	private final int maxNumberOfCheckpointsToRetain;
@@ -82,6 +84,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 	 * Local copy of the completed checkpoints in ZooKeeper. This is restored from ZooKeeper
 	 * when recovering and is maintained in parallel to the state in ZooKeeper during normal
 	 * operations.
+	 * 队列,存储已经完成的checkpoint文件
 	 */
 	private final ArrayDeque<CompletedCheckpoint> completedCheckpoints;
 
@@ -144,12 +147,14 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 	 * <p><strong>Important</strong>: Even if there are more than one checkpoint in ZooKeeper,
 	 * this will only recover the latest and discard the others. Otherwise, there is no guarantee
 	 * that the history of checkpoints is consistent.
+	 *
+	 * 重新恢复,仅保留zookeeper上的最新的信息,抛弃掉非zookeeper上所有的checkpoint文件 --- 将CompletedCheckpoint对象保存到内存
 	 */
 	@Override
 	public void recover() throws Exception {
 		LOG.info("Recovering checkpoints from ZooKeeper.");
 
-		// Get all there is first
+		// Get all there is first 读取zookeeper信息,返回存储的所有<对象,存储路径>
 		List<Tuple2<RetrievableStateHandle<CompletedCheckpoint>, String>> initialCheckpoints;
 		while (true) {
 			try {
@@ -263,6 +268,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 		}
 	}
 
+	//返回最后一个添加的checkpoint文件
 	@Override
 	public CompletedCheckpoint getLatestCheckpoint() {
 		if (completedCheckpoints.isEmpty()) {
@@ -273,17 +279,20 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 		}
 	}
 
+	//返回所有checkpoint文件
 	@Override
 	public List<CompletedCheckpoint> getAllCheckpoints() throws Exception {
 		List<CompletedCheckpoint> checkpoints = new ArrayList<>(completedCheckpoints);
 		return checkpoints;
 	}
 
+	//存储已经真实存放了多少个checkpoint文件
 	@Override
 	public int getNumberOfRetainedCheckpoints() {
 		return completedCheckpoints.size();
 	}
 
+	//总容器 最多允许存储多少个checkpoint文件
 	@Override
 	public int getMaxNumberOfRetainedCheckpoints() {
 		return maxNumberOfCheckpointsToRetain;
@@ -324,6 +333,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 	 *
 	 * @param checkpointId identifying the checkpoint to remove
 	 * @return true if the checkpoint could be removed
+	 * 删除该checkpoint文件
 	 */
 	private boolean tryRemove(long checkpointId) throws Exception {
 		return checkpointsInZooKeeper.releaseAndTryRemove(checkpointIdToPath(checkpointId));
@@ -344,6 +354,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 	 *
 	 * @param path in ZooKeeper
 	 * @return Checkpoint id parsed from the path
+	 * 通过路径,解析checkpoint id.
 	 */
 	public static long pathToCheckpointId(String path) {
 		try {
@@ -364,6 +375,7 @@ public class ZooKeeperCompletedCheckpointStore implements CompletedCheckpointSto
 		}
 	}
 
+	//反序列化CompletedCheckpoint对象
 	private static CompletedCheckpoint retrieveCompletedCheckpoint(Tuple2<RetrievableStateHandle<CompletedCheckpoint>, String> stateHandlePath) throws FlinkException {
 		long checkpointId = pathToCheckpointId(stateHandlePath.f1);
 

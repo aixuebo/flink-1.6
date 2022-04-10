@@ -27,8 +27,10 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 /**
  * A {@link StreamOperator} for executing a {@link ReduceFunction} on a
  * {@link org.apache.flink.streaming.api.datastream.KeyedStream}.
+ *
+ * 聚合函数,使用当前元素与merge的结果集进行计算
+ * 每次都生产一个新的聚合后的值
  */
-
 @Internal
 public class StreamGroupedReduce<IN> extends AbstractUdfStreamOperator<IN, ReduceFunction<IN>>
 		implements OneInputStreamOperator<IN, IN> {
@@ -46,22 +48,24 @@ public class StreamGroupedReduce<IN> extends AbstractUdfStreamOperator<IN, Reduc
 		this.serializer = serializer;
 	}
 
+	//重写open函数，创建中间缓存结果
 	@Override
 	public void open() throws Exception {
 		super.open();
-		ValueStateDescriptor<IN> stateId = new ValueStateDescriptor<>(STATE_NAME, serializer);
+		ValueStateDescriptor<IN> stateId = new ValueStateDescriptor<>(STATE_NAME, serializer);//key对应一个value值
 		values = getPartitionedState(stateId);
 	}
 
+	//相当于在流上套了一层map操作,只是map的计算方式是 聚合上一步的结果,每次发送累计结果到下游输出
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
-		IN value = element.getValue();
-		IN currentValue = values.value();
+		IN value = element.getValue();//当前元素
+		IN currentValue = values.value();//聚合值
 
 		if (currentValue != null) {
-			IN reduced = userFunction.reduce(currentValue, value);
+			IN reduced = userFunction.reduce(currentValue, value);//新值
 			values.update(reduced);
-			output.collect(element.replace(reduced));
+			output.collect(element.replace(reduced));//发送新值
 		} else {
 			values.update(value);
 			output.collect(element.replace(value));

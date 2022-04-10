@@ -42,6 +42,7 @@ final class MethodlessRouter<T> {
 	private static final Logger log = LoggerFactory.getLogger(MethodlessRouter.class);
 
 	// A path pattern can only point to one target
+	//每一个路由规则正则表达式  与  T对象的映射
 	private final Map<PathPattern, T> routes = new LinkedHashMap<>();
 
 	//--------------------------------------------------------------------------
@@ -56,6 +57,7 @@ final class MethodlessRouter<T> {
 	/**
 	 * This method does nothing if the path pattern has already been added.
 	 * A path pattern can only point to one target.
+	 * 添加一个路由规则
 	 */
 	public MethodlessRouter<T> addRoute(String pathPattern, T target) {
 		PathPattern p = new PathPattern(pathPattern);

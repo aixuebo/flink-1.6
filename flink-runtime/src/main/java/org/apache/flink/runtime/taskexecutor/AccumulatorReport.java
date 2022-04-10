@@ -26,9 +26,10 @@ import java.util.List;
 
 /**
  * A report about the current values of all accumulators of the TaskExecutor for a given job.
+ * task节点向jobmanager报告属于该jobmanager的内容,必须支持序列化
  */
 public class AccumulatorReport implements Serializable {
-	private final Collection<AccumulatorSnapshot> accumulatorSnapshots;
+	private final Collection<AccumulatorSnapshot> accumulatorSnapshots;//代表每一个尝试任务信息
 
 	public AccumulatorReport(List<AccumulatorSnapshot> accumulatorSnapshots) {
 		this.accumulatorSnapshots = accumulatorSnapshots;

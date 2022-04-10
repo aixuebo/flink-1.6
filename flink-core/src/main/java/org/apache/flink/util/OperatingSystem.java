@@ -50,6 +50,7 @@ public enum OperatingSystem {
 	 *
 	 * @return <code>true</code> if the operating system this JVM runs on is
 	 *         Windows, <code>false</code> otherwise
+	 *         是否是windows操作系统
 	 */
 	public static boolean isWindows() {
 		return getCurrentOperatingSystem() == WINDOWS;

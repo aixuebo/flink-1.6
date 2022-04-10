@@ -46,6 +46,7 @@ public interface StateBackendFactory<T extends StateBackend> {
 	 *             If the configuration misses critical values, or specifies invalid values
 	 * @throws IOException
 	 *             If the state backend initialization failed due to an I/O exception
+	 * 工厂类,创建状态的后端管理类
 	 */
 	T createFromConfig(Configuration config) throws IllegalConfigurationException, IOException;
 }

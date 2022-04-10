@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.AbstractRichFunction;
 
 /**
  * An {@link AbstractRichFunction} that does nothing.
+ * 不提供具体的函数实现，但提供了任务上下文的富函数
  */
 @Internal
 public class NoOpFunction extends AbstractRichFunction {

@@ -28,25 +28,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
+/**
+ * 由于ExecutionJobVertex表示任务计算操作节点,但他是有并行度的,因此每一个并行产生的结果就是IntermediateResultPartition
+ */
 public class IntermediateResult {
 
-	private final IntermediateDataSetID id;
+	private final IntermediateDataSetID id;//结果ID
 
-	private final ExecutionJobVertex producer;
+	private final ExecutionJobVertex producer;//哪个task产生的结果
 
-	private final IntermediateResultPartition[] partitions;
+	private final IntermediateResultPartition[] partitions;//task上产生的结果会分发给N个partition,因此会持有每一个partition信息
 
 	/**
 	 * Maps intermediate result partition IDs to a partition index. This is
 	 * used for ID lookups of intermediate results. I didn't dare to change the
 	 * partition connect logic in other places that is tightly coupled to the
 	 * partitions being held as an array.
+	 *
+	 * key是partition唯一ID,value是该partition归属第几个partition
+	 *
+	 * 主要是partition结果用数组存储的，而不是Map,因此需要额外维护这个关系
 	 */
 	private final HashMap<IntermediateResultPartitionID, Integer> partitionLookupHelper = new HashMap<>();
 
-	private final int numParallelProducers;
+	private final int numParallelProducers;//多少个partiiton分区
 
-	private final AtomicInteger numberOfRunningProducers;
+	private final AtomicInteger numberOfRunningProducers;//有多少个分区在运行中
 
 	private int partitionsAssigned;
 
@@ -82,17 +89,19 @@ public class IntermediateResult {
 		this.resultType = checkNotNull(resultType);
 	}
 
+	//设置一个partition子结果
 	public void setPartition(int partitionNumber, IntermediateResultPartition partition) {
 		if (partition == null || partitionNumber < 0 || partitionNumber >= numParallelProducers) {
 			throw new IllegalArgumentException();
 		}
 
+		//必须是null,即不能有结果已经分配
 		if (partitions[partitionNumber] != null) {
 			throw new IllegalStateException("Partition #" + partitionNumber + " has already been assigned.");
 		}
 
 		partitions[partitionNumber] = partition;
-		partitionLookupHelper.put(partition.getPartitionId(), partitionNumber);
+		partitionLookupHelper.put(partition.getPartitionId(), partitionNumber);//映射
 		partitionsAssigned++;
 	}
 
@@ -115,6 +124,9 @@ public class IntermediateResult {
 	 * @throws NullPointerException If partition ID <code>null</code>
 	 * @throws IllegalArgumentException Thrown if unknown partition ID
 	 * @return Intermediate result partition with the given ID
+	 *
+	 * 通过partition的唯一ID,找到对应的partition的子结果对象
+	 * 主要是partition结果用数组存储的，而不是Map,因此需要额外维护这个关系
 	 */
 	public IntermediateResultPartition getPartitionById(IntermediateResultPartitionID resultPartitionId) {
 		// Looks ups the partition number via the helper map and returns the

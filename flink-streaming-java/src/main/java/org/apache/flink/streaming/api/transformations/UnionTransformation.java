@@ -34,6 +34,7 @@ import java.util.List;
  * connected to downstream operations.
  *
  * @param <T> The type of the elements that result from this {@code UnionTransformation}
+ * union数据源组合流
  */
 @Internal
 public class UnionTransformation<T> extends StreamTransformation<T> {
@@ -50,7 +51,7 @@ public class UnionTransformation<T> extends StreamTransformation<T> {
 		super("Union", inputs.get(0).getOutputType(), inputs.get(0).getParallelism());
 
 		for (StreamTransformation<T> input: inputs) {
-			if (!input.getOutputType().equals(getOutputType())) {
+			if (!input.getOutputType().equals(getOutputType())) {//类型必须相同
 				throw new UnsupportedOperationException("Type mismatch in input " + input);
 			}
 		}

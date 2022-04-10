@@ -35,6 +35,7 @@ import java.io.Serializable;
  *
  * @param <IN> The data type processed by the combine function.
  * @param <OUT> The data type emitted by the combine function.
+ * CombineFunction,List<I> --> O 转换
  */
 @Public
 @FunctionalInterface

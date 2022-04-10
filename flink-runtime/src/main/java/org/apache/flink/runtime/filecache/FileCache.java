@@ -66,21 +66,21 @@ public class FileCache {
 	/** cache-wide lock to ensure consistency. copies are not done under this lock. */
 	private final Object lock = new Object();
 
-	private final Map<JobID, Map<String, Future<Path>>> entries;
+	private final Map<JobID, Map<String, Future<Path>>> entries;//jobid下,每一个key对应一个文件路径
 
-	private final Map<JobID, Set<ExecutionAttemptID>> jobRefHolders;
+	private final Map<JobID, Set<ExecutionAttemptID>> jobRefHolders;//job与该job运行的尝试任务ID集合
 
-	private final ScheduledExecutorService executorService;
+	private final ScheduledExecutorService executorService;//线程池
 
-	private final File[] storageDirectories;
+	private final File[] storageDirectories;//存储缓存的文件的目录
 
 	private final Thread shutdownHook;
 
 	private int nextDirectory;
 
-	private final PermanentBlobService blobService;
+	private final PermanentBlobService blobService;//缓存服务
 
-	private final long cleanupInterval; //in milliseconds
+	private final long cleanupInterval; //in milliseconds 清理文件周期
 
 	// ------------------------------------------------------------------------
 
@@ -96,10 +96,10 @@ public class FileCache {
 		Preconditions.checkNotNull(tempDirectories);
 		this.cleanupInterval = cleanupInterval;
 
-		storageDirectories = new File[tempDirectories.length];
+		storageDirectories = new File[tempDirectories.length];//创建缓存文件的目录
 
 		for (int i = 0; i < tempDirectories.length; i++) {
-			String cacheDirName = "flink-dist-cache-" + UUID.randomUUID().toString();
+			String cacheDirName = "flink-dist-cache-" + UUID.randomUUID().toString();//创建缓存文件的目录
 			storageDirectories[i] = new File(tempDirectories[i], cacheDirName);
 			String path = storageDirectories[i].getAbsolutePath();
 
@@ -149,7 +149,7 @@ public class FileCache {
 			// clean up the all storage directories
 			for (File dir : storageDirectories) {
 				try {
-					FileUtils.deleteDirectory(dir);
+					FileUtils.deleteDirectory(dir);//删除缓存目录
 				}
 				catch (IOException e) {
 					LOG.error("File cache could not properly clean up storage directory.");
@@ -172,10 +172,10 @@ public class FileCache {
 	 */
 	public Future<Path> createTmpFile(String name, DistributedCacheEntry entry, JobID jobID, ExecutionAttemptID executionId) throws Exception {
 		synchronized (lock) {
-			Map<String, Future<Path>> jobEntries = entries.computeIfAbsent(jobID, k -> new HashMap<>());
+			Map<String, Future<Path>> jobEntries = entries.computeIfAbsent(jobID, k -> new HashMap<>());//key是jobId,value初始化为一个空map
 
 			// register reference holder
-			final Set<ExecutionAttemptID> refHolders = jobRefHolders.computeIfAbsent(jobID, id -> new HashSet<>());
+			final Set<ExecutionAttemptID> refHolders = jobRefHolders.computeIfAbsent(jobID, id -> new HashSet<>());//key是jobId,value初始化为一个空set
 			refHolders.add(executionId);
 
 			Future<Path> fileEntry = jobEntries.get(name);

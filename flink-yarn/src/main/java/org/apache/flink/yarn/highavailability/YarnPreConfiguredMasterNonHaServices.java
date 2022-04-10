@@ -61,6 +61,8 @@ import java.io.IOException;
  * of the JobManager and ResourceManager, which are running as part of the Application Master.
  *
  * @see HighAvailabilityServices
+ *
+ * 读取app master rpc的ip+port，组成两组url
  */
 public class YarnPreConfiguredMasterNonHaServices extends AbstractYarnNonHaServices {
 
@@ -84,6 +86,8 @@ public class YarnPreConfiguredMasterNonHaServices extends AbstractYarnNonHaServi
 	 *             Thrown, if the initialization of the Hadoop file system used by YARN fails.
 	 * @throws IllegalConfigurationException
 	 *             Thrown, if the Flink configuration does not properly describe the ResourceManager address and port.
+	 *
+	 * 读取app master rpc的ip+port，组成两组url
 	 */
 	public YarnPreConfiguredMasterNonHaServices(
 			Configuration config,

@@ -32,6 +32,7 @@ import java.util.Map;
  * https://github.com/sinetja/netty-router/blob/2.2.0/src/main/java/io/netty/handler/codec/http/router/RouteResult.java
  *
  * <p>Result of calling {@link Router#route(HttpMethod, String)}.
+ * 返回路由结果
  */
 public class RouteResult<T> {
 	private final String uri;

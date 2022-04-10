@@ -33,10 +33,14 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * The {@code AllocatedSlot} represents a slot that the JobMaster allocated from a TaskExecutor.
  * It represents a slice of allocated resources from the TaskExecutor.
+ * 该对象表示从TaskExecutor上分配的一个slot
  * 
  * <p>To allocate an {@code AllocatedSlot}, the requests a slot from the ResourceManager. The
  * ResourceManager picks (or starts) a TaskExecutor that will then allocate the slot to the
  * JobMaster and notify the JobMaster.
+ * 发送给ResourceManager请求,申请一个slot
+ * 然后ResourceManager通知TaskExecutor,给job一个slot
+ * 然后TaskExecutor通知JobMaster注册该TaskExecutor
  * 
  * <p>Note: Prior to the resource management changes introduced in (Flink Improvement Proposal 6),
  * an AllocatedSlot was allocated to the JobManager as soon as the TaskManager registered at the
@@ -45,19 +49,19 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 class AllocatedSlot implements SlotContext {
 
 	/** The ID under which the slot is allocated. Uniquely identifies the slot. */
-	private final AllocationID allocationId;
+	private final AllocationID allocationId;//slot唯一ID
 
 	/** The location information of the TaskManager to which this slot belongs */
-	private final TaskManagerLocation taskManagerLocation;
+	private final TaskManagerLocation taskManagerLocation;//taskManager地址信息
 
 	/** The resource profile of the slot provides */
-	private final ResourceProfile resourceProfile;
+	private final ResourceProfile resourceProfile;//slot信息
 
 	/** RPC gateway to call the TaskManager that holds this slot */
-	private final TaskManagerGateway taskManagerGateway;
+	private final TaskManagerGateway taskManagerGateway;//taskManager的网关通信
 
 	/** The number of the slot on the TaskManager to which slot belongs. Purely informational. */
-	private final int physicalSlotNumber;
+	private final int physicalSlotNumber;//具体归属于TaskManager第几个slot
 
 	private final AtomicReference<Payload> payloadReference;
 
@@ -82,6 +86,7 @@ class AllocatedSlot implements SlotContext {
 
 	/**
 	 * Gets the Slot's unique ID defined by its TaskManager.
+	 * task节点id+slot序号 --- 确定唯一的slotID
 	 */
 	public SlotID getSlotId() {
 		return new SlotID(getTaskManagerId(), physicalSlotNumber);
@@ -91,6 +96,7 @@ class AllocatedSlot implements SlotContext {
 	 * Gets the ID under which the slot is allocated, which uniquely identifies the slot.
 	 * 
 	 * @return The ID under which the slot is allocated
+	 * slot的唯一id
 	 */
 	public AllocationID getAllocationId() {
 		return allocationId;
@@ -102,6 +108,7 @@ class AllocatedSlot implements SlotContext {
 	 * <p>This is equivalent to {@link #getTaskManagerLocation()#getTaskManagerId()}.
 	 * 
 	 * @return This slot's TaskManager's ID.
+	 * task节点的唯一id
 	 */
 	public ResourceID getTaskManagerId() {
 		return getTaskManagerLocation().getResourceID();
@@ -141,6 +148,7 @@ class AllocatedSlot implements SlotContext {
 	 * to the slot index on the TaskExecutor.
 	 *
 	 * @return Physical slot number of the allocated slot
+	 * slot具体的在task节点的序号
 	 */
 	public int getPhysicalSlotNumber() {
 		return physicalSlotNumber;

@@ -29,6 +29,7 @@ import org.apache.flink.api.common.functions.Function;
  * (midnight, January 1, 1970 UTC).
  *
  * @param <T> The type of the elements to which this assigner assigns timestamps.
+ * 两个子类:AssignerWithPeriodicWatermarks、AssignerWithPunctuatedWatermarks
  */
 public interface TimestampAssigner<T> extends Function {
 
@@ -40,10 +41,11 @@ public interface TimestampAssigner<T> extends Function {
 	 * by ingestion time. If the element did not carry a timestamp before, this value is
 	 * {@code Long.MIN_VALUE}.
 	 *
-	 * @param element The element that the timestamp will be assigned to.
-	 * @param previousElementTimestamp The previous internal timestamp of the element,
-	 *                                 or a negative value, if no timestamp has been assigned yet.
+	 * @param element The element that the timestamp will be assigned to.从元素中提取时间戳
+	 * @param previousElementTimestamp The previous internal timestamp of the element,元素内部的时间戳，参见StreamRecord对象
+	 *                                 or a negative value, if no timestamp has been assigned yet.如果元素没有分配时间戳,则该该值是负数Long.MIN_VALUE
 	 * @return The new timestamp.
+	 * 提取元素的时间戳
 	 */
 	long extractTimestamp(T element, long previousElementTimestamp);
 }

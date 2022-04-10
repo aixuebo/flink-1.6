@@ -23,13 +23,14 @@ import java.util.Iterator;
 
 /**
  * A {@link SourceFunction} that reads elements from an {@link Iterator} and emits them.
+ * 常量的读取迭代器内的元素作为数据源
  */
 @PublicEvolving
 public class FromIteratorFunction<T> implements SourceFunction<T> {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Iterator<T> iterator;
+	private final Iterator<T> iterator;//迭代器可以是源源不断的迭代器
 
 	private volatile boolean isRunning = true;
 

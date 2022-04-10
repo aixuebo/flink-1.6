@@ -26,6 +26,7 @@ import org.apache.flink.api.java.io.TextOutputFormat.TextFormatter;
 /**
  * Mapper that converts values to strings using a {@link TextFormatter}.
  * @param <T>
+ * 将每一个元素，进行格式化,转换成字符串形式
  */
 @Internal
 public class FormattingMapper<T> implements MapFunction<T, String> {

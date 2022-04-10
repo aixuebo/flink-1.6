@@ -50,6 +50,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * checkpoint, i.e., checkpoint ID, timestamps, and the handles to all states that are part of the
  * checkpoint.
  *
+ * 一个完成的checkpoint,表示所有的task都成功保存了状态。
+ * 包含所有的checkpoint的元数据。
+ * 比如checkpoint ID, timestamps等
+ *
  * <h2>Size the CompletedCheckpoint Instances</h2>
  *
  * <p>In most cases, the CompletedCheckpoint objects are very small, because the handles to the checkpoint
@@ -57,6 +61,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * choose to store some payload data directly with the metadata (for example to avoid many small files).
  * If those thresholds are increased to large values, the memory consumption of the CompletedCheckpoint
  * objects can be significant.
+ * 大多数该对象序列化后占用的存储会很小，因为大多数存储的都是路径。
+ * 但由于耗费大量路径空间，因此也有放在内存里的场景。此时会消耗大量内存。所以要权衡利弊
  *
  * <h2>Metadata Persistence</h2>
  *
@@ -65,6 +71,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * when storing a checkpoint in a file system, that pointer is the file path to the checkpoint's folder
  * or the metadata file. For a state backend that stores metadata in database tables, the pointer
  * could be the table name and row key. The pointer is encoded as a String.
+ * 元数据也可以被存储到额外的存储系统中。
  */
 public class CompletedCheckpoint implements Serializable {
 
@@ -75,16 +82,16 @@ public class CompletedCheckpoint implements Serializable {
 	// ------------------------------------------------------------------------
 
 	/** The ID of the job that the checkpoint belongs to. */
-	private final JobID job;
+	private final JobID job;//checkpoint归属的job
 
 	/** The ID (logical timestamp) of the checkpoint. */
 	private final long checkpointID;
 
 	/** The timestamp when the checkpoint was triggered. */
-	private final long timestamp;
+	private final long timestamp;//启动checkpoint的时间
 
 	/** The duration of the checkpoint (completion timestamp - trigger timestamp). */
-	private final long duration;
+	private final long duration;//checkpoint总耗时
 
 	/** States of the different operator groups belonging to this checkpoint. */
 	private final Map<OperatorID, OperatorState> operatorStates;
@@ -109,7 +116,7 @@ public class CompletedCheckpoint implements Serializable {
 	private transient volatile CompletedCheckpointStats.DiscardCallback discardCallback;
 
 	// ------------------------------------------------------------------------
-
+    //当checkpoint完成时,才会创建该对象
 	public CompletedCheckpoint(
 			JobID job,
 			long checkpointID,

@@ -44,6 +44,10 @@ import java.io.Serializable;
  * @param <IN1> The data type of the first input data set.
  * @param <IN2> The data type of the second input data set.
  * @param <O> The data type of the returned elements.
+ * CoGroupFunction,(List<I>,List<I>) --> List<O>
+ * 主要用于join操作,两个集合如何输出一个集合
+ *
+ *  有可能上游调方法前对两个数据源做了排序，但该函数不关注这个。他只是接受两个数据源的迭代器，自己实现笛卡尔乘积等操作，即可以实现笛卡尔、left join 、inner join等操作
  */
 @Public
 @FunctionalInterface
@@ -54,12 +58,13 @@ public interface CoGroupFunction<IN1, IN2, O> extends Function, Serializable {
 	 * coGroup. It is called for each pair of element groups where the elements share the
 	 * same key.
 	 *
-	 * @param first The records from the first input.
-	 * @param second The records from the second.
-	 * @param out A collector to return elements.
+	 * @param first The records from the first input.第一个数据源的迭代器内容--有可能上游调方法前对两个数据源做了排序，但该函数不关注这个。
+	 * @param second The records from the second.第2个数据源的迭代器内容
+	 * @param out A collector to return elements.输出结果
 	 *
 	 * @throws Exception The function may throw Exceptions, which will cause the program to cancel,
 	 *                   and may trigger the recovery logic.
+	 * 相同key,对应两个流的集合
 	 */
 	void coGroup(Iterable<IN1> first, Iterable<IN2> second, Collector<O> out) throws Exception;
 }

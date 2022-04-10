@@ -63,6 +63,8 @@ import javax.annotation.Nullable;
  * @param <T> The type of the elements to which this assigner assigns timestamps.
  *
  * @see org.apache.flink.streaming.api.watermark.Watermark
+ * 没有时间周期规律，可打断的生成 watermark（即可实现每次获取数据都更新watermark）
+ * 即每一条数据都可以生产一个Watermark
  */
 public interface AssignerWithPunctuatedWatermarks<T> extends TimestampAssigner<T> {
 
@@ -80,6 +82,9 @@ public interface AssignerWithPunctuatedWatermarks<T> extends TimestampAssigner<T
 	 * {@link AssignerWithPunctuatedWatermarks this class}.
 	 *
 	 * @return {@code Null}, if no watermark should be emitted, or the next watermark to emit.
+	 *
+	 * lastElement 表示就是本条数据,不知道为什么命名为last，参数extractedTimestamp表示本条数据产生的时间戳。
+	 * 基于本条数据内容，判断是否生产水印，如果生产则返回Watermark，否则返回null，就不会生产水印
 	 */
 	@Nullable
 	Watermark checkAndGetNextWatermark(T lastElement, long extractedTimestamp);

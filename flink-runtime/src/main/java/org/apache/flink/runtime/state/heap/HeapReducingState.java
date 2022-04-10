@@ -62,7 +62,7 @@ class HeapReducingState<K, N, V>
 		ReduceFunction<V> reduceFunction) {
 
 		super(stateTable, keySerializer, valueSerializer, namespaceSerializer, defaultValue);
-		this.reduceTransformation = new ReduceTransformation<>(reduceFunction);
+		this.reduceTransformation = new ReduceTransformation<>(reduceFunction);//定义如何merge函数
 	}
 
 	@Override
@@ -98,7 +98,7 @@ class HeapReducingState<K, N, V>
 		}
 
 		try {
-			stateTable.transform(currentNamespace, value, reduceTransformation);
+			stateTable.transform(currentNamespace, value, reduceTransformation);//当前值value与merge函数,参与运算
 		} catch (Exception e) {
 			throw new IOException("Exception while applying ReduceFunction in reducing state", e);
 		}
@@ -108,6 +108,7 @@ class HeapReducingState<K, N, V>
 	//  state merging
 	// ------------------------------------------------------------------------
 
+	//如何merge
 	@Override
 	protected V mergeState(V a, V b) throws Exception {
 		return reduceTransformation.apply(a, b);

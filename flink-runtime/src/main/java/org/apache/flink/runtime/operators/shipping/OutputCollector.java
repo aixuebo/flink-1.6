@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * The OutputCollector collects records, and emits them to the  {@link RecordWriter}s.
  * The OutputCollector tracks to which writers a deep-copy must be given and which not.
+ * 输出流，将每一条记录输出到多个输出流中---注意输出流可以是网络输出
  */
 public class OutputCollector<T> implements Collector<T> {
 

@@ -53,7 +53,10 @@ import java.util.concurrent.CompletableFuture;
  * @param <P> type of outgoing responses
  */
 @ChannelHandler.Sharable
-public abstract class AbstractRestHandler<T extends RestfulGateway, R extends RequestBody, P extends ResponseBody, M extends MessageParameters> extends AbstractHandler<T, R, M> {
+public abstract class AbstractRestHandler<T extends RestfulGateway,
+						R extends RequestBody, P extends ResponseBody,
+						M extends MessageParameters>
+						extends AbstractHandler<T, R, M> {
 
 	private final MessageHeaders<R, P, M> messageHeaders;
 

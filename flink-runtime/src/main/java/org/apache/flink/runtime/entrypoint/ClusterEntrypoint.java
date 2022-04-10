@@ -100,6 +100,7 @@ import scala.concurrent.duration.FiniteDuration;
  * Base class for the Flink cluster entry points.
  *
  * <p>Specialization of this class can be used for the session mode and the per-job mode
+ * 在yarn等集群上，任意一个分配的节点上运行，启动applicationMaster的任务逻辑
  */
 public abstract class ClusterEntrypoint implements FatalErrorHandler {
 
@@ -166,7 +167,7 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 	@GuardedBy("lock")
 	private JobManagerMetricGroup jobManagerMetricGroup;
 
-	private final Thread shutDownHook;
+	private final Thread shutDownHook;//清理目录 当shutdown时触发
 
 	protected ClusterEntrypoint(Configuration configuration) {
 		this.configuration = generateClusterConfiguration(configuration);
@@ -260,12 +261,14 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 		LOG.info("Initializing cluster services.");
 
 		synchronized (lock) {
+
+			//在容器的节点上，针对ip+port开启一个prc服务
 			final String bindAddress = configuration.getString(JobManagerOptions.ADDRESS);
 			final String portRange = getRPCPortRange(configuration);
 
 			commonRpcService = createRpcService(configuration, bindAddress, portRange);
 
-			// update the configuration used to create the high availability services
+			// update the configuration used to create the high availability services 设置真实的ip+port服务信息
 			configuration.setString(JobManagerOptions.ADDRESS, commonRpcService.getAddress());
 			configuration.setInteger(JobManagerOptions.PORT, commonRpcService.getPort());
 
@@ -302,15 +305,15 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 			HeartbeatServices heartbeatServices,
 			MetricRegistry metricRegistry) throws Exception {
 		synchronized (lock) {
-			dispatcherLeaderRetrievalService = highAvailabilityServices.getDispatcherLeaderRetriever();
+			dispatcherLeaderRetrievalService = highAvailabilityServices.getDispatcherLeaderRetriever();//关注zookeeper的一个path,当leader节点发生变化的时候，会收到通知
 
-			resourceManagerRetrievalService = highAvailabilityServices.getResourceManagerLeaderRetriever();
+			resourceManagerRetrievalService = highAvailabilityServices.getResourceManagerLeaderRetriever();//关注zookeeper的一个path,当leader节点发生变化的时候，会收到通知
 
 			LeaderGatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever = new RpcGatewayRetriever<>(
 				rpcService,
 				DispatcherGateway.class,
 				DispatcherId::fromUuid,
-				10,
+				10,//最大尝试次数
 				Time.milliseconds(50L));
 
 			LeaderGatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever = new RpcGatewayRetriever<>(
@@ -393,6 +396,7 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 		}
 	}
 
+	//创建一个PRC服务
 	protected RpcService createRpcService(
 			Configuration configuration,
 			String bindAddress,
@@ -643,6 +647,7 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 	 * Clean up of temporary directories created by the {@link ClusterEntrypoint}.
 	 *
 	 * @throws IOException if the temporary directories could not be cleaned up
+	 * 清理目录
 	 */
 	private void cleanupDirectories() throws IOException {
 		ShutdownHookUtil.removeShutdownHook(shutDownHook, getClass().getSimpleName(), LOG);
@@ -665,7 +670,7 @@ public abstract class ClusterEntrypoint implements FatalErrorHandler {
 		HeartbeatServices heartbeatServices,
 		JobManagerMetricGroup jobManagerMetricGroup,
 		@Nullable String metricQueryServicePath,
-		ArchivedExecutionGraphStore archivedExecutionGraphStore,
+		ArchivedExecutionGraphStore archivedExecutionGraphStore,//job完成后存储在本地的目录信息
 		FatalErrorHandler fatalErrorHandler,
 		@Nullable String restAddress,
 		HistoryServerArchivist historyServerArchivist) throws Exception;

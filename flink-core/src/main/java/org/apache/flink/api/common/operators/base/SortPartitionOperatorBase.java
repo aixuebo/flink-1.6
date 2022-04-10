@@ -38,11 +38,14 @@ import java.util.List;
 
 /**
  * @param <IN> The input and result type.
+ * 对分区内的数据做一次排序,不涉及shuffle操作
+ *
+ * 真是对传入的数据进行排序，不需要额外的操作
  */
 @Internal
 public class SortPartitionOperatorBase<IN> extends SingleInputOperator<IN, IN, NoOpFunction> {
 
-	private final Ordering partitionOrdering;
+	private final Ordering partitionOrdering;//排序方式
 
 
 	public SortPartitionOperatorBase(UnaryOperatorInformation<IN, IN> operatorInfo, Ordering partitionOrdering, String name) {
@@ -70,9 +73,9 @@ public class SortPartitionOperatorBase<IN> extends SingleInputOperator<IN, IN, N
 		boolean[] sortOrderings = this.partitionOrdering.getFieldSortDirections();
 
 		final TypeComparator<IN> sortComparator;
-		if (inputType instanceof CompositeType) {
+		if (inputType instanceof CompositeType) {//组合对象
 			sortComparator = ((CompositeType<IN>) inputType).createComparator(sortColumns, sortOrderings, 0, executionConfig);
-		} else if (inputType instanceof AtomicType) {
+		} else if (inputType instanceof AtomicType) {//原生对象
 			sortComparator = ((AtomicType) inputType).createComparator(sortOrderings[0], executionConfig);
 		} else {
 			throw new UnsupportedOperationException("Partition sorting does not support type "+inputType+" yet.");
@@ -85,6 +88,6 @@ public class SortPartitionOperatorBase<IN> extends SingleInputOperator<IN, IN, N
 			}
 		});
 
-		return inputData;
+		return inputData;//返回排序后的内容
 	}
 }

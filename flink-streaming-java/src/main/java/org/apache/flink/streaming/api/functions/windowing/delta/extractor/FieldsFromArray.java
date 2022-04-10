@@ -29,14 +29,16 @@ import java.lang.reflect.Array;
  *            The type of the output array. If out is set to String, the output
  *            of the extractor will be a String[]. If it is set to String[] the
  *            output will be String[][].
+ *
+ * 输入object一定是数组类型数据,输出数组的子集
  */
 @Internal
 public class FieldsFromArray<OUT> implements Extractor<Object, OUT[]> {
 
 	private static final long serialVersionUID = 8075055384516397670L;
 
-	private int[] order;
-	private Class<OUT> clazz;
+	private int[] order;//提取输入数组in的子集下标
+	private Class<OUT> clazz;//将输入数组元素类型,转换成其他类型
 
 	/**
 	 * Extracts multiple fields from an array and puts them in the given order
@@ -58,9 +60,9 @@ public class FieldsFromArray<OUT> implements Extractor<Object, OUT[]> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public OUT[] extract(Object in) {
-		OUT[] output = (OUT[]) Array.newInstance(clazz, order.length);
+		OUT[] output = (OUT[]) Array.newInstance(clazz, order.length);//创建输出类型的数组
 		for (int i = 0; i < order.length; i++) {
-			output[i] = (OUT) Array.get(in, this.order[i]);
+			output[i] = (OUT) Array.get(in, this.order[i]);//提取输入in这个数组的元素,并且强制转换
 		}
 		return output;
 	}

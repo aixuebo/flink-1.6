@@ -41,6 +41,8 @@ import java.util.NoSuchElementException;
  *     <li>The map offers functions such as "putIfAbsent()" and "putOrAggregate()"
  *     <li>The map supports no removal/shrinking.
  * </ul>
+ *
+ * 其实就是一个hashMap一样使用即可
  */
 @Internal
 public class KeyMap<K, V> implements Iterable<KeyMap.Entry<K, V>> {

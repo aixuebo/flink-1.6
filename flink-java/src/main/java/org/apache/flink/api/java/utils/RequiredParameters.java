@@ -36,6 +36,7 @@ public class RequiredParameters {
 	private static final String HELP_TEXT_LINE_DELIMITER = "\n";
 	private static final int HELP_TEXT_LENGTH_PER_PARAM = 100;
 
+	//设置参数映射,即每一个name对应一个参数对象Option
 	private HashMap<String, Option> data;
 
 	public RequiredParameters() {
@@ -48,6 +49,7 @@ public class RequiredParameters {
 	 * @param name - the name of the parameter
 	 * @return - an {@link Option} object representing the parameter
 	 * @throws RequiredParametersException if an option with the same name is already defined
+	 * 添加一个参数
 	 */
 	public Option add(String name) throws RequiredParametersException {
 		if (!this.data.containsKey(name)) {
@@ -64,6 +66,7 @@ public class RequiredParameters {
 	 *
 	 * @param option - the parameter
 	 * @throws RequiredParametersException if an option with the same name is already defined
+	 * 添加一个参数
 	 */
 	public void add(Option option) throws RequiredParametersException {
 		if (!this.data.containsKey(option.getName())) {
@@ -146,7 +149,7 @@ public class RequiredParameters {
 	// else return true to indicate parameter is 'really' missing
 	private boolean hasNoDefaultValueAndNoValuePassedOnAlternativeName(Option o, Map<String, String> data)
 			throws RequiredParametersException {
-		if (o.hasAlt() && data.containsKey(o.getAlt())) {
+		if (o.hasAlt() && data.containsKey(o.getAlt())) {//如果data中包含o的短名称,则向data中添加长名称
 			data.put(o.getName(), data.get(o.getAlt()));
 		} else {
 			if (o.hasDefaultValue()) {
@@ -154,7 +157,7 @@ public class RequiredParameters {
 				if (o.hasAlt()) {
 					data.put(o.getAlt(), o.getDefaultValue());
 				}
-			} else {
+			} else {//如果没有默认值,则返回true
 				return true;
 			}
 		}
@@ -213,6 +216,7 @@ public class RequiredParameters {
 	/**
 	 * for the given option create a line for the help text. The line looks like:
 	 * \t -:shortName:, --:name: \t :helpText: \t default: :defaultValue: \t choices: :choices:
+	 * 打印参数的短名称、长名称、默认值、有效值信息
 	 */
 	private String helpText(Option option) {
 		StringBuilder sb = new StringBuilder(HELP_TEXT_LENGTH_PER_PARAM);
@@ -256,6 +260,7 @@ public class RequiredParameters {
 		return sb.toString();
 	}
 
+	//打印失败的信息
 	private String missingArgumentsText(List<String> missingArguments) {
 		StringBuilder sb = new StringBuilder(missingArguments.size() * 10);
 

@@ -27,6 +27,7 @@ import org.apache.flink.util.Preconditions;
  * This operator will be ignored during translation.
  *
  * @param <IN> The type of the data set passed through the operator.
+ * 不需要任何转换
  */
 @Internal
 public class NoOpOperator<IN> extends DataSet<IN> {

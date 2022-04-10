@@ -42,7 +42,7 @@ import java.util.Set;
  * <p>Routes are guaranteed to be matched in order of their addition.
  *
  * <p>Route targets can be any type. In the below example, targets are classes:
- *
+ * 路由器保证按照规定的顺序匹配
  * <pre>
  * {@code
  * Router<Class> router = new Router<Class>()
@@ -55,7 +55,7 @@ import java.util.Set;
  * </pre>
  *
  * <p>Slashes at both ends are ignored. These are the same:
- *
+ *  前后两边的/会被忽略,因此下面表示相同含义
  * <pre>
  * {@code
  * router.GET("articles",   IndexHandler.class);
@@ -86,13 +86,13 @@ import java.util.Set;
  * </pre>
  */
 public class Router<T> {
-	private final Map<HttpMethod, MethodlessRouter<T>> routers =
-		new HashMap<HttpMethod, MethodlessRouter<T>>();
 
-	private final MethodlessRouter<T> anyMethodRouter =
-		new MethodlessRouter<T>();
+	//每一个方法(get/post) 对应一个路由对象MethodlessRouter
+	private final Map<HttpMethod, MethodlessRouter<T>> routers = new HashMap<HttpMethod, MethodlessRouter<T>>();
 
-	private T notFound;
+	private final MethodlessRouter<T> anyMethodRouter = new MethodlessRouter<T>();
+
+	private T notFound;//默认路由规则对象
 
 	//--------------------------------------------------------------------------
 	// Design decision:
@@ -115,6 +115,7 @@ public class Router<T> {
 
 	/**
 	 * Helper for toString.
+	 * 获取最大字符串的长度
 	 */
 	private static int maxLength(List<String> coll) {
 		int max = 0;
@@ -133,10 +134,12 @@ public class Router<T> {
 	 * <p>For example, returns
 	 * "io.netty.example.http.router.HttpRouterServerHandler" instead of
 	 * "class io.netty.example.http.router.HttpRouterServerHandler"
+	 * 获取class对应的全路径,或者是全路径对应的字符串。
+	 * 总之返回值是class的全路径
 	 */
 	private static String targetToString(Object target) {
 		if (target instanceof Class) {
-			return ((Class<?>) target).getName();
+			return ((Class<?>) target).getName();//getName返回的是全路径
 		} else {
 			return target.toString();
 		}
@@ -152,6 +155,7 @@ public class Router<T> {
 
 	/**
 	 * Returns the number of routes in this router.
+	 * 返回多少条路由规则
 	 */
 	public int size() {
 		int ret = anyMethodRouter.size();
@@ -181,12 +185,14 @@ public class Router<T> {
 	/**
 	 * Sets the fallback target for use when there's no match at
 	 * {@link #route(HttpMethod, String)}.
+	 * 设置默认路由规则
 	 */
 	public Router<T> notFound(T target) {
 		this.notFound = target;
 		return this;
 	}
 
+	//获取方法对应的路由对象
 	private MethodlessRouter<T> getMethodlessRouter(HttpMethod method) {
 		if (method == null) {
 			return anyMethodRouter;
@@ -214,6 +220,8 @@ public class Router<T> {
 	/**
 	 * If there's no match, returns the result with {@link #notFound(Object) notFound}
 	 * as the target if it is set, otherwise returns {@code null}.
+	 * 获取路由结果
+	 * path是url
 	 */
 	public RouteResult<T> route(HttpMethod method, String path) {
 		return route(method, path, Collections.emptyMap());
@@ -225,7 +233,7 @@ public class Router<T> {
 			router = anyMethodRouter;
 		}
 
-		String[] tokens = decodePathTokens(path);
+		String[] tokens = decodePathTokens(path);//url的?之前的字符串进行解码
 
 		RouteResult<T> ret = router.route(path, path, queryParameters, tokens);
 		if (ret != null) {
@@ -247,7 +255,7 @@ public class Router<T> {
 	}
 
 	//--------------------------------------------------------------------------
-
+	//解码 /test1/123%2F456 --> /test1/:p1
 	private String[] decodePathTokens(String uri) {
 		// Need to split the original URI (instead of QueryStringDecoder#path) then decode the tokens (components),
 		// otherwise /test1/123%2F456 will not match /test1/:p1
@@ -295,7 +303,7 @@ public class Router<T> {
 	 * Returns all methods that this router handles. For {@code OPTIONS *}.
 	 */
 	public Set<HttpMethod> allAllowedMethods() {
-		if (anyMethodRouter.size() > 0) {
+		if (anyMethodRouter.size() > 0) {//任意规则,则匹配所有方法
 			Set<HttpMethod> ret = new HashSet<HttpMethod>(9);
 			ret.add(HttpMethod.CONNECT);
 			ret.add(HttpMethod.DELETE);
@@ -307,7 +315,7 @@ public class Router<T> {
 			ret.add(HttpMethod.PUT);
 			ret.add(HttpMethod.TRACE);
 			return ret;
-		} else {
+		} else {//获取匹配的方法集合
 			return new HashSet<HttpMethod>(routers.keySet());
 		}
 	}

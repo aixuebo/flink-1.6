@@ -34,6 +34,8 @@ import java.util.Arrays;
  * provide the corresponding class loader.
  *
  * @param <T> The type of the value held.
+ *
+ * T对象支持java的序列化
  */
 @Internal
 public class SerializedValue<T> implements java.io.Serializable {

@@ -145,16 +145,16 @@ public class CollectionExecutor {
 		else if (operator instanceof DeltaIterationBase) {
 			result = executeDeltaIteration((DeltaIterationBase<?, ?>) operator);
 		}
-		else if (operator instanceof SingleInputOperator) {
+		else if (operator instanceof SingleInputOperator) {//一个输入值,经过函数,输出一个值
 			result = executeUnaryOperator((SingleInputOperator<?, ?, ?>) operator, superStep);
 		}
-		else if (operator instanceof DualInputOperator) {
+		else if (operator instanceof DualInputOperator) {//操作是join等操作，即有两个数据源,经过双参数的函数,输出一个值
 			result = executeBinaryOperator((DualInputOperator<?, ?, ?, ?>) operator, superStep);
 		}
-		else if (operator instanceof GenericDataSourceBase) {
+		else if (operator instanceof GenericDataSourceBase) {//操作是数据源--读取数据
 			result = executeDataSource((GenericDataSourceBase<?, ?>) operator, superStep);
 		}
-		else if (operator instanceof GenericDataSinkBase) {
+		else if (operator instanceof GenericDataSinkBase) {//操作是输出--将结果输出到hdfs上
 			executeDataSink((GenericDataSinkBase<?>) operator, superStep);
 			result = Collections.emptyList();
 		}
@@ -197,9 +197,10 @@ public class CollectionExecutor {
 			ctx = null;
 		}
 
-		typedSink.executeOnCollections(input, ctx, executionConfig);
+		typedSink.executeOnCollections(input, ctx, executionConfig);//将input写入到output中
 	}
-	
+
+	//读取数据集合---返回的数据可能很大。。这怎么处理?
 	private <OUT> List<OUT> executeDataSource(GenericDataSourceBase<?, ?> source, int superStep)
 			throws Exception {
 		@SuppressWarnings("unchecked")
@@ -218,7 +219,8 @@ public class CollectionExecutor {
 		}
 		return typedSource.executeOnCollections(ctx, executionConfig);
 	}
-	
+
+	//处理一元函数
 	private <IN, OUT> List<OUT> executeUnaryOperator(SingleInputOperator<?, ?, ?> operator, int superStep) throws Exception {
 		Operator<?> inputOp = operator.getInput();
 		if (inputOp == null) {

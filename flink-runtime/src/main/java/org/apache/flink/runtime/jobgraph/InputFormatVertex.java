@@ -51,7 +51,8 @@ public class InputFormatVertex extends JobVertex {
 	public String getFormatDescription() {
 		return formatDescription;
 	}
-	
+
+	//ExecutionGraphBuilder中调用该函数
 	@Override
 	public void initializeOnMaster(ClassLoader loader) throws Exception {
 		final TaskConfig cfg = new TaskConfig(getConfiguration());

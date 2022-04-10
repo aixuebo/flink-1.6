@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * An accumulator that sums up {@code double} values.
+ * sum -- double类型
  */
 @PublicEvolving
 public class DoubleCounter implements SimpleAccumulator<Double> {

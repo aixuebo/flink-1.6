@@ -38,6 +38,8 @@ import java.util.Set;
 /**
  * A {@link Window} that represents a time interval from {@code start} (inclusive) to
  * {@code end} (exclusive).
+ *
+ * 代表了一个时间区间的window,[start,end)
  */
 @PublicEvolving
 public class TimeWindow extends Window {
@@ -78,6 +80,7 @@ public class TimeWindow extends Window {
 	 * @return The largest timestamp that still belongs to this window.
 	 *
 	 * @see #getEnd()
+	 * 最大时间戳就是 end-1,因为时间窗口是[start,end-1]
 	 */
 	@Override
 	public long maxTimestamp() {
@@ -113,6 +116,7 @@ public class TimeWindow extends Window {
 
 	/**
 	 * Returns {@code true} if this window intersects the given window.
+	 * 是否有交集
 	 */
 	public boolean intersects(TimeWindow other) {
 		return this.start <= other.end && this.end >= other.start;
@@ -120,6 +124,7 @@ public class TimeWindow extends Window {
 
 	/**
 	 * Returns the minimal window covers both this window and the given window.
+	 * 返回窗口的 并集  ,即返回值可以容纳两个窗口
 	 */
 	public TimeWindow cover(TimeWindow other) {
 		return new TimeWindow(Math.min(start, other.start), Math.max(end, other.end));
@@ -131,6 +136,7 @@ public class TimeWindow extends Window {
 
 	/**
 	 * The serializer used to write the TimeWindow type.
+	 * 把开始时间、结束时间序列化
 	 */
 	public static class Serializer extends TypeSerializerSingleton<TimeWindow> {
 		private static final long serialVersionUID = 1L;
@@ -204,6 +210,7 @@ public class TimeWindow extends Window {
 
 		List<TimeWindow> sortedWindows = new ArrayList<>(windows);
 
+		//按照start时间排序
 		Collections.sort(sortedWindows, new Comparator<TimeWindow>() {
 			@Override
 			public int compare(TimeWindow o1, TimeWindow o2) {
@@ -211,10 +218,12 @@ public class TimeWindow extends Window {
 			}
 		});
 
+		//存在交集的TimeWindow，进行聚合，tuple.0 = 范围最大的[start,end] tuple.1是表示哪些TimeWindow进行的merge。
+		//list每一个独立的元素,表示TimeWindow没有任何交集
 		List<Tuple2<TimeWindow, Set<TimeWindow>>> merged = new ArrayList<>();
 		Tuple2<TimeWindow, Set<TimeWindow>> currentMerge = null;
 
-		for (TimeWindow candidate: sortedWindows) {
+		for (TimeWindow candidate: sortedWindows) {//排序后的window
 			if (currentMerge == null) {
 				currentMerge = new Tuple2<>();
 				currentMerge.f0 = candidate;
@@ -237,8 +246,8 @@ public class TimeWindow extends Window {
 		}
 
 		for (Tuple2<TimeWindow, Set<TimeWindow>> m: merged) {
-			if (m.f1.size() > 1) {
-				c.merge(m.f1, m.f0);
+			if (m.f1.size() > 1) {//说明存在2个以上的TimeWindow,因此需要merge
+				c.merge(m.f1, m.f0);//f0需要merge合并的所有window集合,f1基础window
 			}
 		}
 	}
@@ -246,10 +255,12 @@ public class TimeWindow extends Window {
 	/**
 	 * Method to get the window start for a timestamp.
 	 *
-	 * @param timestamp epoch millisecond to get the window start.
+	 * @param timestamp epoch millisecond to get the window start. 元素的时间戳
 	 * @param offset The offset which window start would be shifted by.
 	 * @param windowSize The size of the generated windows.
 	 * @return window start
+	 * 返回该元素应该归属于哪个窗口
+	 * 返回归属的窗口的start位置
 	 */
 	public static long getWindowStartWithOffset(long timestamp, long offset, long windowSize) {
 		return timestamp - (timestamp - offset + windowSize) % windowSize;

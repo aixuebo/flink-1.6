@@ -59,6 +59,11 @@ public class IntPrimitiveArraySerializer extends TypeSerializerSingleton<int[]>{
 		return copy(from);
 	}
 
+	/**
+	 * 如果是固定长度类型,则返回长度,比如long返回8.
+	 * 如果非固定长度，返回-1 ，比如数组
+	 * @return
+	 */
 	@Override
 	public int getLength() {
 		return -1;

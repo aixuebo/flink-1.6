@@ -26,6 +26,8 @@ import org.apache.flink.annotation.PublicEvolving;
  *
  * <p>Subclasses should implement {@code equals()} and {@code hashCode()} so that logically
  * same windows are treated the same.
+ *
+ * window表示一组元素，window的maxTimestamp,表示当达到maxTimestamp时,全部元素都已经到达了,可以接下来继续操作了
  */
 @PublicEvolving
 public abstract class Window {

@@ -42,6 +42,9 @@ import java.io.Serializable;
  * @param <IN1> Type of the first input.
  * @param <IN2> Type of the second input.
  * @param <OUT> Output type.
+ *
+ * 输入的两个流来自不同的类型,但输出类型是一致的。
+ * 两个函数,分别处理不同的两个流。
  */
 @Public
 public interface CoFlatMapFunction<IN1, IN2, OUT> extends Function, Serializable {

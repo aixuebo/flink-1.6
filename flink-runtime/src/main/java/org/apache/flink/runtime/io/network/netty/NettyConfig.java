@@ -40,7 +40,7 @@ public class NettyConfig {
 	private static final Logger LOG = LoggerFactory.getLogger(NettyConfig.class);
 
 	// - Config keys ----------------------------------------------------------
-
+    //Configuration配置的key
 	public static final ConfigOption<Integer> NUM_ARENAS = ConfigOptions
 			.key("taskmanager.network.netty.num-arenas")
 			.defaultValue(-1)
@@ -94,13 +94,13 @@ public class NettyConfig {
 
 	static final String CLIENT_THREAD_GROUP_NAME = "Flink Netty Client";
 
-	private final InetAddress serverAddress;
+	private final InetAddress serverAddress;//task节点所在的host地址  再初始化task节点的时候设置
 
 	private final int serverPort;
 
-	private final int memorySegmentSize;
+	private final int memorySegmentSize;//pageSize
 
-	private final int numberOfSlots;
+	private final int numberOfSlots;//task节点的slot数量
 
 	private final Configuration config; // optional configuration
 

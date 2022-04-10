@@ -22,6 +22,8 @@ import org.apache.flink.api.java.tuple.Tuple;
 
 /**
  * Extracts one or more fields of the type Double from a tuple and puts them into a new double[].
+ *
+ * 输入tuple,输出数组集合
  */
 @Internal
 public class FieldsFromTuple implements Extractor<Tuple, double[]> {
@@ -41,6 +43,7 @@ public class FieldsFromTuple implements Extractor<Tuple, double[]> {
 		this.indexes = indexes;
 	}
 
+	//从0开始计数,返回tuple中的子集
 	@Override
 	public double[] extract(Tuple in) {
 		double[] out = new double[indexes.length];

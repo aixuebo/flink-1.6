@@ -26,12 +26,14 @@ import java.io.Serializable;
  * Interface for implementing user defined sink functionality.
  *
  * @param <IN> Input type parameter.
+ * 输出函数
  */
 @Public
 public interface SinkFunction<IN> extends Function, Serializable {
 
 	/**
 	 * @deprecated Use {@link #invoke(Object, Context)}.
+	 * 将value输出
 	 */
 	@Deprecated
 	default void invoke(IN value) throws Exception {}
@@ -65,7 +67,7 @@ public interface SinkFunction<IN> extends Function, Serializable {
 	@Public // Interface might be extended in the future with additional methods.
 	interface Context<T> {
 
-		/** Returns the current processing time. */
+		/** Returns the current processing time.返回当前的系统时间戳 */
 		long currentProcessingTime();
 
 		/** Returns the current event-time watermark. */
@@ -74,6 +76,7 @@ public interface SinkFunction<IN> extends Function, Serializable {
 		/**
 		 * Returns the timestamp of the current input record or {@code null} if the element does not
 		 * have an assigned timestamp.
+		 * 返回元素的时间戳
 		 */
 		Long timestamp();
 	}

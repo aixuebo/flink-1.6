@@ -23,7 +23,9 @@ import org.apache.flink.runtime.taskmanager.TaskActions;
 
 /**
  * Interface for notifications about consumable partitions.
+ * 分区有数据写入,或者已经完成写入时,触发该通知,让下游开始调度
  */
 public interface ResultPartitionConsumableNotifier {
+	//哪个job的哪个partitionId已经有数据了
 	void notifyPartitionConsumable(JobID jobId, ResultPartitionID partitionId, TaskActions taskActions);
 }

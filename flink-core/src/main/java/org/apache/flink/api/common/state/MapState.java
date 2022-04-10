@@ -95,6 +95,7 @@ public interface MapState<UK, UV> extends State {
 	 * @return An iterable view of all the key-value pairs in the state.
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 返回Map的迭代器,相当于get
 	 */
 	Iterable<Map.Entry<UK, UV>> entries() throws Exception;
 
@@ -122,6 +123,7 @@ public interface MapState<UK, UV> extends State {
 	 * @return An iterator over all the mappings in the state
 	 *
 	 * @throws Exception Thrown if the system cannot access the state.
+	 * 返回Map的迭代器,相当于get
 	 */
 	Iterator<Map.Entry<UK, UV>> iterator() throws Exception;
 }

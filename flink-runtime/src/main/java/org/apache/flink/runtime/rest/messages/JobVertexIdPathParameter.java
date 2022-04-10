@@ -22,6 +22,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 
 /**
  * Path parameter specifying a {@link JobVertexID}.
+ * 参数值是JobVertexID
  */
 public class JobVertexIdPathParameter extends MessagePathParameter<JobVertexID> {
 

@@ -26,36 +26,42 @@ package org.apache.flink.streaming.api.windowing.triggers;
  * <p>If a {@link Trigger} returns {@link #FIRE} or {@link #FIRE_AND_PURGE} but the window does not
  * contain any data the window function will not be invoked, i.e. no data will be produced for the
  * window.
+ *
+ * 触发动作
  */
 public enum TriggerResult {
 
 	/**
 	 * No action is taken on the window.
+	 * 不进行操作，等待
 	 */
 	CONTINUE(false, false),
 
 	/**
 	 * {@code FIRE_AND_PURGE} evaluates the window function and emits the window
 	 * result.
+	 * 触发计算并清除对应的数据 -- 参见PurgingTrigger
 	 */
 	FIRE_AND_PURGE(true, true),
 
 	/**
 	 * On {@code FIRE}, the window is evaluated and results are emitted.
 	 * The window is not purged, though, all elements are retained.
+	 * 触发计算且数据保留
 	 */
 	FIRE(true, false),
 
 	/**
 	 * All elements in the window are cleared and the window is discarded,
 	 * without evaluating the window function or emitting any elements.
+	 * 窗口内部数据清除且不触发计算
 	 */
 	PURGE(false, true);
 
 	// ------------------------------------------------------------------------
 
-	private final boolean fire;
-	private final boolean purge;
+	private final boolean fire;//计算
+	private final boolean purge;//清除数据
 
 	TriggerResult(boolean fire, boolean purge) {
 		this.purge = purge;

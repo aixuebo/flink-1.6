@@ -52,6 +52,7 @@ public abstract class SingleInputOperator<IN, OUT, O extends SingleInputOperator
 	 * This method returns equivalent information as {@code getInput().getType()}.
 	 *
 	 * @return The input data type.
+	 * 输入类型
 	 */
 	public TypeInformation<IN> getInputType() {
 		return this.input.getType();
@@ -62,6 +63,7 @@ public abstract class SingleInputOperator<IN, OUT, O extends SingleInputOperator
 	 *
 	 * @param input The data flow operator that produces this operation's input data.
 	 * @return The translated data flow operator.
+	 * 输入类型 如何 转换成输出类型
 	 */
 	protected abstract org.apache.flink.api.common.operators.Operator<OUT> translateToDataFlow(
 			org.apache.flink.api.common.operators.Operator<IN> input);

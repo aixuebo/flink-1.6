@@ -35,9 +35,9 @@ public final class ResultPartitionID implements Serializable {
 
 	private static final long serialVersionUID = -902516386203787826L;
 
-	private final IntermediateResultPartitionID partitionId;
+	private final IntermediateResultPartitionID partitionId;//结果id
 
-	private final ExecutionAttemptID producerId;
+	private final ExecutionAttemptID producerId;//谁生产的该结果进程
 
 	public ResultPartitionID() {
 		this(new IntermediateResultPartitionID(), new ExecutionAttemptID());

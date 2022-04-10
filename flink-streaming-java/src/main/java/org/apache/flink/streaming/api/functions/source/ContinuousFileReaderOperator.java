@@ -58,6 +58,9 @@ import static org.apache.flink.util.Preconditions.checkState;
  * thread read the actual data of the split. This architecture allows the separation of the
  * reading thread from the one emitting the checkpoint barriers, thus removing any potential
  * back-pressure.
+ *
+ * 不断的接收数据块,读取数据块内容,发送出去
+ * 属于StreamOperator流的操作类
  */
 @Internal
 public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OUT>
@@ -67,13 +70,13 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContinuousFileReaderOperator.class);
 
-	private FileInputFormat<OUT> format;
-	private TypeSerializer<OUT> serializer;
+	private FileInputFormat<OUT> format;//读取原始文件作为数据源,因此数据源的类型,就是输出的类型
+	private TypeSerializer<OUT> serializer;//如何生成输出对象
 
 	private transient Object checkpointLock;
 
-	private transient SplitReader<OUT> reader;
-	private transient SourceFunction.SourceContext<OUT> readerContext;
+	private transient SplitReader<OUT> reader;//如何读取一个数据块
+	private transient SourceFunction.SourceContext<OUT> readerContext;//上下文
 
 	private transient ListState<TimestampedFileInputSplit> checkpointedState;
 	private transient List<TimestampedFileInputSplit> restoredReaderState;
@@ -219,6 +222,7 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 		output.close();
 	}
 
+	//如何读取一个数据块文件
 	private class SplitReader<OT> extends Thread {
 
 		private volatile boolean shouldClose;
@@ -229,13 +233,13 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 		private final TypeSerializer<OT> serializer;
 
 		private final Object checkpointLock;
-		private final SourceFunction.SourceContext<OT> readerContext;
+		private final SourceFunction.SourceContext<OT> readerContext;//操作的上下文
 
-		private final Queue<TimestampedFileInputSplit> pendingSplits;
+		private final Queue<TimestampedFileInputSplit> pendingSplits;//等待读取的数据块---优先队列
 
-		private TimestampedFileInputSplit currentSplit;
+		private TimestampedFileInputSplit currentSplit;//当前读取的数据块
 
-		private volatile boolean isSplitOpen;
+		private volatile boolean isSplitOpen;//说明文件块被打开了
 
 		private SplitReader(FileInputFormat<OT> format,
 					TypeSerializer<OT> serializer,
@@ -270,19 +274,20 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 			return this.isRunning;
 		}
 
+		//不断的读取数据块
 		@Override
 		public void run() {
 			try {
 
-				Counter completedSplitsCounter = getMetricGroup().counter("numSplitsProcessed");
+				Counter completedSplitsCounter = getMetricGroup().counter("numSplitsProcessed");//统计读取了多少个数据块
 				this.format.openInputFormat();
 
-				while (this.isRunning) {
+				while (this.isRunning) {//不断的读取数据块内容,发送到下游
 
-					synchronized (checkpointLock) {
+					synchronized (checkpointLock) {//同步去open一个数据块
 
 						if (currentSplit == null) {
-							currentSplit = this.pendingSplits.poll();
+							currentSplit = this.pendingSplits.poll();//获取一个要读取的数据块
 
 							// if the list of pending splits is empty (currentSplit == null) then:
 							//   1) if close() was called on the operator then exit the while loop
@@ -292,7 +297,7 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 								if (this.shouldClose) {
 									isRunning = false;
 								} else {
-									checkpointLock.wait(50);
+									checkpointLock.wait(50);//说明没有要读取的数据块,因此等待一阵子
 								}
 								continue;
 							}
@@ -306,7 +311,7 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 						} else {
 							// we either have a new split, or we recovered from a node
 							// failure but the input format does not support resetting the offset.
-							this.format.open(currentSplit);
+							this.format.open(currentSplit);//打开数据块
 						}
 
 						// reset the restored state to null for the next iteration
@@ -316,19 +321,20 @@ public class ContinuousFileReaderOperator<OUT> extends AbstractStreamOperator<OU
 
 					LOG.debug("Reading split: " + currentSplit);
 
+					//开始读取数据块内容
 					try {
-						OT nextElement = serializer.createInstance();
+						OT nextElement = serializer.createInstance();//创建一个输出对象,用于读取数据块的数据
 						while (!format.reachedEnd()) {
 							synchronized (checkpointLock) {
-								nextElement = format.nextRecord(nextElement);
+								nextElement = format.nextRecord(nextElement);//填充数据内容
 								if (nextElement != null) {
-									readerContext.collect(nextElement);
+									readerContext.collect(nextElement);//发送输出内容到下游
 								} else {
 									break;
 								}
 							}
 						}
-						completedSplitsCounter.inc();
+						completedSplitsCounter.inc();//完成读取一个数据块
 
 					} finally {
 						// close and prepare for the next iteration

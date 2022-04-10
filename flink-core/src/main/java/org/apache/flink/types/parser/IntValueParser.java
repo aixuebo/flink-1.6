@@ -38,7 +38,7 @@ public class IntValueParser extends FieldParser<IntValue> {
 	public int parseField(byte[] bytes, int startPos, int limit, byte[] delimiter, IntValue reusable) {
 
 		if (startPos == limit) {
-			setErrorState(ParseErrorState.EMPTY_COLUMN);
+			setErrorState(ParseErrorState.EMPTY_COLUMN);//这个属性值为""
 			return -1;
 		}
 

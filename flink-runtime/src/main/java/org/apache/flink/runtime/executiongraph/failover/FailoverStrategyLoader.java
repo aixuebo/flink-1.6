@@ -28,12 +28,13 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 
 /**
- * A utility class to load failover strategies from the configuration. 
+ * A utility class to load failover strategies from the configuration.
+ * 策略工厂
  */
 public class FailoverStrategyLoader {
 
 	/** Config name for the {@link RestartAllStrategy} */
-	public static final String FULL_RESTART_STRATEGY_NAME = "full";
+	public static final String FULL_RESTART_STRATEGY_NAME = "full";//默认策略
 
 	/** Config name for the {@link RestartIndividualStrategy} */
 	public static final String INDIVIDUAL_RESTART_STRATEGY_NAME = "individual";
@@ -45,17 +46,18 @@ public class FailoverStrategyLoader {
 
 	/**
 	 * Loads a FailoverStrategy Factory from the given configuration.
+	 * 加载配置文件,创建对应的策略实例
 	 */
 	public static FailoverStrategy.Factory loadFailoverStrategy(Configuration config, @Nullable Logger logger) {
 		final String strategyParam = config.getString(JobManagerOptions.EXECUTION_FAILOVER_STRATEGY);
 
-		if (StringUtils.isNullOrWhitespaceOnly(strategyParam)) {
+		if (StringUtils.isNullOrWhitespaceOnly(strategyParam)) {//true表示参数是null或者空,说明没有设置策略
 			if (logger != null) {
 				logger.warn("Null config value for {} ; using default failover strategy (full restarts).",
 						JobManagerOptions.EXECUTION_FAILOVER_STRATEGY.key());
 			}
 
-			return new RestartAllStrategy.Factory();
+			return new RestartAllStrategy.Factory();//走默认策略
 		}
 		else {
 			switch (strategyParam.toLowerCase()) {

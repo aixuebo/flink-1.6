@@ -50,7 +50,7 @@ public final class ListSerializer<T> extends TypeSerializer<List<T>> {
 	private static final long serialVersionUID = 1119562170939152304L;
 
 	/** The serializer for the elements of the list */
-	private final TypeSerializer<T> elementSerializer;
+	private final TypeSerializer<T> elementSerializer;//持有元素的序列化对象
 
 	/**
 	 * Creates a list serializer that uses the given serializer to serialize the list's elements.
@@ -124,7 +124,7 @@ public final class ListSerializer<T> extends TypeSerializer<List<T>> {
 		// We iterate here rather than accessing by index, because we cannot be sure that
 		// the given list supports RandomAccess.
 		// The Iterator should be stack allocated on new JVMs (due to escape analysis)
-		for (T element : list) {
+		for (T element : list) {//序列化每一个元素
 			elementSerializer.serialize(element, target);
 		}
 	}

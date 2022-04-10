@@ -22,6 +22,7 @@ import org.apache.flink.runtime.rest.handler.legacy.JobCancellationHandler;
 
 /**
  * Termination mode for the {@link JobCancellationHandler}.
+ * 参数值是参数值是list<TerminationMode>
  */
 public class TerminationModeQueryParameter extends MessageQueryParameter<TerminationModeQueryParameter.TerminationMode> {
 

@@ -346,6 +346,7 @@ public final class StringUtils {
 	 *
 	 * @param str The string to check
 	 * @return True, if the string is null or blank, false otherwise.
+	 * true表示参数是null或者空
 	 */
 	public static boolean isNullOrWhitespaceOnly(String str) {
 		if (str == null || str.length() == 0) {

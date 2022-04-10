@@ -546,10 +546,11 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 		}
 	}
 
+	//返回属于该任务要读取的数据源
 	@Override
 	public CompletableFuture<SerializedInputSplit> requestNextInputSplit(
-			final JobVertexID vertexID,
-			final ExecutionAttemptID executionAttempt) {
+			final JobVertexID vertexID,//操作ID
+			final ExecutionAttemptID executionAttempt) {//第几个任务
 
 		final Execution execution = executionGraph.getRegisteredExecutions().get(executionAttempt);
 		if (execution == null) {
@@ -723,9 +724,9 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 			final KvStateLocationRegistry registry = executionGraph.getKvStateLocationRegistry();
 			final KvStateLocation location = registry.getKvStateLocation(registrationName);
 			if (location != null) {
-				return CompletableFuture.completedFuture(location);
+				return CompletableFuture.completedFuture(location);//要么存储KvStateLocation
 			} else {
-				return FutureUtils.completedExceptionally(new UnknownKvStateLocation(registrationName));
+				return FutureUtils.completedExceptionally(new UnknownKvStateLocation(registrationName));//要么存储Exception
 			}
 		} else {
 			if (log.isDebugEnabled()) {
@@ -870,6 +871,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 								// the task manager will not request heartbeat, so this method will never be called currently
 							}
 
+							//向resource manager发送心跳
 							@Override
 							public void requestHeartbeat(ResourceID resourceID, Void payload) {
 								taskExecutorGateway.heartbeatFromJobManager(resourceID);
@@ -1319,7 +1321,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 			resourceManagerHeartbeatManager.monitorTarget(resourceManagerResourceId, new HeartbeatTarget<Void>() {
 				@Override
 				public void receiveHeartbeat(ResourceID resourceID, Void payload) {
-					resourceManagerGateway.heartbeatFromJobManager(resourceID);
+					resourceManagerGateway.heartbeatFromJobManager(resourceID);//向resource manager发送心跳
 				}
 
 				@Override
@@ -1573,7 +1575,7 @@ public class JobMaster extends FencedRpcEndpoint<JobMasterId> implements JobMast
 	}
 
 	//----------------------------------------------------------------------------------------------
-
+	//当job发生状态变化的时候 触发回调函数
 	private class JobManagerJobStatusListener implements JobStatusListener {
 
 		private volatile boolean running = true;

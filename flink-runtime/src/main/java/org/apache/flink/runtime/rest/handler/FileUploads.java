@@ -43,7 +43,7 @@ import java.util.Collections;
  */
 public final class FileUploads implements AutoCloseable {
 	@Nullable
-	private final Path uploadDirectory;
+	private final Path uploadDirectory;//目录
 
 	public static final FileUploads EMPTY = new FileUploads();
 
@@ -59,6 +59,7 @@ public final class FileUploads implements AutoCloseable {
 		this.uploadDirectory = uploadDirectory;
 	}
 
+	//获取上传的文件集合
 	public Collection<File> getUploadedFiles() throws IOException {
 		if (uploadDirectory == null) {
 			return Collections.emptyList();
@@ -70,6 +71,7 @@ public final class FileUploads implements AutoCloseable {
 		return Collections.unmodifiableCollection(visitor.getContainedFiles());
 	}
 
+	//删除文件
 	@Override
 	public void close() throws IOException {
 		if (uploadDirectory != null) {

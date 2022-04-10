@@ -37,10 +37,11 @@ import scala.concurrent.duration.FiniteDuration;
 
 /**
  * Adapter to use a {@link ActorSystem} as a {@link ScheduledExecutor}.
+ * 基于akka的定时调度实现
  */
 public final class ActorSystemScheduledExecutorAdapter implements ScheduledExecutor {
 
-	private final ActorSystem actorSystem;
+	private final ActorSystem actorSystem;//代表akka服务器
 
 	public ActorSystemScheduledExecutorAdapter(ActorSystem actorSystem) {
 		this.actorSystem = Preconditions.checkNotNull(actorSystem, "rpcService");
@@ -104,6 +105,7 @@ public final class ActorSystemScheduledExecutorAdapter implements ScheduledExecu
 		return scheduledFutureTask;
 	}
 
+	//执行一个Runnable任务
 	@Override
 	public void execute(@Nonnull Runnable command) {
 		actorSystem.dispatcher().execute(command);

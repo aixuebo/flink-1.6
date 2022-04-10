@@ -63,6 +63,9 @@ import java.util.Map;
  *
  * @see TypeInformation#of(Class) specify type information based on a class that will be analyzed
  * @see TypeInformation#of(TypeHint) specify type information based on a {@link TypeHint}
+ *
+ * 对外的一个接口类
+ * 创建各种类的工厂
  */
 @PublicEvolving
 public class Types {
@@ -168,6 +171,7 @@ public class Types {
 	 * the default names (f0, f1, f2 ..).
 	 *
 	 * @param types The types of the row fields, e.g., Types.STRING, Types.INT
+	 * 相当于vo,一行数据由多个TypeInformation组成
 	 */
 	public static TypeInformation<Row> ROW(TypeInformation<?>... types) {
 		return new RowTypeInfo(types);
@@ -189,6 +193,7 @@ public class Types {
 	 *
 	 * @param fieldNames array of field names
 	 * @param types array of field types
+	 * 相当于vo,一行数据由多个TypeInformation组成,以及为每一个字段添加name
 	 */
 	public static TypeInformation<Row> ROW_NAMED(String[] fieldNames, TypeInformation<?>... types) {
 		return new RowTypeInfo(types, fieldNames);

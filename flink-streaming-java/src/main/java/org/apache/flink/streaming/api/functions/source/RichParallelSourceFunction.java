@@ -31,6 +31,7 @@ import org.apache.flink.api.common.functions.AbstractRichFunction;
  * ({@link #open(org.apache.flink.configuration.Configuration)} and {@link #close()}.</p>
  *
  * @param <OUT> The type of the records produced by this source.
+ * 可以并发读取的数据源--富模式
  */
 @Public
 public abstract class RichParallelSourceFunction<OUT> extends AbstractRichFunction

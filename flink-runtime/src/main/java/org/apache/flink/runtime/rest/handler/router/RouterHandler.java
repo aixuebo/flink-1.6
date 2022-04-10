@@ -41,7 +41,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Inbound handler that converts HttpRequest to Routed and passes Routed to the matched handler.
- *
+ * 对请求拦截,封装一个路由结果
  * <p>This class replaces the standard error response to be identical with those sent by the {@link AbstractRestHandler}.
  *
  * <p>This class is based on:
@@ -73,8 +73,8 @@ public class RouterHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
 		// Route
 		HttpMethod method = httpRequest.getMethod();
-		QueryStringDecoder qsd = new QueryStringDecoder(httpRequest.uri());
-		RouteResult<?> routeResult = router.route(method, qsd.path(), qsd.parameters());
+		QueryStringDecoder qsd = new QueryStringDecoder(httpRequest.uri());//url进行解码
+		RouteResult<?> routeResult = router.route(method, qsd.path(), qsd.parameters());//路由
 
 		if (routeResult == null) {
 			respondNotFound(channelHandlerContext, httpRequest);
@@ -91,7 +91,7 @@ public class RouterHandler extends SimpleChannelInboundHandler<HttpRequest> {
 		ChannelInboundHandler handler = (ChannelInboundHandler) routeResult.target();
 
 		// The handler may have been added (keep alive)
-		ChannelPipeline pipeline     = channelHandlerContext.pipeline();
+		ChannelPipeline pipeline = channelHandlerContext.pipeline();
 		ChannelHandler addedHandler = pipeline.get(ROUTED_HANDLER_NAME);
 		if (handler != addedHandler) {
 			if (addedHandler == null) {

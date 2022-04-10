@@ -33,14 +33,15 @@ import scala.concurrent.duration.Duration;
 
 /**
  * Configuration for the {@link SlotManager}.
+ * 配置三种超时时间
  */
 public class SlotManagerConfiguration {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SlotManagerConfiguration.class);
 
-	private final Time taskManagerRequestTimeout;
-	private final Time slotRequestTimeout;
-	private final Time taskManagerTimeout;
+	private final Time taskManagerRequestTimeout;//调用task manager的rpc超时时间 ,即与task manager交互的超时时间
+	private final Time slotRequestTimeout;//jobmanager请求的资源，长时间未分配slot,因此超时
+	private final Time taskManagerTimeout;//某一个taskmanager长时间没有分配任务，则说明该节点有超时
 
 	public SlotManagerConfiguration(
 			Time taskManagerRequestTimeout,

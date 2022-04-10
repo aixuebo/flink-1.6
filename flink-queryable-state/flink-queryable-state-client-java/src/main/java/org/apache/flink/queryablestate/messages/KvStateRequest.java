@@ -33,6 +33,7 @@ import java.util.Arrays;
 /**
  * The request to be sent by the {@link org.apache.flink.queryablestate.client.QueryableStateClient
  * Queryable State Client} to the Client Proxy requesting a given state.
+ * 请求kv的stage状态
  */
 @Internal
 public class KvStateRequest extends MessageBody {
@@ -40,7 +41,7 @@ public class KvStateRequest extends MessageBody {
 	private final JobID jobId;
 	private final String stateName;
 	private final int keyHashCode;
-	private final byte[] serializedKeyAndNamespace;
+	private final byte[] serializedKeyAndNamespace;//key+命名空间
 
 	public KvStateRequest(
 			final JobID jobId,

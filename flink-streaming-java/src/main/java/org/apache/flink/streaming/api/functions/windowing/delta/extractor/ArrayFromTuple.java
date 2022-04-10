@@ -23,6 +23,10 @@ import org.apache.flink.api.java.tuple.Tuple;
 /**
  * Converts a Tuple to an Object-Array. The field which should be included in
  * the array can selected and reordered as needed.
+ *
+ * 提取tuple中的子集,并且转换成数组 --- 要求tuple提取的子集类型可以统一。因为这个是数组的限制条件
+ *
+ * 但返回值由于是Object[],所以不需要类型统一的概念，但也是在不明白如果类型不统一，要数组何用，为什么不要tuple,因此猜测大概率使用场景是待提取的数据类型是统一的。
  */
 @Internal
 public class ArrayFromTuple implements Extractor<Tuple, Object[]> {
@@ -53,7 +57,7 @@ public class ArrayFromTuple implements Extractor<Tuple, Object[]> {
 	public Object[] extract(Tuple in) {
 		Object[] output;
 
-		if (order == null) {
+		if (order == null) {//全部复制
 			// copy the whole tuple
 			output = new Object[in.getArity()];
 			for (int i = 0; i < in.getArity(); i++) {

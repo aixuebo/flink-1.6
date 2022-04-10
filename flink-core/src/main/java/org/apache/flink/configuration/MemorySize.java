@@ -269,6 +269,7 @@ public class MemorySize implements java.io.Serializable {
 			return concatenateUnits(BYTES.getUnits(), KILO_BYTES.getUnits(), MEGA_BYTES.getUnits(), GIGA_BYTES.getUnits(), TERA_BYTES.getUnits());
 		}
 
+		//true表示除了数字外,还有单位
 		public static boolean hasUnit(String text) {
 			checkNotNull(text, "text");
 

@@ -34,6 +34,8 @@ import java.io.Serializable;
  * correctness of the program.
  * 
  * @param <T> The data type that the serializer serializes.
+ *
+ * 定义如何序列化和反序列化T对象、支持对象的复制等操作,即重复的公用同一个对象
  */
 @PublicEvolving
 public abstract class TypeSerializer<T> implements Serializable {
@@ -48,6 +50,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * Gets whether the type is an immutable type.
 	 * 
 	 * @return True, if the type is immutable.
+	 * 是否是不可变类型
 	 */
 	public abstract boolean isImmutableType();
 	
@@ -57,6 +60,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 *
 	 * We need this because Serializers might be used in several threads. Stateless serializers
 	 * are inherently thread-safe while stateful serializers might not be thread-safe.
+	 * 复制
 	 */
 	public abstract TypeSerializer<T> duplicate();
 
@@ -68,6 +72,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * Creates a new instance of the data type.
 	 * 
 	 * @return A new instance of the data type.
+	 * 创建一个对象T实例
 	 */
 	public abstract T createInstance();
 
@@ -76,6 +81,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * 
 	 * @param from The element reuse be copied.
 	 * @return A deep copy of the element.
+	 * 复制参数的对象,产生一个新的对象
 	 */
 	public abstract T copy(T from);
 	
@@ -96,6 +102,8 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * Gets the length of the data type, if it is a fix length data type.
 	 * 
 	 * @return The length of the data type, or <code>-1</code> for variable length data types.
+	 * 如果是固定长度类型,则返回长度,比如long返回8.
+	 * 如果非固定长度，返回-1 ，比如数组
 	 */
 	public abstract int getLength();
 	
@@ -109,6 +117,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * 
 	 * @throws IOException Thrown, if the serialization encountered an I/O related error. Typically raised by the
 	 *                     output view, which may have an underlying I/O channel to which it delegates.
+	 * 序列化
 	 */
 	public abstract void serialize(T record, DataOutputView target) throws IOException;
 
@@ -120,6 +129,7 @@ public abstract class TypeSerializer<T> implements Serializable {
 	 * 
 	 * @throws IOException Thrown, if the de-serialization encountered an I/O related error. Typically raised by the
 	 *                     input view, which may have an underlying I/O channel from which it reads.
+	 *  反序列化
 	 */
 	public abstract T deserialize(DataInputView source) throws IOException;
 	

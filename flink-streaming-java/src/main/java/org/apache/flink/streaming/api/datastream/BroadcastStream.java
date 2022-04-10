@@ -41,35 +41,43 @@ import static java.util.Objects.requireNonNull;
  * {@link BroadcastConnectedStream} for further processing.
  *
  * @param <T> The type of input/output elements.
+ * 广播流,说明数据内容很小,可以存储在state状态内存里
+ *
+注意:
+a.此时只是定义了一个流，以及流的数据会很小，流的数据会发送给所有的子任务。
+b.定义的MapStateDescriptor，明确了每一个子任务，可以把收到的数据存储到子任务本地的MapStateDescriptor对象内。即相当于定义了sink。
+c.至于BroadcastStream和其他流怎么join，这不属于该BroadcastStream流要关注的。属于connect去关注的。
+ *
  */
 @PublicEvolving
 public class BroadcastStream<T> {
 
 	private final StreamExecutionEnvironment environment;
 
-	private final DataStream<T> inputStream;
+	private final DataStream<T> inputStream;//待广播的数据源，这个数据最终写到state状态中
 
 	/**
 	 * The {@link org.apache.flink.api.common.state.StateDescriptor state descriptors} of the
 	 * registered {@link org.apache.flink.api.common.state.BroadcastState broadcast states}. These
 	 * states have {@code key-value} format.
 	 */
-	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;
+	private final List<MapStateDescriptor<?, ?>> broadcastStateDescriptors;//要广播存储内容的state集合,因为一次数据可以存储到多个stage集合里,所以是list
 
 	protected BroadcastStream(
 			final StreamExecutionEnvironment env,
 			final DataStream<T> input,
-			final MapStateDescriptor<?, ?>... broadcastStateDescriptors) {
+			final MapStateDescriptor<?, ?>... broadcastStateDescriptors) {//定义广播的变量名字 以及 key和value类型
 
 		this.environment = requireNonNull(env);
 		this.inputStream = requireNonNull(input);
-		this.broadcastStateDescriptors = Arrays.asList(requireNonNull(broadcastStateDescriptors));
+		this.broadcastStateDescriptors = Arrays.asList(requireNonNull(broadcastStateDescriptors));//虽然只有一个存储state,但依然要外面套一层List
 	}
 
 	public TypeInformation<T> getType() {
 		return inputStream.getType();
 	}
 
+	//确保函数支持序列化
 	public <F> F clean(F f) {
 		return environment.clean(f);
 	}

@@ -72,9 +72,10 @@ public class PrintSinkFunction<IN> extends RichSinkFunction<IN> {
 
 		// set the prefix if we have a >1 parallelism
 		prefix = (context.getNumberOfParallelSubtasks() > 1) ?
-				((context.getIndexOfThisSubtask() + 1) + "> ") : null;
+				((context.getIndexOfThisSubtask() + 1) + "> ") : null; //打印第几个任务序号
 	}
 
+	//每一行数据什么也不做,就是直接输出
 	@Override
 	public void invoke(IN record) {
 		if (prefix != null) {

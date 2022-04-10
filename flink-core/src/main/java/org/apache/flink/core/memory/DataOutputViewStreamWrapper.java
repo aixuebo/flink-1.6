@@ -26,6 +26,7 @@ import java.io.OutputStream;
 
 /**
  * Utility class that turns an {@link OutputStream} into a {@link DataOutputView}.
+ * 因为serializer需要DataOutputView类型参数,所以我们要进一步包装,即将OutputStream包装成DataOutputView
  */
 @PublicEvolving
 public class DataOutputViewStreamWrapper extends DataOutputStream implements DataOutputView {

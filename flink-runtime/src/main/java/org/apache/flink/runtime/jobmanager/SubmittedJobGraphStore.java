@@ -27,11 +27,14 @@ import java.util.Collection;
 
 /**
  * {@link SubmittedJobGraph} instances for recovery.
+ * 如何实例化job全局的元数据信息，比如用zookeeper实现
  */
 public interface SubmittedJobGraphStore {
 
 	/**
 	 * Starts the {@link SubmittedJobGraphStore} service.
+	 * 打开一个存储job的服务。
+	 * 参数表示:当job发生删除、新增时，如何做通知
 	 */
 	void start(SubmittedJobGraphListener jobGraphListener) throws Exception;
 
@@ -43,6 +46,7 @@ public interface SubmittedJobGraphStore {
 	/**
 	 * Returns the {@link SubmittedJobGraph} with the given {@link JobID} or
 	 * {@code null} if no job was registered.
+	 * 恢复还原给定jobId
 	 */
 	@Nullable
 	SubmittedJobGraph recoverJobGraph(JobID jobId) throws Exception;
@@ -51,11 +55,13 @@ public interface SubmittedJobGraphStore {
 	 * Adds the {@link SubmittedJobGraph} instance.
 	 *
 	 * <p>If a job graph with the same {@link JobID} exists, it is replaced.
+	 * 新增/更新一个job
 	 */
 	void putJobGraph(SubmittedJobGraph jobGraph) throws Exception;
 
 	/**
 	 * Removes the {@link SubmittedJobGraph} with the given {@link JobID} if it exists.
+	 * 删除一个job
 	 */
 	void removeJobGraph(JobID jobId) throws Exception;
 
@@ -67,6 +73,7 @@ public interface SubmittedJobGraphStore {
 	 *
 	 * @param jobId specifying the job to release the locks for
 	 * @throws Exception if the locks cannot be released
+	 * 释放该job的锁对象
 	 */
 	void releaseJobGraph(JobID jobId) throws Exception;
 
@@ -75,12 +82,14 @@ public interface SubmittedJobGraphStore {
 	 *
 	 * @return Collection of submitted job ids
 	 * @throws Exception if the operation fails
+	 * 获取全部的job信息集合
 	 */
 	Collection<JobID> getJobIds() throws Exception;
 
 	/**
 	 * A listener for {@link SubmittedJobGraph} instances. This is used to react to races between
 	 * multiple running {@link SubmittedJobGraphStore} instances (on multiple job managers).
+	 * 任务的提交/删除,子类用于接到通知时，该如何处理
 	 */
 	interface SubmittedJobGraphListener {
 
@@ -92,6 +101,7 @@ public interface SubmittedJobGraphStore {
 		 * about a job graph, which was added by this instance.
 		 *
 		 * @param jobId The {@link JobID} of the added job graph
+		 * 第一次新增一个job时触发
 		 */
 		void onAddedJobGraph(JobID jobId);
 
@@ -100,6 +110,7 @@ public interface SubmittedJobGraphStore {
 		 * SubmittedJobGraphStore} instance.
 		 *
 		 * @param jobId The {@link JobID} of the removed job graph
+		 * 删除一个job时触发
 		 */
 		void onRemovedJobGraph(JobID jobId);
 	}

@@ -28,10 +28,12 @@ import org.apache.flink.types.Value;
 
 /**
  * A registry for iteration {@link Aggregator}s.
+ * 注册所有的聚合操作
  */
 @Internal
 public class AggregatorRegistry {
-	
+
+	//注册成功的聚合器,即name和聚合器的映射关系
 	private final Map<String, Aggregator<?>> registry = new HashMap<String, Aggregator<?>>();
 	
 	private ConvergenceCriterion<? extends Value> convergenceCriterion;
@@ -39,7 +41,7 @@ public class AggregatorRegistry {
 	private String convergenceCriterionAggregatorName;
 	
 	// --------------------------------------------------------------------------------------------
-	
+	//注册操作
 	public void registerAggregator(String name, Aggregator<?> aggregator) {
 		if (name == null || aggregator == null) {
 			throw new IllegalArgumentException("Name and aggregator must not be null");
@@ -50,6 +52,7 @@ public class AggregatorRegistry {
 		this.registry.put(name, aggregator);
 	}
 
+	//返回注册了哪些聚合器
 	public Collection<AggregatorWithName<?>> getAllRegisteredAggregators() {
 		ArrayList<AggregatorWithName<?>> list = new ArrayList<AggregatorWithName<?>>(this.registry.size());
 		

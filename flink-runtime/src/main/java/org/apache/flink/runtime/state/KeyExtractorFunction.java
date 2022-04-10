@@ -24,10 +24,13 @@ import javax.annotation.Nonnull;
  * Function to extract a key from a given object.
  *
  * @param <T> type of the element from which we extract the key.
+ *
+ *  如何提取key对象
  */
 @FunctionalInterface
 public interface KeyExtractorFunction<T> {
 
+	//直接实现了Keyed接口,可以提取key
 	KeyExtractorFunction<? extends Keyed<?>> FOR_KEYED_OBJECTS = new KeyExtractorFunction<Keyed<?>>() {
 		@Nonnull
 		@Override
@@ -38,10 +41,12 @@ public interface KeyExtractorFunction<T> {
 
 	/**
 	 * Returns the key for the given element by which the key-group can be computed.
+	 * 从元素中如何提取key对象值
 	 */
 	@Nonnull
 	Object extractKeyFromElement(@Nonnull T element);
 
+	//通过接口提取key
 	@SuppressWarnings("unchecked")
 	static <T extends Keyed<?>> KeyExtractorFunction<T> forKeyedObjects() {
 		return (KeyExtractorFunction<T>) FOR_KEYED_OBJECTS;

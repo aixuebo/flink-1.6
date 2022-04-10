@@ -219,6 +219,7 @@ public abstract class RpcEndpoint implements RpcGateway {
 	 * Gets the endpoint's RPC service.
 	 *
 	 * @return The endpoint's RPC service
+	 * 对外提供的服务 -- 属于服务端
 	 */
 	public RpcService getRpcService() {
 		return rpcService;

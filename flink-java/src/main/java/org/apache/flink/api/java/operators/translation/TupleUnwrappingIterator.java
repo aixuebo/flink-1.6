@@ -35,7 +35,7 @@ public class TupleUnwrappingIterator<T, K> implements Iterator<T>, Iterable<T>, 
 
 	private K lastKey;
 	private Iterator<Tuple2<K, T>> iterator;
-	private boolean iteratorAvailable;
+	private boolean iteratorAvailable;//true表示还没开始迭代，即迭代可用，false表示已经开始迭代
 
 	public void set(Iterator<Tuple2<K, T>> iterator) {
 		this.iterator = iterator;
@@ -66,7 +66,7 @@ public class TupleUnwrappingIterator<T, K> implements Iterator<T>, Iterable<T>, 
 	@Override
 	public Iterator<T> iterator() {
 		if (iteratorAvailable) {
-			iteratorAvailable = false;
+			iteratorAvailable = false;//false表示已经开始迭代
 			return this;
 		} else {
 			throw new TraversableOnceException();

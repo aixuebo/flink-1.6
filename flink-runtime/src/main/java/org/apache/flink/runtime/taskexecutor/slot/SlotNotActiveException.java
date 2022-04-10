@@ -23,6 +23,7 @@ import org.apache.flink.runtime.clusterframework.types.AllocationID;
 
 /**
  * Exception indicating that the given {@link TaskSlot} was not in state active.
+ * slot已经不是活着的slot了
  */
 public class SlotNotActiveException extends Exception {
 

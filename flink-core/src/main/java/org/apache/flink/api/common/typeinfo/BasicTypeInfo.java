@@ -67,6 +67,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * 泛型T 代表的是具体类型,比如String、long、Void等
  *
  * 为什么要对基础对象进行封装,因为要丰富基础对象的比较、序列化功能
+ * java基础类型、char、string、Date、void、BigInteger、BigDecimal
  */
 @Public
 public class BasicTypeInfo<T> extends TypeInformation<T> implements AtomicType<T> {
@@ -91,7 +92,7 @@ public class BasicTypeInfo<T> extends TypeInformation<T> implements AtomicType<T
 
 	//描述了一个类型，如何序列化、如何强转、如何比较
 
-	private final Class<T> clazz;//真实类型 比如 byte
+	private final Class<T> clazz;//真实类型 比如 Integer
 
 	private final TypeSerializer<T> serializer;//如何序列化
 
@@ -99,7 +100,10 @@ public class BasicTypeInfo<T> extends TypeInformation<T> implements AtomicType<T
 
 	private final Class<? extends TypeComparator<T>> comparatorClass;//如何参与比较
 
-	protected BasicTypeInfo(Class<T> clazz, Class<?>[] possibleCastTargetTypes, TypeSerializer<T> serializer, Class<? extends TypeComparator<T>> comparatorClass) {
+	protected BasicTypeInfo(Class<T> clazz,
+							Class<?>[] possibleCastTargetTypes,
+							TypeSerializer<T> serializer,
+							Class<? extends TypeComparator<T>> comparatorClass) {
 		this.clazz = checkNotNull(clazz);
 		this.possibleCastTargetTypes = checkNotNull(possibleCastTargetTypes);
 		this.serializer = checkNotNull(serializer);
@@ -209,7 +213,7 @@ public class BasicTypeInfo<T> extends TypeInformation<T> implements AtomicType<T
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+	//java类型转换成BasicTypeInfo
 	@PublicEvolving
 	public static <X> BasicTypeInfo<X> getInfoFor(Class<X> type) {
 		if (type == null) {

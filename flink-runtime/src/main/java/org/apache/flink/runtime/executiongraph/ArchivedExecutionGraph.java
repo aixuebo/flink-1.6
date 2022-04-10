@@ -42,6 +42,7 @@ import java.util.NoSuchElementException;
 
 /**
  * An archived execution graph represents a serializable form of the {@link ExecutionGraph}.
+ * 代表一个job的归档
  */
 public class ArchivedExecutionGraph implements AccessExecutionGraph, Serializable {
 

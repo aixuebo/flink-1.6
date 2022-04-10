@@ -23,6 +23,7 @@ import org.apache.flink.annotation.Public;
 /**
  * An accumulator that computes the average value.
  * Input can be {@code long}, {@code integer}, or {@code double} and the result is {@code double}.
+ * 计算double类型的均值
  */
 @Public
 public class AverageAccumulator implements SimpleAccumulator<Double> {
@@ -54,6 +55,7 @@ public class AverageAccumulator implements SimpleAccumulator<Double> {
 		this.sum += value;
 	}
 
+	//计算均值
 	@Override
 	public Double getLocalValue() {
 		if (this.count == 0) {

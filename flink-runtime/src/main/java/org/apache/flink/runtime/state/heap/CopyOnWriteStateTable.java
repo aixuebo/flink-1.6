@@ -98,6 +98,9 @@ import static org.apache.flink.util.CollectionUtil.MAX_ARRAY_SIZE;
  * @param <K> type of key.
  * @param <N> type of namespace.
  * @param <S> type of value.
+ *
+ * 定义一个大容器，存储内容<Key,window,value>
+ *
  */
 public class CopyOnWriteStateTable<K, N, S> extends StateTable<K, N, S> implements Iterable<StateEntry<K, N, S>> {
 
@@ -475,12 +478,12 @@ public class CopyOnWriteStateTable<K, N, S> extends StateTable<K, N, S> implemen
 
 		final int hash = computeHashForOperationAndDoIncrementalRehash(key, namespace);
 		final StateTableEntry<K, N, S>[] tab = selectActiveTable(hash);
-		int index = hash & (tab.length - 1);
+		int index = hash & (tab.length - 1);//hash分配具体的StateTableEntry
 
 		for (StateTableEntry<K, N, S> e = tab[index]; e != null; e = e.next) {
-			if (e.hash == hash && key.equals(e.key) && namespace.equals(e.namespace)) {
+			if (e.hash == hash && key.equals(e.key) && namespace.equals(e.namespace)) { //说明是修改操作
 
-				// copy-on-write check for entry
+				// copy-on-write check for entry 双重校验
 				if (e.entryVersion < highestRequiredSnapshotVersion) {
 					e = handleChainedEntryCopyOnWrite(tab, index, e);
 				}

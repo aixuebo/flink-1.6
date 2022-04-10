@@ -72,8 +72,20 @@ import java.util.Map;
  * has an arity of two, and also two fields totally. The "OuterType" has an arity of two fields,
  * and a total number of three fields ( it contains "id", "text", and "timestamp" through recursive flattening).
  *
- * @param <T> The type represented by this type information. T表示要封装的具体类型
+ * @param <T> The type represented by this type infoTypeInformationrmation. T表示要封装的具体类型
  * 为什么要对基础对象进行封装,因为要丰富基础对象的比较、序列化功能
+ *
+ * 对class的一个封装,可以知道class是谁，如何序列化该class、该对象能否支持排序等功能。
+ *
+ * 1.boolean isBasicType(); 是否基础类型
+ * 2.boolean isTupleType() 是否tuple类型
+ * 3.int getArity();有多少个元素 -- 不需要解析嵌套字段
+ * 4.int getTotalFields(); 逻辑上包含多少个字段，需要解析嵌套字段
+ * 5.Class<T> getTypeClass(); 到底是哪个class,因为涉及到泛型类型擦除,所以需要知道具体的class是谁
+ * 6.boolean isKeyType();true表示 类型可以比较，也可以hash
+ * 7. boolean isSortKeyType() true表示类型可以排序
+ * 8.TypeSerializer<T> createSerializer(ExecutionConfig config) 为给定对象T,创建序列化对象
+ *
  */
 @Public
 public abstract class TypeInformation<T> implements Serializable {
@@ -105,6 +117,7 @@ public abstract class TypeInformation<T> implements Serializable {
 	 * Gets the arity of this type - the number of fields without nesting.
 	 *
 	 * @return Gets the number of fields in this type without nesting.
+	 * 有多少个元素 -- 不需要解析嵌套字段
 	 */
 	@PublicEvolving
 	public abstract int getArity();
@@ -114,9 +127,10 @@ public abstract class TypeInformation<T> implements Serializable {
 	 * fields, in the case of composite types. In the example below, the OuterType type has three
 	 * fields in total.
 	 *
-	 * <p>The total number of fields must be at least 1.
+	 * <p>The total number of fields must be at least 1.必须至少是1
 	 *
 	 * @return The number of fields in this type, including its sub-fields (for composite types)
+	 * 逻辑上包含多少个字段，需要解析嵌套字段
 	 */
 	@PublicEvolving
 	public abstract int getTotalFields();
@@ -125,6 +139,7 @@ public abstract class TypeInformation<T> implements Serializable {
 	 * Gets the class of the type represented by this type information.
 	 *
 	 * @return The class of the type represented by this type information.
+	 * 到底是哪个class,因为涉及到泛型类型擦除,所以需要知道具体的class是谁
 	 */
 	@PublicEvolving
 	public abstract Class<T> getTypeClass();
@@ -156,6 +171,7 @@ public abstract class TypeInformation<T> implements Serializable {
 	 * to be hashable and comparable to be keys.
 	 *
 	 * @return True, if the type can be used as a key, false otherwise.
+	 * true表示 类型可以比较，也可以hash
 	 */
 	@PublicEvolving
 	public abstract boolean isKeyType();
@@ -163,6 +179,7 @@ public abstract class TypeInformation<T> implements Serializable {
 	/**
 	 * Checks whether this type can be used as a key for sorting.
 	 * The order produced by sorting this type must be meaningful.
+	 * true表示类型可以排序
 	 */
 	@PublicEvolving
 	public boolean isSortKeyType() {

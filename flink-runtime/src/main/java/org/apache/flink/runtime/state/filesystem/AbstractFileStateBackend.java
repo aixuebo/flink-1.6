@@ -74,6 +74,7 @@ public abstract class AbstractFileStateBackend extends AbstractStateBackend {
 	//  State Backend Properties
 	// ------------------------------------------------------------------------
 
+	//存储checkpoint 以及 savepoint的目录
 	/** The path where checkpoints will be stored, or null, if none has been configured. */
 	@Nullable
 	private final Path baseCheckpointPath;

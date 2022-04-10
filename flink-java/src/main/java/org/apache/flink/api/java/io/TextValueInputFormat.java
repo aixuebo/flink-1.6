@@ -34,6 +34,7 @@ import java.util.Arrays;
 
 /**
  * Input format that reads text files.
+ * 读取文本文件,每一行是一个StringValue
  */
 @PublicEvolving
 public class TextValueInputFormat extends DelimitedInputFormat<StringValue> {
@@ -42,13 +43,13 @@ public class TextValueInputFormat extends DelimitedInputFormat<StringValue> {
 
 	private String charsetName = "UTF-8";
 
-	private boolean skipInvalidLines;
+	private boolean skipInvalidLines;//true表示是否允许跳过解析失败的数据
 
 	private transient CharsetDecoder decoder;
 
 	private transient ByteBuffer byteWrapper;
 
-	private transient boolean ascii;
+	private transient boolean ascii;//true表示读取的是acsii
 
 	// --------------------------------------------------------------------------------------------
 
@@ -97,7 +98,7 @@ public class TextValueInputFormat extends DelimitedInputFormat<StringValue> {
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+    //每一行就是一个StringValue,即将bytes存储到StringValue中
 	@Override
 	public StringValue readRecord(StringValue reuse, byte[] bytes, int offset, int numBytes) {
 		if (this.ascii) {

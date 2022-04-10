@@ -163,6 +163,7 @@ public class SSLUtils {
 	 * Creates a {@link SSLEngineFactory} to be used by the REST Clients.
 	 *
 	 * @param config The application configuration.
+	 * 解析安全引擎工厂
 	 */
 	public static SSLEngineFactory createRestClientSSLEngineFactory(final Configuration config) throws Exception {
 		SSLContext sslContext = createRestClientSSLContext(config);

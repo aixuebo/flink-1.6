@@ -54,12 +54,14 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 
 	/**
 	 * Initializes the operator. Sets access to the context and the output.
+	 * setup 通过整体配置文件、任务的环境配置文件、输出对象,初始化
 	 */
 	void setup(StreamTask<?, ?> containingTask, StreamConfig config, Output<StreamRecord<OUT>> output);
 
 	/**
 	 * This method is called immediately before any elements are processed, it should contain the
 	 * operator's initialization logic.
+	 * 任何元素尚未被处理前,调用该方法,他应该用于处理操作的初始化
 	 *
 	 * @throws java.lang.Exception An exception in this method causes the operator to fail.
 	 */
@@ -76,6 +78,7 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 	 * as failed, because the last data items are not processed properly.
 	 *
 	 * @throws java.lang.Exception An exception in this method causes the operator to fail.
+	 * 仅仅是关闭，在函数元素都被处理后,在调用该方法
 	 */
 	void close() throws Exception;
 
@@ -85,6 +88,7 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 	 *
 	 * <p>This method is expected to make a thorough effort to release all resources
 	 * that the operator has acquired.
+	 * 不仅close,还销毁/清理资源
 	 */
 	@Override
 	void dispose() throws Exception;
@@ -135,13 +139,13 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 	// ------------------------------------------------------------------------
 	//  miscellaneous
 	// ------------------------------------------------------------------------
-
+    //将参数数据内容,转换成key
 	void setKeyContextElement1(StreamRecord<?> record) throws Exception;
 
 	void setKeyContextElement2(StreamRecord<?> record) throws Exception;
 
+	//函数chain的策略
 	ChainingStrategy getChainingStrategy();
-
 	void setChainingStrategy(ChainingStrategy strategy);
 
 	MetricGroup getMetricGroup();

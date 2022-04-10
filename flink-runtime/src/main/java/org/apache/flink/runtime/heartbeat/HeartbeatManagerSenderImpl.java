@@ -34,14 +34,17 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <I> Type of the incoming heartbeat payload
  * @param <O> Type of the outgoing heartbeat payload
+ *
+ * 作为服务端，定期让客户端发送给自己心跳信息。
+ * 比如resource manager要求定期让jobmanager、taskmanager给自己发送心跳
  */
 public class HeartbeatManagerSenderImpl<I, O> extends HeartbeatManagerImpl<I, O> implements Runnable {
 
-	private final ScheduledFuture<?> triggerFuture;
+	private final ScheduledFuture<?> triggerFuture;//周期性调度任务--执行该类
 
 	public HeartbeatManagerSenderImpl(
-			long heartbeatPeriod,
-			long heartbeatTimeout,
+			long heartbeatPeriod,//发送心跳周期
+			long heartbeatTimeout,//两个节点之间超时时间,超过该时间,则说明节点超时,确定丢失心跳
 			ResourceID ownResourceID,
 			HeartbeatListener<I, O> heartbeatListener,
 			Executor executor,
@@ -58,17 +61,19 @@ public class HeartbeatManagerSenderImpl<I, O> extends HeartbeatManagerImpl<I, O>
 		triggerFuture = scheduledExecutor.scheduleAtFixedRate(this, 0L, heartbeatPeriod, TimeUnit.MILLISECONDS);
 	}
 
+	//周期性的执行该run方法
 	@Override
 	public void run() {
 		if (!stopped) {
 			log.debug("Trigger heartbeat request.");
-			for (HeartbeatMonitor<O> heartbeatMonitor : getHeartbeatTargets()) {
-				CompletableFuture<O> futurePayload = getHeartbeatListener().retrievePayload(heartbeatMonitor.getHeartbeatTargetId());
-				final HeartbeatTarget<O> heartbeatTarget = heartbeatMonitor.getHeartbeatTarget();
+			for (HeartbeatMonitor<O> heartbeatMonitor : getHeartbeatTargets()) {//与自己关联的jobmanager、taskmanager
+				CompletableFuture<O> futurePayload = getHeartbeatListener().retrievePayload(heartbeatMonitor.getHeartbeatTargetId());//要发送客户端的内容
+				final HeartbeatTarget<O> heartbeatTarget = heartbeatMonitor.getHeartbeatTarget();//返回response的内容
 
 				if (futurePayload != null) {
 					CompletableFuture<Void> requestHeartbeatFuture = futurePayload.thenAcceptAsync(
-						payload -> heartbeatTarget.requestHeartbeat(getOwnResourceID(), payload),
+						//payload表示要发送的内容
+						payload -> heartbeatTarget.requestHeartbeat(getOwnResourceID(), payload),//向客户端发送信息,要求客户端知道自己是谁、以及传递的信息内容
 						getExecutor());
 
 					requestHeartbeatFuture.exceptionally(

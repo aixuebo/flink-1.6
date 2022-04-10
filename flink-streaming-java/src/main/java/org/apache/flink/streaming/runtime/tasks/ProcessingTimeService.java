@@ -37,22 +37,26 @@ import java.util.concurrent.TimeUnit;
  *     <li>After a call to {@link #shutdownService()}, all calls to {@link #registerTimer(long, ProcessingTimeCallback)}
  *         will result in a hard exception.</li>
  * </ol>
+ * 时间服务:计算当前处理时间戳、定时执行任务的能力
  */
 public abstract class ProcessingTimeService {
 
 	/**
 	 * Returns the current processing time.
+	 * 返回当前时间戳,表示处理数据的当前时间 System.currentTimeMillis()
 	 */
 	public abstract long getCurrentProcessingTime();
 
 	/**
 	 * Registers a task to be executed when (processing) time is {@code timestamp}.
 	 *
-	 * @param timestamp   Time when the task is to be executed (in processing time)
-	 * @param target      The task to be executed
+	 * @param timestamp   Time when the task is to be executed (in processing time) 当处理时间戳是该时间点时,执行target子任务
+	 * @param target      The task to be executed 待执行的任务
 	 *
 	 * @return The future that represents the scheduled task. This always returns some future,
 	 *         even if the timer was shut down
+	 *
+	 * 注册一个任务,当时间到timestamp后,执行target方法
 	 */
 	public abstract ScheduledFuture<?> registerTimer(long timestamp, ProcessingTimeCallback target);
 
@@ -63,11 +67,13 @@ public abstract class ProcessingTimeService {
 	 * @param initialDelay initial delay to start executing callback
 	 * @param period after the initial delay after which the callback is executed
 	 * @return Scheduled future representing the task to be executed repeatedly
+	 * 当前时间戳+initialDelay后,开始周期性的执行callback任务
 	 */
 	public abstract ScheduledFuture<?> scheduleAtFixedRate(ProcessingTimeCallback callback, long initialDelay, long period);
 
 	/**
 	 * Returns <tt>true</tt> if the service has been shut down, <tt>false</tt> otherwise.
+	 * true表示服务已经shutdown完成
 	 */
 	public abstract boolean isTerminated();
 
@@ -79,6 +85,7 @@ public abstract class ProcessingTimeService {
 	 * <p>This method can be used to cleanly shut down the timer service. The using components
 	 * will not notice that the service is shut down (as for example via exceptions when registering
 	 * a new timer), but the service will simply not fire any timer any more.
+	 * 设置休眠状态
 	 */
 	public abstract void quiesce() throws InterruptedException;
 
@@ -92,6 +99,7 @@ public abstract class ProcessingTimeService {
 	 * Shuts down and clean up the timer service provider hard and immediately. This does not wait
 	 * for any timer to complete. Any further call to {@link #registerTimer(long, ProcessingTimeCallback)}
 	 * will result in a hard exception.
+	 * 立刻关闭服务,不在对外提供服务
 	 */
 	public abstract void shutdownService();
 
@@ -114,6 +122,7 @@ public abstract class ProcessingTimeService {
 	 * @param timeUnit time unit of parameter time.
 	 * @return {@code true} if this timer service and all pending timers are terminated and
 	 *         {@code false} if the timeout elapsed before this happened.
+	 * 立刻关闭服务,不在对外提供服务,同时等候time时间后,再返回给客户,属于安全性的关闭服务方式
 	 */
 	public abstract boolean shutdownAndAwaitPending(long time, TimeUnit timeUnit) throws InterruptedException;
 }

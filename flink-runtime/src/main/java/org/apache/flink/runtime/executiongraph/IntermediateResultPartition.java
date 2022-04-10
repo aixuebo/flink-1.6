@@ -24,15 +24,20 @@ import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
 import java.util.ArrayList;
 import java.util.List;
 
+//表示task上某一个partition的结果集
+//由于ExecutionJobVertex表示任务计算操作节点,但他是有并行度的,因此每一个并行产生的结果就是IntermediateResultPartition
+//每一个IntermediateResultPartition,都是由ExecutionVertex生产的
+
+//IntermediateResultPartition对生产者是一个ExecutionVertex,消费者是一个或若干个 ExecutionEdge。
 public class IntermediateResultPartition {
 
-	private final IntermediateResult totalResult;
+	private final IntermediateResult totalResult;//属于哪个task任务的结果集之一
 
-	private final ExecutionVertex producer;
+	private final ExecutionVertex producer;//task任务节点
 
-	private final int partitionNumber;
+	private final int partitionNumber;//partition序号
 
-	private final IntermediateResultPartitionID partitionId;
+	private final IntermediateResultPartitionID partitionId;//partitionId
 
 	private List<List<ExecutionEdge>> consumers;
 

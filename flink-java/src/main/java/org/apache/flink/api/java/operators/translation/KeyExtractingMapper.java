@@ -28,6 +28,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
  * Mapper that extracts keys.
  * @param <T> type of value
  * @param <K> type of key
+ * 将value 转换成<key,value>元组
  */
 @Internal
 @ForwardedFields("*->1")

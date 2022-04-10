@@ -42,6 +42,7 @@ import java.util.List;
  *     <li>Memory pools and pool usage</li>
  *     <li>Garbage collection times and counts</li>
  * </ul>
+ * 周期性的打印资源使用日志
  */
 public class MemoryLogger extends Thread {
 	

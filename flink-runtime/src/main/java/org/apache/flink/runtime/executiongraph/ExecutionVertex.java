@@ -75,6 +75,12 @@ import static org.apache.flink.runtime.execution.ExecutionState.FINISHED;
 /**
  * The ExecutionVertex is a parallel subtask of the execution. It may be executed once, or several times, each of
  * which time it spawns an {@link Execution}.
+ *
+ * Flink Job 是可以指定任务的并行度的，在实际运行时，会有多个并行的任务同时在执行，对应到这里就是 ExecutionVertex。
+ * ExecutionVertex 是并行任务的一个子任务，算子的并行度是多少，那么就会有多少个 ExecutionVertex。
+ *
+ * 由于ExecutionJobVertex表示任务计算操作节点,但他是有并行度的,因此每一个并行产生的结果就是IntermediateResultPartition
+ * 每一个IntermediateResultPartition,都是由ExecutionVertex生产的
  */
 public class ExecutionVertex implements AccessExecutionVertex, Archiveable<ArchivedExecutionVertex> {
 
@@ -663,6 +669,7 @@ public class ExecutionVertex implements AccessExecutionVertex, Archiveable<Archi
 
 	/**
 	 * Schedules or updates the consumer tasks of the result partition with the given ID.
+	 * 说明某一个尝试任务已经产生了计算结果，在ResultPartitionID中已经有了结果
 	 */
 	void scheduleOrUpdateConsumers(ResultPartitionID partitionId) {
 

@@ -27,6 +27,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * Simple configuration object for the parameters for the server-side of queryable state.
+ * 来自TaskManagerServicesConfiguration解析生成
  */
 public class QueryableStateConfiguration {
 

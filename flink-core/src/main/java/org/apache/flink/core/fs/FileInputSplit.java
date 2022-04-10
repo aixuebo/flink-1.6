@@ -34,7 +34,7 @@ public class FileInputSplit extends LocatableInputSplit {
 	/** The path of the file this file split refers to. */
 	private final Path file;
 
-	/** The position of the first byte in the file to process. */
+	/** The position of the first byte in the file to process. 在整个文件的偏移量*/
 	private final long start;
 
 	/** The number of bytes in the file to process. */
@@ -46,7 +46,7 @@ public class FileInputSplit extends LocatableInputSplit {
 	 * Constructs a split with host information.
 	 *
 	 * @param num
-	 *        the number of this input split
+	 *        the number of this input split 第几个数据块
 	 * @param file
 	 *        the file name
 	 * @param start

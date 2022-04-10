@@ -36,6 +36,7 @@ import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 
 /**
  * @see org.apache.flink.api.common.functions.FlatMapFunction
+ * 处理FlatMap函数,进行过滤操作，即输入T 输出还是T
  */
 @Internal
 public class FilterOperatorBase<T, FT extends FlatMapFunction<T, T>> extends SingleInputOperator<T, T, FT> {

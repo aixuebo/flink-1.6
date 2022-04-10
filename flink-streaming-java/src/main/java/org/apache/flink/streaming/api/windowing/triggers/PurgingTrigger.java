@@ -30,6 +30,8 @@ import org.apache.flink.streaming.api.windowing.windows.Window;
  *
  * @param <T> The type of elements on which this trigger can operate.
  * @param <W> The type of {@link Window Windows} on which this trigger can operate.
+ *
+ * 对trigger的结果,包装一层purging清除数据功能
  */
 @PublicEvolving
 public class PurgingTrigger<T, W extends Window> extends Trigger<T, W> {
@@ -44,19 +46,19 @@ public class PurgingTrigger<T, W extends Window> extends Trigger<T, W> {
 	@Override
 	public TriggerResult onElement(T element, long timestamp, W window, TriggerContext ctx) throws Exception {
 		TriggerResult triggerResult = nestedTrigger.onElement(element, timestamp, window, ctx);
-		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;
+		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;//包装一层
 	}
 
 	@Override
 	public TriggerResult onEventTime(long time, W window, TriggerContext ctx) throws Exception {
 		TriggerResult triggerResult = nestedTrigger.onEventTime(time, window, ctx);
-		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;
+		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;//包装一层
 	}
 
 	@Override
 	public TriggerResult onProcessingTime(long time, W window, TriggerContext ctx) throws Exception {
 		TriggerResult triggerResult = nestedTrigger.onProcessingTime(time, window, ctx);
-		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;
+		return triggerResult.isFire() ? TriggerResult.FIRE_AND_PURGE : triggerResult;//包装一层
 	}
 
 	@Override

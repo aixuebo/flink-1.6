@@ -19,6 +19,7 @@ import org.apache.flink.annotation.PublicEvolving;
  * Must be implemented by stoppable functions, eg, source functions of streaming jobs. The method {@link #stop()} will
  * be called when the job received the STOP signal. On this signal, the source function must stop emitting new data and
  * terminate gracefully.
+ * 当job接收到stop信号的时候,source数据源要停止发送数据
  */
 @PublicEvolving
 public interface StoppableFunction {

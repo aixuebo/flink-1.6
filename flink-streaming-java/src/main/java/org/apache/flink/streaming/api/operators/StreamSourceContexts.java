@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledFuture;
 
 /**
  * Source contexts for various stream time characteristics.
+ * 创建数据源的上下文
  */
 public class StreamSourceContexts {
 
@@ -42,14 +43,15 @@ public class StreamSourceContexts {
 	 *     <li>{@link TimeCharacteristic#ProcessingTime} = {@code NonTimestampContext}</li>
 	 *     <li>{@link TimeCharacteristic#EventTime} = {@code ManualWatermarkContext}</li>
 	 * </ul>
+	 * 上下文对象,内存中始终缓存一些对象的引用
 	 * */
 	public static <OUT> SourceFunction.SourceContext<OUT> getSourceContext(
-			TimeCharacteristic timeCharacteristic,
-			ProcessingTimeService processingTimeService,
-			Object checkpointLock,
-			StreamStatusMaintainer streamStatusMaintainer,
-			Output<StreamRecord<OUT>> output,
-			long watermarkInterval,
+			TimeCharacteristic timeCharacteristic,//事件时间方式
+			ProcessingTimeService processingTimeService,//时间对象
+			Object checkpointLock,//锁对象
+			StreamStatusMaintainer streamStatusMaintainer,//流的状态变更对象
+			Output<StreamRecord<OUT>> output,//输出流
+			long watermarkInterval,//watermarkInterval时间周期
 			long idleTimeout) {
 
 		final SourceFunction.SourceContext<OUT> ctx;
@@ -63,7 +65,7 @@ public class StreamSourceContexts {
 					idleTimeout);
 
 				break;
-			case IngestionTime:
+			case IngestionTime://进入flink的时间
 				ctx = new AutomaticWatermarkContext<>(
 					output,
 					watermarkInterval,
@@ -281,6 +283,7 @@ public class StreamSourceContexts {
 	 *
 	 * <p>Streaming topologies can use timestamp assigner functions to override the timestamps
 	 * assigned here.
+	 *
 	 */
 	private static class ManualWatermarkContext<T> extends WatermarkContext<T> {
 

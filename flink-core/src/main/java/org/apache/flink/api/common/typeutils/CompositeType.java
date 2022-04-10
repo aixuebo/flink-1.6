@@ -32,15 +32,17 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Base type information class for Tuple and Pojo types
+ * 基于基础类型组装成的对象
  * 
  * The class is taking care of serialization and comparators for Tuples as well.
+ * 组合对象
  */
 @Public
 public abstract class CompositeType<T> extends TypeInformation<T> {
 	
 	private static final long serialVersionUID = 1L;
 	
-	private final Class<T> typeClass;
+	private final Class<T> typeClass;//比如 tuple7
 
 	@PublicEvolving
 	public CompositeType(Class<T> typeClass) {
@@ -76,6 +78,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 * @param fieldExpression The field expression for which the FlatFieldDescriptors are computed.
 	 * @param offset The offset to use when computing the positions of the flat fields.
 	 * @param result The list into which all flat field descriptors are inserted.
+	 *  解析复杂对象的嵌套问题
 	 */
 	@PublicEvolving
 	public abstract void getFlatFields(String fieldExpression, int offset, List<FlatFieldDescriptor> result);
@@ -86,6 +89,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 *
 	 * @param fieldExpression The field expression for which the field of which the type is returned.
 	 * @return The type of the field at the given field expression.
+	 * 获取某一个元素对应的类型
 	 */
 	@PublicEvolving
 	public abstract <X> TypeInformation<X> getTypeAt(String fieldExpression);
@@ -95,10 +99,12 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 *
 	 * @param pos The position of the (unnested) field in this composite type.
 	 * @return The type of the field at the given position.
+	 * 获取某一个元素对应的类型
 	 */
 	@PublicEvolving
 	public abstract <X> TypeInformation<X> getTypeAt(int pos);
 
+	//创建复杂对象的比较器
 	@PublicEvolving
 	protected abstract TypeComparatorBuilder<T> createTypeComparatorBuilder();
 	
@@ -168,14 +174,14 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	}
 
 	// --------------------------------------------------------------------------------------------
-
+     //如何对比
 	@PublicEvolving
 	protected interface TypeComparatorBuilder<T> {
-		void initializeTypeComparatorBuilder(int size);
+		void initializeTypeComparatorBuilder(int size);//初始化需要对比的字段存储数组
 
-		void addComparatorField(int fieldId, TypeComparator<?> comparator);
+		void addComparatorField(int fieldId, TypeComparator<?> comparator);//设置每一个参与比较的字段
 
-		TypeComparator<T> createTypeComparator(ExecutionConfig config);
+		TypeComparator<T> createTypeComparator(ExecutionConfig config);//创建复杂对象的比较器
 	}
 
 	@PublicEvolving
@@ -239,6 +245,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	/**
 	 * Returns the names of the composite fields of this type. The order of the returned array must
 	 * be consistent with the internal field index ordering.
+	 * 每一个属性对应的name
 	 */
 	@PublicEvolving
 	public abstract String[] getFieldNames();
@@ -251,6 +258,8 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 *
 	 * This is used when translating a DataSet or DataStream to an Expression Table, when
 	 * initially renaming the fields of the underlying type.
+	 * true表示属性的顺序是固定的,用于case class 或者tuple。
+	 * 但java的对象属性是不固定的,因此是false
 	 */
 	@PublicEvolving
 	public boolean hasDeterministicFieldOrder() {
@@ -261,6 +270,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 	 * Returns the field index of the composite field of the given name.
 	 *
 	 * @return The field index or -1 if this type does not have a field of the given name.
+	 * 给定属性名字,返回属性是第几个属性
 	 */
 	@PublicEvolving
 	public abstract int getFieldIndex(String fieldName);

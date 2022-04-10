@@ -35,6 +35,7 @@ public interface LibraryCacheManager {
 	 *
 	 * @param id identifying the job
 	 * @return ClassLoader which can load the user code
+	 * 返回类加载器
 	 */
 	ClassLoader getClassLoader(JobID id);
 

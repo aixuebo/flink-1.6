@@ -36,18 +36,22 @@ import java.io.IOException;
  * already partitioned, this can be a NOP. The returned {@link StateKeyGroupWriter} can be used by the caller
  * to write the state by key-group. As a last step, when the state is completely written, the user calls
  * {@link #release()}.
+ *
+ * 对内存的state对象做一个快照 --- 只能一个partition,一个partition为单位做快照
  */
 @Internal
 public interface StateSnapshot {
 
 	/**
 	 * This method returns {@link StateKeyGroupWriter} and should be called in the asynchronous part of the snapshot.
+	 * 如何输出指定的分区数据到指定的输出流中
 	 */
 	@Nonnull
 	StateKeyGroupWriter getKeyGroupWriter();
 
 	/**
 	 * Returns a snapshot of the state's meta data.
+	 * state快照的元数据信息
 	 */
 	@Nonnull
 	StateMetaInfoSnapshot getMetaInfoSnapshot();
@@ -70,6 +74,7 @@ public interface StateSnapshot {
 		 * @param dov        the output.
 		 * @param keyGroupId the key-group to write.
 		 * @throws IOException on write-related problems.
+		 * 输出某一个分区的数据到输出流dov中
 		 */
 		void writeStateInKeyGroup(@Nonnull DataOutputView dov, @Nonnegative int keyGroupId) throws IOException;
 	}

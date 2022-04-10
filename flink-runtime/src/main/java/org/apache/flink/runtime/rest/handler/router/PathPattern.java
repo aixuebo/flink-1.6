@@ -40,10 +40,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * {@code ["constant1", ":variable", "constant2", ":*"]}
  */
 final class PathPattern {
-	private final String pattern;
+	private final String pattern;//不包含参数的url,比如xx/xx/xx,定位请求资源的路径
 
 	//--------------------------------------------------------------------------
-	private final String[] tokens;
+	private final String[] tokens;//将pattern按照/拆分成数组
 	/**
 	 * The pattern must not contain query, example:
 	 * {@code constant1/constant2?foo=bar}.
@@ -51,7 +51,7 @@ final class PathPattern {
 	 * <p>The pattern will be stored without slashes at both ends.
 	 */
 	public PathPattern(String pattern) {
-		if (pattern.contains("?")) {
+		if (pattern.contains("?")) {//不允许包含?即不包含参数的url
 			throw new IllegalArgumentException("Path pattern must not contain query");
 		}
 
@@ -59,6 +59,7 @@ final class PathPattern {
 		this.tokens = this.pattern.split("/");
 	}
 
+	//移除path前后的/字符,比如 ////xx/xx/xx/// 输出 xx/xx/xx
 	public static String removeSlashesAtBothEnds(String path) {
 		checkNotNull(path, "path");
 

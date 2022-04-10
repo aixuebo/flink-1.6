@@ -50,6 +50,8 @@ import java.io.Serializable;
  *
  * @param <T> The type of elements on which this {@code Trigger} works.
  * @param <W> The type of {@link Window Windows} on which this {@code Trigger} can operate.
+ *
+ * 触发器的作用就是去控制什么时候来触发我们的聚合方法
  */
 @PublicEvolving
 public abstract class Trigger<T, W extends Window> implements Serializable {
@@ -60,10 +62,11 @@ public abstract class Trigger<T, W extends Window> implements Serializable {
 	 * Called for every element that gets added to a pane. The result of this will determine
 	 * whether the pane is evaluated to emit results.
 	 *
-	 * @param element The element that arrived.
-	 * @param timestamp The timestamp of the element that arrived.
+	 * @param element The element that arrived. 数据内容
+	 * @param timestamp The timestamp of the element that arrived.数据时间戳
 	 * @param window The window to which the element is being added.
-	 * @param ctx A context object that can be used to register timer callbacks.
+	 * @param ctx A context object that can be used to register timer callbacks.数据上下文信息
+	 * 每一个数据进入窗口都会触发。
 	 */
 	public abstract TriggerResult onElement(T element, long timestamp, W window, TriggerContext ctx) throws Exception;
 
@@ -73,6 +76,7 @@ public abstract class Trigger<T, W extends Window> implements Serializable {
 	 * @param time The timestamp at which the timer fired.
 	 * @param window The window for which the timer fired.
 	 * @param ctx A context object that can be used to register timer callbacks.
+	 * 根据接入窗口的ProcessTime进行触发操作
 	 */
 	public abstract TriggerResult onProcessingTime(long time, W window, TriggerContext ctx) throws Exception;
 
@@ -82,6 +86,7 @@ public abstract class Trigger<T, W extends Window> implements Serializable {
 	 * @param time The timestamp at which the timer fired.
 	 * @param window The window for which the timer fired.
 	 * @param ctx A context object that can be used to register timer callbacks.
+	 * 根据接入窗口的EventTime进行触发操作
 	 */
 	public abstract TriggerResult onEventTime(long time, W window, TriggerContext ctx) throws Exception;
 
@@ -113,6 +118,7 @@ public abstract class Trigger<T, W extends Window> implements Serializable {
 	 * when a window is purged. Timers set using {@link TriggerContext#registerEventTimeTimer(long)}
 	 * and {@link TriggerContext#registerProcessingTimeTimer(long)} should be deleted here as
 	 * well as state acquired using {@link TriggerContext#getPartitionedState(StateDescriptor)}.
+	 * 执行窗口及状态数据的清除方法
 	 */
 	public abstract void clear(W window, TriggerContext ctx) throws Exception;
 

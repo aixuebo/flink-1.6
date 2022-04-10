@@ -78,7 +78,7 @@ public class StreamInputProcessor<IN> {
 
 	private RecordDeserializer<DeserializationDelegate<StreamElement>> currentRecordDeserializer;
 
-	private final DeserializationDelegate<StreamElement> deserializationDelegate;
+	private final DeserializationDelegate<StreamElement> deserializationDelegate;//每次返回反序列化对象
 
 	private final CheckpointBarrierHandler barrierHandler;
 
@@ -112,7 +112,7 @@ public class StreamInputProcessor<IN> {
 	@SuppressWarnings("unchecked")
 	public StreamInputProcessor(
 			InputGate[] inputGates,
-			TypeSerializer<IN> inputSerializer,
+			TypeSerializer<IN> inputSerializer,//输入类型
 			StreamTask<?, ?> checkpointedTask,
 			CheckpointingMode checkpointMode,
 			Object lock,
@@ -123,14 +123,14 @@ public class StreamInputProcessor<IN> {
 			TaskIOMetricGroup metrics,
 			WatermarkGauge watermarkGauge) throws IOException {
 
-		InputGate inputGate = InputGateUtil.createInputGate(inputGates);
+		InputGate inputGate = InputGateUtil.createInputGate(inputGates);//结果是InputGate 或者是 UnionInputGate
 
 		this.barrierHandler = InputProcessorUtil.createCheckpointBarrierHandler(
 			checkpointedTask, checkpointMode, ioManager, inputGate, taskManagerConfig);
 
 		this.lock = checkNotNull(lock);
 
-		StreamElementSerializer<IN> ser = new StreamElementSerializer<>(inputSerializer);
+		StreamElementSerializer<IN> ser = new StreamElementSerializer<>(inputSerializer);//创建输入类型的序列化对象
 		this.deserializationDelegate = new NonReusingDeserializationDelegate<>(ser);
 
 		// Initialize one deserializer per input channel
@@ -154,6 +154,7 @@ public class StreamInputProcessor<IN> {
 		metrics.gauge("checkpointAlignmentTime", barrierHandler::getAlignmentDurationNanos);
 	}
 
+	//处理input
 	public boolean processInput() throws Exception {
 		if (isFinished) {
 			return false;

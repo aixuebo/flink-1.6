@@ -51,9 +51,9 @@ public class CsvReader {
 
 	protected boolean[] includedMask;
 
-	protected String lineDelimiter = CsvInputFormat.DEFAULT_LINE_DELIMITER;
+	protected String lineDelimiter = CsvInputFormat.DEFAULT_LINE_DELIMITER;//换行符
 
-	protected String fieldDelimiter = CsvInputFormat.DEFAULT_FIELD_DELIMITER;
+	protected String fieldDelimiter = CsvInputFormat.DEFAULT_FIELD_DELIMITER;//属性拆分符
 
 	protected String commentPrefix = null; //default: no comments
 
@@ -63,7 +63,7 @@ public class CsvReader {
 
 	protected boolean skipFirstLineAsHeader = false;
 
-	protected boolean ignoreInvalidLines = false;
+	protected boolean ignoreInvalidLines = false;//是否允许解析失败
 
 	private String charset = "UTF-8";
 
@@ -93,6 +93,7 @@ public class CsvReader {
 	 *
 	 * @param delimiter The delimiter that separates the rows.
 	 * @return The CSV reader instance itself, to allow for fluent function chaining.
+	 * 设置换行符 默认\n
 	 */
 	public CsvReader lineDelimiter(String delimiter) {
 		if (delimiter == null || delimiter.length() == 0) {
@@ -111,6 +112,7 @@ public class CsvReader {
 	 * @return The CSV reader instance itself, to allow for fluent function chaining.
 	 *
 	 * @deprecated Please use {@link #fieldDelimiter(String)}.
+	 * 设置属性拆分符,默认逗号
 	 */
 	@Deprecated
 	@PublicEvolving
@@ -361,7 +363,7 @@ public class CsvReader {
 	// --------------------------------------------------------------------------------------------
 	// Miscellaneous
 	// --------------------------------------------------------------------------------------------
-
+	//初始化csv解析器
 	private void configureInputFormat(CsvInputFormat<?> format) {
 		format.setCharset(this.charset);
 		format.setDelimiter(this.lineDelimiter);

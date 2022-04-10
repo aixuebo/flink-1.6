@@ -42,6 +42,7 @@ public interface DispatcherGateway extends FencedRpcGateway<DispatcherId>, Restf
 	 * @param jobGraph JobGraph to submit
 	 * @param timeout RPC timeout
 	 * @return A future acknowledge if the submission succeeded
+	 * job提交的信息存储起来 --- 创建JobManagerRunner -- 管理JobManagerRunner
 	 */
 	CompletableFuture<Acknowledge> submitJob(
 		JobGraph jobGraph,
@@ -52,6 +53,7 @@ public interface DispatcherGateway extends FencedRpcGateway<DispatcherId>, Restf
 	 *
 	 * @param timeout RPC timeout
 	 * @return A future collection of currently submitted jobs
+	 * 获取管理的所有job信息
 	 */
 	CompletableFuture<Collection<JobID>> listJobs(
 		@RpcTimeout Time timeout);

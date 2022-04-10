@@ -41,6 +41,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>Unlike the {@link org.apache.flink.runtime.state.filesystem.FsCheckpointStreamFactory.FsCheckpointStateOutputStream},
  * this stream does not have a threshold below which it returns a memory byte stream handle,
  * and does not create random files, but writes to a specified file.
+ *
+ * 基于文件的方式,存储文件内容
  */
 public final class FileBasedStateOutputStream extends CheckpointStateOutputStream {
 
@@ -61,7 +63,7 @@ public final class FileBasedStateOutputStream extends CheckpointStateOutputStrea
 		this.fileSystem = checkNotNull(fileSystem);
 		this.path = checkNotNull(path);
 
-		this.out = fileSystem.create(path, WriteMode.NO_OVERWRITE);
+		this.out = fileSystem.create(path, WriteMode.NO_OVERWRITE);//追加输出
 	}
 
 	// ------------------------------------------------------------------------

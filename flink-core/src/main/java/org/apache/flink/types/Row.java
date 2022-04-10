@@ -44,11 +44,11 @@ public class Row implements Serializable{
 	private static final long serialVersionUID = 1L;
 
 	/** The array to store actual values. */
-	private final Object[] fields;
+	private final Object[] fields;//存储该行的每一个属性值.因为属性类型不同,所以对象是Object
 
 	/**
 	 * Create a new Row instance.
-	 * @param arity The number of fields in the Row
+	 * @param arity The number of fields in the Row 有多少个属性
 	 */
 	public Row(int arity) {
 		this.fields = new Object[arity];
@@ -159,6 +159,7 @@ public class Row implements Serializable{
 	 *
 	 * @param fields fields to be projected
 	 * @return the new projected Row
+	 * 提取行中某些列---子集
 	 */
 	public static Row project(Row row, int[] fields) {
 		final Row newRow = new Row(fields.length);

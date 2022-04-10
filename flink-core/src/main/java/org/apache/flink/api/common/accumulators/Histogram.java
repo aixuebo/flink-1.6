@@ -30,18 +30,20 @@ import java.util.TreeMap;
  * 
  * This class does not extend to continuous values later, because it makes no
  * attempt to put the data in bins.
+ * 统计每一个integer数字出现的次数
  */
 @Public
 public class Histogram implements Accumulator<Integer, TreeMap<Integer, Integer>> {
 
 	private static final long serialVersionUID = 1L;
 
+	//key为数字,value为数字出现的次数
 	private TreeMap<Integer, Integer> treeMap = new TreeMap<Integer, Integer>();
 
 	@Override
 	public void add(Integer value) {
 		Integer current = treeMap.get(value);
-		Integer newValue = (current != null ? current : 0) + 1;
+		Integer newValue = (current != null ? current : 0) + 1;//更新次数
 		this.treeMap.put(value, newValue);
 	}
 
@@ -55,9 +57,9 @@ public class Histogram implements Accumulator<Integer, TreeMap<Integer, Integer>
 		// Merge the values into this map
 		for (Map.Entry<Integer, Integer> entryFromOther : other.getLocalValue().entrySet()) {
 			Integer ownValue = this.treeMap.get(entryFromOther.getKey());
-			if (ownValue == null) {
+			if (ownValue == null) {//不存在,则直接add添加参数的key与value
 				this.treeMap.put(entryFromOther.getKey(), entryFromOther.getValue());
-			} else {
+			} else {//存在,则value次数累加
 				this.treeMap.put(entryFromOther.getKey(), entryFromOther.getValue() + ownValue);
 			}
 		}

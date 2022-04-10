@@ -31,6 +31,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Serialization proxy for the timer services for a given key-group.
+ * 针对一个InternalTimeServiceManager，如何序列化旗下所有的InternalTimerServiceImpl
  */
 @Internal
 public class InternalTimerServiceSerializationProxy<K> extends PostVersionedIOReadableWritable {
@@ -77,18 +78,19 @@ public class InternalTimerServiceSerializationProxy<K> extends PostVersionedIORe
 	@Override
 	public void write(DataOutputView out) throws IOException {
 		super.write(out);
-		final Map<String, InternalTimerServiceImpl<K, ?>> registeredTimerServices =
-			timerServicesManager.getRegisteredTimerServices();
+		final Map<String, InternalTimerServiceImpl<K, ?>> registeredTimerServices = timerServicesManager.getRegisteredTimerServices(); //获取所有的InternalTimerServiceImpl服务集合
 
-		out.writeInt(registeredTimerServices.size());
-		for (Map.Entry<String, InternalTimerServiceImpl<K, ?>> entry : registeredTimerServices.entrySet()) {
+
+		out.writeInt(registeredTimerServices.size());//服务数量
+
+		for (Map.Entry<String, InternalTimerServiceImpl<K, ?>> entry : registeredTimerServices.entrySet()) {//循环每一个服务
 			String serviceName = entry.getKey();
 			InternalTimerServiceImpl<K, ?> timerService = entry.getValue();
 
 			out.writeUTF(serviceName);
 			InternalTimersSnapshotReaderWriters
-				.getWriterForVersion(VERSION, timerService.snapshotTimersForKeyGroup(keyGroupIdx))
-				.writeTimersSnapshot(out);
+				.getWriterForVersion(VERSION, timerService.snapshotTimersForKeyGroup(keyGroupIdx))//如何写快照,以及写哪个具体的快照
+				.writeTimersSnapshot(out);//开始真正的写入快照
 		}
 	}
 

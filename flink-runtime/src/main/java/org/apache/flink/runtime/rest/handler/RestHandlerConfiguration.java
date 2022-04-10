@@ -27,12 +27,13 @@ import java.io.File;
 
 /**
  * Configuration object containing values for the rest handler configuration.
+ * rest配置信息
  */
 public class RestHandlerConfiguration {
 
-	private final long refreshInterval;
+	private final long refreshInterval;//时间间隔
 
-	private final int maxCheckpointStatisticCacheEntries;
+	private final int maxCheckpointStatisticCacheEntries;//最近历史checkpoint数量
 
 	private final Time timeout;
 

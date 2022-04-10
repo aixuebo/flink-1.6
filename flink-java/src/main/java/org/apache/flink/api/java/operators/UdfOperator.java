@@ -31,6 +31,7 @@ import java.util.Map;
  * {@link org.apache.flink.api.common.functions.RichMapFunction}, {@link org.apache.flink.api.common.functions.RichReduceFunction},
  * or {@link org.apache.flink.api.common.functions.RichCoGroupFunction}.
  * The UDF operators stand in contrast to operators that execute built-in operations, like aggregations.
+ * UDF的操作,泛型 输出类型O
  */
 @Public
 public interface UdfOperator<O extends UdfOperator<O>> {
@@ -46,6 +47,7 @@ public interface UdfOperator<O extends UdfOperator<O>> {
 	 * method.
 	 *
 	 * @return The configuration parameters for the UDF.
+	 * UDF参数配置信息
 	 */
 	Configuration getParameters();
 

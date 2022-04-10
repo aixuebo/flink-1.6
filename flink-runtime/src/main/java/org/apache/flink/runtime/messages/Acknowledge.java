@@ -22,6 +22,7 @@ import java.io.Serializable;
 
 /**
  * A generic acknowledgement message.
+ * 表示可以存储Serializable的内容，经常返回值是CompletableFuture<Acknowledge>,即要么存储Serializable,要么存储exception
  */
 public class Acknowledge implements Serializable {
 

@@ -31,6 +31,7 @@ import java.util.List;
 
 /**
  * Collecting {@link Output} for {@link StreamRecord}.
+ * 用内存list收集输出内容
  */
 public class CollectorOutput<T> implements Output<StreamRecord<T>> {
 
@@ -54,6 +55,7 @@ public class CollectorOutput<T> implements Output<StreamRecord<T>> {
 	public void collect(StreamRecord<T> record) {
 		try {
 			ClassLoader cl = record.getClass().getClassLoader();
+			//公用同一个对象,不断重复设置属性值,优化内存利用率
 			T copied = InstantiationUtil.deserializeObject(InstantiationUtil.serializeObject(record.getValue()), cl);
 			list.add(record.copy(copied));
 		} catch (IOException | ClassNotFoundException ex) {
@@ -61,6 +63,7 @@ public class CollectorOutput<T> implements Output<StreamRecord<T>> {
 		}
 	}
 
+	//不支持分发
 	@Override
 	public <X> void collect(OutputTag<X> outputTag, StreamRecord<X> record) {
 		throw new UnsupportedOperationException("Side output not supported for CollectorOutput");

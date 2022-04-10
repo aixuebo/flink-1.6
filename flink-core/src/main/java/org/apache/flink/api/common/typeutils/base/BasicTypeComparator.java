@@ -30,9 +30,9 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 
 	private static final long serialVersionUID = 1L;
 	
-	private transient T reference;
+	private transient T reference;//设置要比较的值
 	
-	protected final boolean ascendingComparison;
+	protected final boolean ascendingComparison;//是否升序
 
 	// For use by getComparators
 	@SuppressWarnings("rawtypes")
@@ -53,11 +53,13 @@ public abstract class BasicTypeComparator<T extends Comparable<T>> extends TypeC
 		this.reference = toCompare;
 	}
 
+	//比较参数与要比较的值是否相同
 	@Override
 	public boolean equalToReference(T candidate) {
 		return candidate.equals(reference);
 	}
 
+	//两个值比较大小
 	@Override
 	public int compareToReference(TypeComparator<T> referencedComparator) {
 		int comp = ((BasicTypeComparator<T>) referencedComparator).reference.compareTo(reference);

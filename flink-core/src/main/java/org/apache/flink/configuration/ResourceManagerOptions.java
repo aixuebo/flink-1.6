@@ -49,6 +49,7 @@ public class ResourceManagerOptions {
 	/**
 	 * Percentage of heap space to remove from containers (YARN / Mesos), to compensate
 	 * for other JVM memory usage.
+	 * 容器预留多少比例的内存给其他用处
 	 */
 	public static final ConfigOption<Float> CONTAINERIZED_HEAP_CUTOFF_RATIO = ConfigOptions
 		.key("containerized.heap-cutoff-ratio")
@@ -59,6 +60,7 @@ public class ResourceManagerOptions {
 
 	/**
 	 * Minimum amount of heap memory to remove in containers, as a safety margin.
+	 * 容器至少预留多少内存给其他用处
 	 */
 	public static final ConfigOption<Integer> CONTAINERIZED_HEAP_CUTOFF_MIN = ConfigOptions
 		.key("containerized.heap-cutoff-min")
@@ -108,6 +110,7 @@ public class ResourceManagerOptions {
 	/**
 	 * Similar to the {@see CONTAINERIZED_MASTER_ENV_PREFIX}, this configuration prefix allows
 	 * setting custom environment variables for the workers (TaskManagers).
+	 * 配置容器的key前缀
 	 */
 	public static final String CONTAINERIZED_TASK_MANAGER_ENV_PREFIX = "containerized.taskmanager.env.";
 

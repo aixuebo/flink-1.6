@@ -36,6 +36,7 @@ import java.util.List;
  * Objects may be deserialized on demand with a specific classloader.
  *
  * @param <T> The type of the accumulated objects
+ * 收集每一个T的字节数组 --- 即T 转换成 List<T的字节数组形式>
  */
 @PublicEvolving
 public class SerializedListAccumulator<T> implements Accumulator<T, ArrayList<byte[]>> {
@@ -53,8 +54,8 @@ public class SerializedListAccumulator<T> implements Accumulator<T, ArrayList<by
 	public void add(T value, TypeSerializer<T> serializer) throws IOException {
 		try {
 			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-			DataOutputViewStreamWrapper out = new DataOutputViewStreamWrapper(outStream);
-			serializer.serialize(value, out);
+			DataOutputViewStreamWrapper out = new DataOutputViewStreamWrapper(outStream);// --- 因为serializer需要DataOutputView类型参数,所以我们要进一步包装
+			serializer.serialize(value, out);//将数据序列化成字节数组 --- 输出到out流中
 			localValue.add(outStream.toByteArray());
 		}
 		catch (IOException e) {

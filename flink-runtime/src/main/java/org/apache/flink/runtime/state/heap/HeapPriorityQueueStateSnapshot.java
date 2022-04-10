@@ -36,6 +36,9 @@ import java.lang.reflect.Array;
  * This class represents the snapshot of an {@link HeapPriorityQueueSet}.
  *
  * @param <T> type of the state elements.
+ *
+ * 将元素存储在内存中，由于内存中存储的元素归属于多个partition,所以最终结果是按照partition的顺序,把元素一个个存储在内存数组中。
+ * 因此 当需要输出某一个分区的数据时，只需要判断好该分区在内存数组的顺序区间，就可以获取该分区的数据了,输出到指定的输出流中
  */
 public class HeapPriorityQueueStateSnapshot<T> implements StateSnapshot {
 
@@ -88,19 +91,19 @@ public class HeapPriorityQueueStateSnapshot<T> implements StateSnapshot {
 				heapArrayCopy.getClass().getComponentType(),
 				heapArrayCopy.length);
 
-			final TypeSerializer<T> elementSerializer = metaInfo.getElementSerializer();
+			final TypeSerializer<T> elementSerializer = metaInfo.getElementSerializer();//元素对象如何序列化成字节数组
 
 			KeyGroupPartitioner<T> keyGroupPartitioner =
 				new KeyGroupPartitioner<>(
-					heapArrayCopy,
-					heapArrayCopy.length,
-					partitioningOutput,
+					heapArrayCopy,//所有的数据元素
+					heapArrayCopy.length,//元素数量
+					partitioningOutput,//对heapArrayCopy进行排序,排序后的输出数组
 					keyGroupRange,
-					totalKeyGroups,
+					totalKeyGroups,////task节点上的partition数量
 					keyExtractor,
-					elementSerializer::serialize);
+					elementSerializer::serialize);////如何对数据处理,输出输出流中
 
-			stateKeyGroupWriter = keyGroupPartitioner.partitionByKeyGroup();
+			stateKeyGroupWriter = keyGroupPartitioner.partitionByKeyGroup();//返回partition输出对象
 		}
 
 		return stateKeyGroupWriter;

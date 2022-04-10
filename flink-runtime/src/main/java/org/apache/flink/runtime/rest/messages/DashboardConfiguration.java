@@ -33,6 +33,7 @@ import java.util.Objects;
 /**
  * Response of the {@link DashboardConfigHandler} containing general configuration
  * values such as the time zone and the refresh interval.
+ * 获取集群的信息，比如集群版本等信息
  */
 public class DashboardConfiguration implements ResponseBody {
 

@@ -94,16 +94,23 @@ import java.util.stream.Collectors;
  * for receiving job submissions, persisting them, spawning JobManagers to execute
  * the jobs and to recover them in case of a master failure. Furthermore, it knows
  * about the state of the Flink session cluster.
+ * 目标:
+ * 1.接受提交的job任务、并且实例化job信息
+ * 2.为每一个job产生一个JobManagers去执行job,并且跟踪job的进展、失败状态。
+ * 3.跟踪整体flink集群的状态信息
+ *
+ * submitJob:job提交的信息存储起来 --- 创建JobManagerRunner -- 管理JobManagerRunner
  */
 public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> implements
-	DispatcherGateway, LeaderContender, SubmittedJobGraphStore.SubmittedJobGraphListener {
+	DispatcherGateway, LeaderContender,
+	SubmittedJobGraphStore.SubmittedJobGraphListener {//当job被提交成功或者删除成功后，回调一些操作
 
 	public static final String DISPATCHER_NAME = "dispatcher";
 
 	private final Configuration configuration;
 
-	private final SubmittedJobGraphStore submittedJobGraphStore;
-	private final RunningJobsRegistry runningJobsRegistry;
+	private final SubmittedJobGraphStore submittedJobGraphStore;//如何实例化的存储job信息 比如 ZooKeeperSubmittedJobGraphStore
+	private final RunningJobsRegistry runningJobsRegistry;//管理所有的job
 
 	private final HighAvailabilityServices highAvailabilityServices;
 	private final ResourceManagerGateway resourceManagerGateway;
@@ -115,9 +122,9 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 
 	private final Map<JobID, CompletableFuture<JobManagerRunner>> jobManagerRunnerFutures;
 
-	private final LeaderElectionService leaderElectionService;
+	private final LeaderElectionService leaderElectionService;//选举服务
 
-	private final ArchivedExecutionGraphStore archivedExecutionGraphStore;
+	private final ArchivedExecutionGraphStore archivedExecutionGraphStore;//如何存储每一个job的结果
 
 	private final JobManagerRunnerFactory jobManagerRunnerFactory;
 
@@ -137,7 +144,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 
 	public Dispatcher(
 			RpcService rpcService,
-			String endpointId,
+			String endpointId,//dispatcher
 			Configuration configuration,
 			HighAvailabilityServices highAvailabilityServices,
 			SubmittedJobGraphStore submittedJobGraphStore,
@@ -253,14 +260,14 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 			return FutureUtils.completedExceptionally(new FlinkException(String.format("Failed to retrieve job scheduling status for job %s.", jobId), e));
 		}
 
-		if (jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE || jobManagerRunnerFutures.containsKey(jobId)) {
+		if (jobSchedulingStatus == RunningJobsRegistry.JobSchedulingStatus.DONE || jobManagerRunnerFutures.containsKey(jobId)) {//状态异常
 			return FutureUtils.completedExceptionally(
 				new JobSubmissionException(jobId, String.format("Job has already been submitted and is in state %s.", jobSchedulingStatus)));
 		} else {
-			final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobId, jobGraph, this::persistAndRunJob)
+			final CompletableFuture<Acknowledge> persistAndRunFuture = waitForTerminatingJobManager(jobId, jobGraph, this::persistAndRunJob)//实例化、开启jobManager
 				.thenApply(ignored -> Acknowledge.get());
 
-			return persistAndRunFuture.exceptionally(
+			return persistAndRunFuture.exceptionally(//如果出现异常,则该如何处理
 				(Throwable throwable) -> {
 					final Throwable strippedThrowable = ExceptionUtils.stripCompletionException(throwable);
 					log.error("Failed to submit job {}.", jobId, strippedThrowable);
@@ -271,12 +278,12 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 	}
 
 	private CompletableFuture<Void> persistAndRunJob(JobGraph jobGraph) throws Exception {
-		submittedJobGraphStore.putJobGraph(new SubmittedJobGraph(jobGraph, null));
+		submittedJobGraphStore.putJobGraph(new SubmittedJobGraph(jobGraph, null));//存储该job的信息--job信息实例化
 
 		final CompletableFuture<Void> runJobFuture = runJob(jobGraph);
 
 		return runJobFuture.whenComplete(BiConsumerWithException.unchecked((Object ignored, Throwable throwable) -> {
-			if (throwable != null) {
+			if (throwable != null) {//添加失败的时候,要做删除处理
 				submittedJobGraphStore.removeJobGraph(jobGraph.getJobID());
 			}
 		}));
@@ -397,6 +404,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 				jobMasterGateway.rescaleJob(newParallelism, rescalingBehaviour, timeout));
 	}
 
+	//获取dispatcher服务地址
 	@Override
 	public CompletableFuture<String> requestRestAddress(Time timeout) {
 		if (restAddress != null) {
@@ -652,6 +660,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 
 	/**
 	 * Recovers all jobs persisted via the submitted job graph store.
+	 * 还原所有的job信息
 	 */
 	@VisibleForTesting
 	Collection<JobGraph> recoverJobs() throws Exception {
@@ -690,6 +699,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 		return jobGraphs;
 	}
 
+	//该job已经被提交过，从系统中还原
 	@Nullable
 	private JobGraph recoverJob(JobID jobId) throws Exception {
 		log.debug("Recover job {}.", jobId);
@@ -759,6 +769,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 		onFatalError(new FlinkException(String.format("JobMaster for job %s failed.", jobId), cause));
 	}
 
+	//找到job的JobManagerRunner,获取该leader节点
 	private CompletableFuture<JobMasterGateway> getJobMasterGatewayFuture(JobID jobId) {
 		final CompletableFuture<JobManagerRunner> jobManagerRunnerFuture = jobManagerRunnerFutures.get(jobId);
 
@@ -817,15 +828,17 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 			() -> {
 				log.info("Dispatcher {} was granted leadership with fencing token {}", getAddress(), newLeaderSessionID);
 
+				//使用一个线程,获取所有的job信息
 				final CompletableFuture<Collection<JobGraph>> recoveredJobsFuture = recoveryOperation.thenApplyAsync(
-					FunctionUtils.uncheckedFunction(ignored -> recoverJobs()),
-					getRpcService().getExecutor());
+					FunctionUtils.uncheckedFunction(ignored -> recoverJobs()),//相当于map操作,functionWithException定义个map函数
+					getRpcService().getExecutor());//使用一个线程
 
+				//每一个任务调tryAcceptLeadershipAndRunJobs方法
 				final CompletableFuture<Boolean> fencingTokenFuture = recoveredJobsFuture.thenComposeAsync(
 					(Collection<JobGraph> recoveredJobs) -> tryAcceptLeadershipAndRunJobs(newLeaderSessionID, recoveredJobs),
 					getUnfencedMainThreadExecutor());
 
-				final CompletableFuture<Void> confirmationFuture = fencingTokenFuture.thenCombineAsync(
+				final CompletableFuture<Void> confirmationFuture = fencingTokenFuture.thenCombineAsync(//所有的fencingTokenFuture任务都执行完后,才能调用该方法
 					recoveredJobsFuture,
 					BiFunctionWithException.unchecked((Boolean confirmLeadership, Collection<JobGraph> recoveredJobs) -> {
 						if (confirmLeadership) {
@@ -853,7 +866,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 	private CompletableFuture<Boolean> tryAcceptLeadershipAndRunJobs(UUID newLeaderSessionID, Collection<JobGraph> recoveredJobs) {
 		final DispatcherId dispatcherId = DispatcherId.fromUuid(newLeaderSessionID);
 
-		if (leaderElectionService.hasLeadership(newLeaderSessionID)) {
+		if (leaderElectionService.hasLeadership(newLeaderSessionID)) {//必须是leader节点
 			log.debug("Dispatcher {} accepted leadership with fencing token {}. Start recovered jobs.", getAddress(), dispatcherId);
 			setNewFencingToken(dispatcherId);
 
@@ -955,7 +968,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 					// SubmittedJobGraphStore.recoverJob returns null.
 					final CompletableFuture<Optional<JobGraph>> recoveredJob = recoveryOperation.thenApplyAsync(
 						FunctionUtils.uncheckedFunction(ignored -> Optional.ofNullable(recoverJob(jobId))),
-						getRpcService().getExecutor());
+						getRpcService().getExecutor());//该job已经被提交过，从系统中还原
 
 					final DispatcherId dispatcherId = getFencingToken();
 					final CompletableFuture<Void> submissionFuture = recoveredJob.thenComposeAsync(
@@ -1039,6 +1052,7 @@ public abstract class Dispatcher extends FencedRpcEndpoint<DispatcherId> impleme
 
 	/**
 	 * Singleton default factory for {@link JobManagerRunner}.
+	 * 如何创建一个job的JobManagerRunner对象
 	 */
 	public enum DefaultJobManagerRunnerFactory implements JobManagerRunnerFactory {
 		INSTANCE;

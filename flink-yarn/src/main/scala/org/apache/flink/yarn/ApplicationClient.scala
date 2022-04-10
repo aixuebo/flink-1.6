@@ -36,7 +36,7 @@ import scala.language.postfixOps
   *
   * This class represents the bridge between the [[YarnClusterClient]] and the
   * [[YarnApplicationMasterRunner]].
-  *
+  *LeaderRetrievalService
   * @param flinkConfig Configuration object
   * @param leaderRetrievalService [[LeaderRetrievalService]] which is used to retrieve the current
   *                              leading [[org.apache.flink.runtime.jobmanager.JobManager]]

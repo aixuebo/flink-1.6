@@ -24,6 +24,7 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 
 /**
  * Interface for observers that monitor the status of individual task executions.
+ * 监听task过程中的状态,当状态发生变化后,要做到及时通知
  */
 public interface ExecutionStatusListener {
 

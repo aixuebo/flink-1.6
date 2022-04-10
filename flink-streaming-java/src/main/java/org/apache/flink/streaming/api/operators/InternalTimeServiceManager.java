@@ -78,14 +78,16 @@ public class InternalTimeServiceManager<K> {
 		this.timerServices = new HashMap<>();
 	}
 
+	//创建一个服务
 	@SuppressWarnings("unchecked")
 	public <N> InternalTimerService<N> getInternalTimerService(
 		String name,
 		TimerSerializer<K, N> timerSerializer,
 		Triggerable<K, N> triggerable) {
 
-		InternalTimerServiceImpl<K, N> timerService = registerOrGetTimerService(name, timerSerializer);
+		InternalTimerServiceImpl<K, N> timerService = registerOrGetTimerService(name, timerSerializer);//get或者新增一个服务
 
+		//开启该服务
 		timerService.startTimerService(
 			timerSerializer.getKeySerializer(),
 			timerSerializer.getNamespaceSerializer(),
@@ -94,12 +96,19 @@ public class InternalTimeServiceManager<K> {
 		return timerService;
 	}
 
+	/**
+	 * 只是注册一个服务,并不会去开启服务
+	 * @param name 服务名字
+	 * @param timerSerializer 如何序列化服务的key与命名空间
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	<N> InternalTimerServiceImpl<K, N> registerOrGetTimerService(String name, TimerSerializer<K, N> timerSerializer) {
-		InternalTimerServiceImpl<K, N> timerService = (InternalTimerServiceImpl<K, N>) timerServices.get(name);
-		if (timerService == null) {
 
-			timerService = new InternalTimerServiceImpl<>(
+		InternalTimerServiceImpl<K, N> timerService = (InternalTimerServiceImpl<K, N>) timerServices.get(name);//是否存在
+
+		if (timerService == null) {//说明不存在,没注册过
+			timerService = new InternalTimerServiceImpl<>( //注册一个新的服务
 				localKeyGroupRange,
 				keyContext,
 				processingTimeService,
@@ -111,6 +120,7 @@ public class InternalTimeServiceManager<K> {
 		return timerService;
 	}
 
+	//返回已经注册的所有InternalTimerServiceImpl
 	Map<String, InternalTimerServiceImpl<K, ?>> getRegisteredTimerServices() {
 		return Collections.unmodifiableMap(timerServices);
 	}
@@ -123,6 +133,7 @@ public class InternalTimeServiceManager<K> {
 			timerSerializer);
 	}
 
+	//处理eventTime的触发
 	public void advanceWatermark(Watermark watermark) throws Exception {
 		for (InternalTimerServiceImpl<?, ?> service : timerServices.values()) {
 			service.advanceWatermark(watermark.getTimestamp());
@@ -140,9 +151,9 @@ public class InternalTimeServiceManager<K> {
 	}
 
 	public void restoreStateForKeyGroup(
-			InputStream stream,
-			int keyGroupIdx,
-			ClassLoader userCodeClassLoader) throws IOException {
+		InputStream stream,
+		int keyGroupIdx,
+		ClassLoader userCodeClassLoader) throws IOException {
 
 		InternalTimerServiceSerializationProxy<K> serializationProxy =
 			new InternalTimerServiceSerializationProxy<>(
@@ -154,7 +165,7 @@ public class InternalTimeServiceManager<K> {
 	}
 
 	////////////////////			Methods used ONLY IN TESTS				////////////////////
-
+	//所有的ProcessingTimeTimers数量
 	@VisibleForTesting
 	public int numProcessingTimeTimers() {
 		int count = 0;
@@ -164,6 +175,7 @@ public class InternalTimeServiceManager<K> {
 		return count;
 	}
 
+	//所有的EventTimeTimers数量
 	@VisibleForTesting
 	public int numEventTimeTimers() {
 		int count = 0;

@@ -35,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Utility class which monitors the specified yarn application status periodically.
+ * 定期去yarn上请求application的状态。
+ *
+ * 用于FlinkYarnSessionCli中不断的打印任务运行的日志信息
  */
 public class YarnApplicationStatusMonitor implements AutoCloseable {
 
@@ -91,7 +94,7 @@ public class YarnApplicationStatusMonitor implements AutoCloseable {
 
 			if (yarnApplicationState == YarnApplicationState.FAILED || yarnApplicationState == YarnApplicationState.KILLED) {
 				applicationStatus = ApplicationStatus.FAILED;
-			} else {
+			} else {//其他状态都是成功
 				applicationStatus = ApplicationStatus.SUCCEEDED;
 			}
 		} else {

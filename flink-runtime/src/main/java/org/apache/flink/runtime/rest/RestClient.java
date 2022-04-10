@@ -94,14 +94,20 @@ import static org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpRes
 
 /**
  * This client is the counter-part to the {@link RestServerEndpoint}.
+ *
+ * 开启netty,发送请求,处理response内容 ClientHandler
+ *
+ * 主要对外提供sendRequest方法 --- 属于工具类,提供了发送请求、返回respnse的能力
+ *
+ * 属于客户端,需要去请求服务端(RestServerEndpoint)
  */
 public class RestClient implements AutoCloseableAsync {
 	private static final Logger LOG = LoggerFactory.getLogger(RestClient.class);
 
-	private static final ObjectMapper objectMapper = RestMapperUtils.getStrictObjectMapper();
+	private static final ObjectMapper objectMapper = RestMapperUtils.getStrictObjectMapper();//JSON对象转化类
 
 	// used to open connections to a rest server endpoint
-	private final Executor executor;
+	private final Executor executor;//执行一个线程
 
 	private final Bootstrap bootstrap;
 
@@ -120,7 +126,7 @@ public class RestClient implements AutoCloseableAsync {
 			protected void initChannel(SocketChannel socketChannel) {
 				try {
 					// SSL should be the first handler in the pipeline
-					if (sslEngineFactory != null) {
+					if (sslEngineFactory != null) {//套一层ssl安全引擎
 						socketChannel.pipeline().addLast("ssl", new SslHandler(sslEngineFactory.createSSLEngine()));
 					}
 
@@ -194,11 +200,11 @@ public class RestClient implements AutoCloseableAsync {
 	}
 
 	public <M extends MessageHeaders<R, P, U>, U extends MessageParameters, R extends RequestBody, P extends ResponseBody> CompletableFuture<P> sendRequest(
-			String targetAddress,
-			int targetPort,
-			M messageHeaders,
-			U messageParameters,
-			R request,
+			String targetAddress,//目标地址
+			int targetPort,//目标端口
+			M messageHeaders,//请求的url、如何拼接参数
+			U messageParameters,//参数具体的key=value信息集合
+			R request,//请求的request对象
 			Collection<FileUpload> fileUploads) throws IOException {
 		Preconditions.checkNotNull(targetAddress);
 		Preconditions.checkArgument(0 <= targetPort && targetPort < 65536, "The target port " + targetPort + " is not in the range (0, 65536].");
@@ -208,10 +214,12 @@ public class RestClient implements AutoCloseableAsync {
 		Preconditions.checkNotNull(fileUploads);
 		Preconditions.checkState(messageParameters.isResolved(), "Message parameters were not resolved.");
 
-		String targetUrl = MessageParameters.resolveUrl(messageHeaders.getTargetRestEndpointURL(), messageParameters);
+		String targetUrl = MessageParameters.resolveUrl(messageHeaders.getTargetRestEndpointURL(), messageParameters);//请求的url
 
+		//发送请求request去 host:port url
 		LOG.debug("Sending request of class {} to {}:{}{}", request.getClass(), targetAddress, targetPort, targetUrl);
-		// serialize payload
+
+		// serialize payload 将request请求对象转换成json信息,然后再转换成字节数组
 		StringWriter sw = new StringWriter();
 		objectMapper.writeValue(sw, request);
 		ByteBuf payload = Unpooled.wrappedBuffer(sw.toString().getBytes(ConfigConstants.DEFAULT_CHARSET));
@@ -220,7 +228,7 @@ public class RestClient implements AutoCloseableAsync {
 
 		final JavaType responseType;
 
-		final Collection<Class<?>> typeParameters = messageHeaders.getResponseTypeParameters();
+		final Collection<Class<?>> typeParameters = messageHeaders.getResponseTypeParameters();//response输出是对象,所以需要将json转换成对象
 
 		if (typeParameters.isEmpty()) {
 			responseType = objectMapper.constructType(messageHeaders.getResponseClass());
@@ -233,8 +241,17 @@ public class RestClient implements AutoCloseableAsync {
 		return submitRequest(targetAddress, targetPort, httpRequest, responseType);
 	}
 
+	/**
+	 * @param targetAddress 目标host:port
+	 * @param targetUrl 目标url
+	 * @param httpMethod get/post等方法
+	 * @param jsonPayload 请求的request字节内容
+	 * @param fileUploads 上传的文件集合  如果为"" 表示无上传文件
+	 * @return 返回netty的request对象
+	 * @throws IOException
+	 */
 	private static Request createRequest(String targetAddress, String targetUrl, HttpMethod httpMethod, ByteBuf jsonPayload, Collection<FileUpload> fileUploads) throws IOException {
-		if (fileUploads.isEmpty()) {
+		if (fileUploads.isEmpty()) {//没有上传的文件
 
 			HttpRequest httpRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, targetUrl, jsonPayload);
 
@@ -290,6 +307,7 @@ public class RestClient implements AutoCloseableAsync {
 		}
 	}
 
+	//真正意义发送一个请求
 	private <P extends ResponseBody> CompletableFuture<P> submitRequest(String targetAddress, int targetPort, Request httpRequest, JavaType responseType) {
 		final ChannelFuture connectFuture = bootstrap.connect(targetAddress, targetPort);
 
@@ -316,7 +334,7 @@ public class RestClient implements AutoCloseableAsync {
 						if (handler == null) {
 							throw new IOException("Netty pipeline was not properly initialized.");
 						} else {
-							httpRequest.writeTo(channel);
+							httpRequest.writeTo(channel);//请求输出到流中
 							future = handler.getJsonFuture();
 							success = true;
 						}
@@ -336,6 +354,7 @@ public class RestClient implements AutoCloseableAsync {
 				executor);
 	}
 
+	//解析成Response对象 --- 把rawResponse的json形式字符串,转换成JavaType对象
 	private static <P extends ResponseBody> CompletableFuture<P> parseResponse(JsonResponse rawResponse, JavaType responseType) {
 		CompletableFuture<P> responseFuture = new CompletableFuture<>();
 		final JsonParser jsonParser = objectMapper.treeAsTokens(rawResponse.json);
@@ -410,9 +429,10 @@ public class RestClient implements AutoCloseableAsync {
 			return jsonFuture;
 		}
 
+		//处理response信息
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-			if (msg instanceof HttpResponse && ((HttpResponse) msg).status().equals(REQUEST_ENTITY_TOO_LARGE)) {
+			if (msg instanceof HttpResponse && ((HttpResponse) msg).status().equals(REQUEST_ENTITY_TOO_LARGE)) {//413 Request Entity Too Large
 				jsonFuture.completeExceptionally(
 					new RestClientException(
 						String.format(
@@ -474,7 +494,7 @@ public class RestClient implements AutoCloseableAsync {
 			try (InputStream in = new ByteBufInputStream(content)) {
 				rawResponse = objectMapper.readTree(in);
 				LOG.debug("Received response {}.", rawResponse);
-			} catch (JsonProcessingException je) {
+			} catch (JsonProcessingException je) {//不是json信息
 				LOG.error("Response was not valid JSON.", je);
 				// let's see if it was a plain-text message instead
 				content.readerIndex(0);
@@ -498,8 +518,8 @@ public class RestClient implements AutoCloseableAsync {
 	}
 
 	private static final class JsonResponse {
-		private final JsonNode json;
-		private final HttpResponseStatus httpResponseStatus;
+		private final JsonNode json;//返回的json信息
+		private final HttpResponseStatus httpResponseStatus;//返回的状态码
 
 		private JsonResponse(JsonNode json, HttpResponseStatus httpResponseStatus) {
 			this.json = Preconditions.checkNotNull(json);

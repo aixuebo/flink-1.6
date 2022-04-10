@@ -28,6 +28,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Immutable ordered list of fields IDs.
+ * 按照顺序,组成Integer的ID集合,用list存储
  */
 @Internal
 public class FieldList extends FieldSet {
@@ -121,7 +122,7 @@ public class FieldList extends FieldSet {
 	}
 
 	// --------------------------------------------------------------------------------------------
-	
+	//校验是一个子集
 	@Override
 	public boolean isValidSubset(FieldSet set) {
 		if (set instanceof FieldList) {

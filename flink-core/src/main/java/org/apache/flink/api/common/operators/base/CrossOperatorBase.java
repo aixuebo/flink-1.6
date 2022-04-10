@@ -36,12 +36,14 @@ import java.util.List;
 
 /**
  * @see org.apache.flink.api.common.functions.CrossFunction
+ * 笛卡尔join
  */
 @Internal
 public class CrossOperatorBase<IN1, IN2, OUT, FT extends CrossFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {
 	
 	/**
 	 * The cross hint tells the system which sizes to expect from the data sets
+	 * 暗示第几个表小
 	 */
 	@Public
 	public static enum CrossHint {
@@ -96,7 +98,8 @@ public class CrossOperatorBase<IN1, IN2, OUT, FT extends CrossFunction<IN1, IN2,
 		FunctionUtils.openFunction(function, this.parameters);
 
 		ArrayList<OUT> result = new ArrayList<OUT>(inputData1.size() * inputData2.size());
-		
+
+		//输入、输出类型
 		TypeSerializer<IN1> inSerializer1 = getOperatorInfo().getFirstInputType().createSerializer(executionConfig);
 		TypeSerializer<IN2> inSerializer2 = getOperatorInfo().getSecondInputType().createSerializer(executionConfig);
 		TypeSerializer<OUT> outSerializer = getOperatorInfo().getOutputType().createSerializer(executionConfig);

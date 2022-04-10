@@ -128,12 +128,14 @@ public class ShortSummaryAggregator extends NumericSummaryAggregator<Short> {
 		return new SumShortAggregator();
 	}
 
+	//只有Float和Double类型才有NaN
 	@Override
 	protected boolean isNan(Short number) {
 		// NaN never applies here because only types like Float and Double have NaN
 		return false;
 	}
 
+	//只有Float和Double类型才有Infinity
 	@Override
 	protected boolean isInfinite(Short number) {
 		// Infinity never applies here because only types like Float and Double have Infinity

@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Main accumulator registry which encapsulates user-defined accumulators.
+ * 某一个job归属的task尝试任务,在内存中的状态
  */
 public class AccumulatorRegistry {
 

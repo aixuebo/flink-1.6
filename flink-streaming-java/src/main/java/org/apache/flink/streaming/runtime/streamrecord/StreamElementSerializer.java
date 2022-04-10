@@ -45,20 +45,22 @@ import static java.util.Objects.requireNonNull;
  * stream task/operator level for transmitting StreamRecords and Watermarks.
  *
  * @param <T> The type of value in the StreamRecord
+ *
+ * 可以序列化的元素流
  */
 @Internal
 public final class StreamElementSerializer<T> extends TypeSerializer<StreamElement> {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final int TAG_REC_WITH_TIMESTAMP = 0;
-	private static final int TAG_REC_WITHOUT_TIMESTAMP = 1;
-	private static final int TAG_WATERMARK = 2;
-	private static final int TAG_LATENCY_MARKER = 3;
-	private static final int TAG_STREAM_STATUS = 4;
+	private static final int TAG_REC_WITH_TIMESTAMP = 0;//带时间戳的元素对象
+	private static final int TAG_REC_WITHOUT_TIMESTAMP = 1;//不带时间戳的元素对象
+	private static final int TAG_WATERMARK = 2;//WATERMARK水印元素对象
+	private static final int TAG_LATENCY_MARKER = 3;//延迟元素对象
+	private static final int TAG_STREAM_STATUS = 4;//状态元素对象
 
 
-	private final TypeSerializer<T> typeSerializer;
+	private final TypeSerializer<T> typeSerializer;//如何序列化、反序列化对象
 
 	public StreamElementSerializer(TypeSerializer<T> serializer) {
 		if (serializer instanceof StreamElementSerializer) {

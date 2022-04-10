@@ -43,16 +43,18 @@ public class TimestampsAndPunctuatedWatermarksOperator<T>
 		this.chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
+	//正常处理数据
 	@Override
 	public void processElement(StreamRecord<T> element) throws Exception {
 		final T value = element.getValue();
 		final long newTimestamp = userFunction.extractTimestamp(value,
 				element.hasTimestamp() ? element.getTimestamp() : Long.MIN_VALUE);
 
-		output.collect(element.replace(element.getValue(), newTimestamp));
+		output.collect(element.replace(element.getValue(), newTimestamp));//产生新的StreamRecord
 
-		final Watermark nextWatermark = userFunction.checkAndGetNextWatermark(value, newTimestamp);
-		if (nextWatermark != null && nextWatermark.getTimestamp() > currentWatermark) {
+		//生产水印
+		final Watermark nextWatermark = userFunction.checkAndGetNextWatermark(value, newTimestamp);//非null就说明有水印产生
+		if (nextWatermark != null && nextWatermark.getTimestamp() > currentWatermark) {//确保水印是递增的
 			currentWatermark = nextWatermark.getTimestamp();
 			output.emitWatermark(nextWatermark);
 		}
@@ -62,6 +64,7 @@ public class TimestampsAndPunctuatedWatermarksOperator<T>
 	 * Override the base implementation to completely ignore watermarks propagated from
 	 * upstream (we rely only on the {@link AssignerWithPunctuatedWatermarks} to emit
 	 * watermarks from here).
+	 * 正常处理水印，但大多数情况不会走到该方法，因为该流本身是产生水印的流,不会接收到水印
 	 */
 	@Override
 	public void processWatermark(Watermark mark) throws Exception {

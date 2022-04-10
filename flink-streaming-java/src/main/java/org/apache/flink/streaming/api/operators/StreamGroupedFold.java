@@ -51,10 +51,10 @@ public class StreamGroupedFold<IN, OUT, KEY>
 	// Grouped values
 	private transient ValueState<OUT> values;
 
-	private transient OUT initialValue;
+	private transient OUT initialValue;//fold需要初始化值
 
 	// Initial value serialization
-	private byte[] serializedInitialValue;
+	private byte[] serializedInitialValue;//序列化的值 --- 将其反序列化，成initialValue
 
 	private TypeSerializer<OUT> outTypeSerializer;
 

@@ -29,6 +29,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A recoverable {@link JobGraph} and {@link JobInfo}.
+ * 表示提交的一个job作业 --- 有job的工作描述 以及 job的基础信息
  */
 public class SubmittedJobGraph implements Serializable {
 

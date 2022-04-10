@@ -33,24 +33,25 @@ import org.apache.flink.util.Visitable;
 * one or more inputs, producing a result.
  *
  * @param <OUT> Output type of the records output by this operator
+ * 所有操作类的根类,产生输出结果---即只关注结果
 */
 @Internal
 public abstract class Operator<OUT> implements Visitable<Operator<?>> {
 	
-	protected final Configuration parameters;			// the parameters to parameterize the UDF
+	protected final Configuration parameters;			// the parameters to parameterize the UDF 参数信息
 	
 	protected CompilerHints compilerHints;				// hints to the compiler
 	
-	protected String name;								// the name of the contract instance. optional.
+	protected String name;								// the name of the contract instance. optional.操作名称
 		
-	private int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;  // the number of parallel instances to use
+	private int parallelism = ExecutionConfig.PARALLELISM_DEFAULT;  // the number of parallel instances to use 并行度
 
-	private ResourceSpec minResources = ResourceSpec.DEFAULT;          // the minimum resource of the contract instance.
+	private ResourceSpec minResources = ResourceSpec.DEFAULT;          // the minimum resource of the contract instance. 最少的资源
 
-	private ResourceSpec preferredResources = ResourceSpec.DEFAULT;    // the preferred resource of the contract instance.
+	private ResourceSpec preferredResources = ResourceSpec.DEFAULT;    // the preferred resource of the contract instance. 希望的资源
 
 	/**
-	 * The return type of the user function.
+	 * The return type of the user function.返回值输出类型
 	 */
 	protected final OperatorInformation<OUT> operatorInfo;
 
@@ -173,6 +174,7 @@ public abstract class Operator<OUT> implements Visitable<Operator<?>> {
 	 * number of parallel instances by itself.
 	 *
 	 * @return The parallelism.
+	 *
 	 */
 	public int getParallelism() {
 		return this.parallelism;

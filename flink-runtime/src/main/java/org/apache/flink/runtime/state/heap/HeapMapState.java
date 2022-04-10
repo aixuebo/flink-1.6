@@ -79,6 +79,7 @@ class HeapMapState<K, N, UK, UV>
 		return valueSerializer;
 	}
 
+	//获取map中某一个key对应的值
 	@Override
 	public UV get(UK userKey) {
 
@@ -91,6 +92,7 @@ class HeapMapState<K, N, UK, UV>
 		return userMap.get(userKey);
 	}
 
+	//向map中存储key-value键值对
 	@Override
 	public void put(UK userKey, UV userValue) {
 
@@ -103,6 +105,7 @@ class HeapMapState<K, N, UK, UV>
 		userMap.put(userKey, userValue);
 	}
 
+	//增加一组key-value键值对
 	@Override
 	public void putAll(Map<UK, UV> value) {
 
@@ -116,6 +119,7 @@ class HeapMapState<K, N, UK, UV>
 		userMap.putAll(value);
 	}
 
+	//移除某一个key
 	@Override
 	public void remove(UK userKey) {
 
@@ -126,7 +130,7 @@ class HeapMapState<K, N, UK, UV>
 
 		userMap.remove(userKey);
 
-		if (userMap.isEmpty()) {
+		if (userMap.isEmpty()) {//如果无任何key了,则删除该map
 			clear();
 		}
 	}

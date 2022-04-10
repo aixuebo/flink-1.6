@@ -26,12 +26,12 @@ import org.apache.flink.annotation.PublicEvolving;
 @PublicEvolving
 public class StringColumnSummary extends ColumnSummary {
 
-	private long nonNullCount;
-	private long nullCount;
-	private long emptyCount;
-	private Integer minLength;
-	private Integer maxLength;
-	private Double meanLength;
+	private long nonNullCount;//字符串非null的数量
+	private long nullCount;//null的数量
+	private long emptyCount;//""空的数量
+	private Integer minLength;//字符串最小长度
+	private Integer maxLength;//字符串最大长度
+	private Double meanLength;//平均字符串长度
 
 	public StringColumnSummary(long nonNullCount, long nullCount, long emptyCount, Integer minLength, Integer maxLength, Double meanLength) {
 		this.nonNullCount = nonNullCount;

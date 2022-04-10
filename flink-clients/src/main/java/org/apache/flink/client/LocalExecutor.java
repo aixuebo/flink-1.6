@@ -74,7 +74,7 @@ public class LocalExecutor extends PlanExecutor {
 	/** Config value for how many slots to provide in the local cluster. */
 	private int taskManagerNumSlots = DEFAULT_TASK_MANAGER_NUM_SLOTS;
 
-	/** Config flag whether to overwrite existing files by default. */
+	/** Config flag whether to overwrite existing files by default. 默认文件是否覆盖 */
 	private boolean defaultOverwriteFiles = DEFAULT_OVERWRITE;
 
 	// ------------------------------------------------------------------------
@@ -126,8 +126,9 @@ public class LocalExecutor extends PlanExecutor {
 
 	private JobExecutorService createJobExecutorService(Configuration configuration) throws Exception {
 		final JobExecutorService newJobExecutorService;
-		if (CoreOptions.NEW_MODE.equals(configuration.getString(CoreOptions.MODE))) {
+		if (CoreOptions.NEW_MODE.equals(configuration.getString(CoreOptions.MODE))) {//新模式
 
+			//设置服务端监听端口
 			if (!configuration.contains(RestOptions.PORT)) {
 				configuration.setInteger(RestOptions.PORT, 0);
 			}
@@ -137,7 +138,7 @@ public class LocalExecutor extends PlanExecutor {
 				.setNumTaskManagers(
 					configuration.getInteger(
 						ConfigConstants.LOCAL_NUMBER_TASK_MANAGER,
-						ConfigConstants.DEFAULT_LOCAL_NUMBER_TASK_MANAGER))
+						ConfigConstants.DEFAULT_LOCAL_NUMBER_TASK_MANAGER))//设置local模式下,task manager数量
 				.setRpcServiceSharing(RpcServiceSharing.SHARED)
 				.setNumSlotsPerTaskManager(
 					configuration.getInteger(
@@ -150,7 +151,7 @@ public class LocalExecutor extends PlanExecutor {
 			configuration.setInteger(RestOptions.PORT, miniCluster.getRestAddress().getPort());
 
 			newJobExecutorService = miniCluster;
-		} else {
+		} else {//老模式
 			final LocalFlinkMiniCluster localFlinkMiniCluster = new LocalFlinkMiniCluster(configuration, true);
 			localFlinkMiniCluster.start();
 
@@ -268,7 +269,7 @@ public class LocalExecutor extends PlanExecutor {
 	private Configuration createConfiguration() {
 		Configuration newConfiguration = new Configuration();
 		newConfiguration.setInteger(TaskManagerOptions.NUM_TASK_SLOTS, getTaskManagerNumSlots());
-		newConfiguration.setBoolean(CoreOptions.FILESYTEM_DEFAULT_OVERRIDE, isDefaultOverwriteFiles());
+		newConfiguration.setBoolean(CoreOptions.FILESYTEM_DEFAULT_OVERRIDE, isDefaultOverwriteFiles());//默认文件是否覆盖
 
 		newConfiguration.addAll(baseConfiguration);
 

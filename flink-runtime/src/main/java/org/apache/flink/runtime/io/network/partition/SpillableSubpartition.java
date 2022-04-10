@@ -38,11 +38,13 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * A spillable sub partition starts out in-memory and spills to disk if asked
  * to do so.
+ * 可溢出的子分区,开始写入内存,然后输出到磁盘。
  *
  * <p>Buffers for the partition come from a {@link BufferPool}. The buffer pool
  * is also responsible to trigger the release of the buffers if it needs them
  * back. At this point, the spillable sub partition will write all in-memory
  * buffers to disk. All added buffers after that point directly go to disk.
+ * 数据先写入到buffer,如果buffer池要被release,则现将buffer数据写入到磁盘,然后后面的buffer数据直接写入到磁盘,不会缓存在buffer中
  *
  * <p>This partition type is used for {@link ResultPartitionType#BLOCKING}
  * results that are fully produced before they can be consumed. At the point
@@ -50,6 +52,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * being spilled to disk, or (iii) completely spilled to disk. Depending on
  * this state, different reader variants are returned (see
  * {@link SpillableSubpartitionView} and {@link SpilledSubpartitionView}).
+ * 如果是BLOCKING类型模式,则当下游消费时，必须所有的数据都写入完成后才允许被消费。
  *
  * <p>Since the network buffer pool size for outgoing partitions is usually
  * quite small, e.g. via the {@link TaskManagerOptions#NETWORK_BUFFERS_PER_CHANNEL}
@@ -101,7 +104,7 @@ class SpillableSubpartition extends ResultSubpartition {
 		checkNotNull(bufferConsumer);
 
 		synchronized (buffers) {
-			if (isFinished || isReleased) {
+			if (isFinished || isReleased) {//说明不需要在写入数据了
 				bufferConsumer.close();
 				return false;
 			}
@@ -113,7 +116,7 @@ class SpillableSubpartition extends ResultSubpartition {
 			updateStatistics(bufferConsumer);
 			increaseBuffersInBacklog(bufferConsumer);
 
-			if (spillWriter != null) {
+			if (spillWriter != null) {//已经向磁盘写数据了,因此后期数据都写入磁盘
 				spillFinishedBufferConsumers(forceFinishRemainingBuffers);
 			}
 		}
@@ -232,7 +235,7 @@ class SpillableSubpartition extends ResultSubpartition {
 				SpillableSubpartitionView spillableView = (SpillableSubpartitionView) view;
 				return spillableView.releaseMemory();
 			} else if (spillWriter == null) {
-				// No view and in-memory => spill to disk
+				// No view and in-memory => spill to disk 没有视图,此时数据都在内存里,全部刷到磁盘上
 				spillWriter = ioManager.createBufferFileWriter(ioManager.createChannel());
 
 				int numberOfBuffers = buffers.size();

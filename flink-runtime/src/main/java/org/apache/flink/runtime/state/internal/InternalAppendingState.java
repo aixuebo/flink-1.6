@@ -25,11 +25,14 @@ import org.apache.flink.api.common.state.AppendingState;
  *
  * <p>See {@link InternalKvState} for a description of the internal state hierarchy.
  *
- * @param <K> The type of key the state is associated to
- * @param <N> The type of the namespace
- * @param <IN> The type of elements added to the state
- * @param <SV> The type of elements in the state
- * @param <OUT> The type of the resulting element in the state
+ * @param <K> The type of key the state is associated to,key的类型
+ * @param <N> The type of the namespace 命名空间
+ * @param <IN> The type of elements added to the state,数据输入类型
+ * @param <SV> The type of elements in the state  state状态存储的值类型
+ * @param <OUT> The type of the resulting element in the state 数据输出类型
+ *
+ *
+ * key+命名空间+输入类型--->转换成state中间存储的值类型 ---> state中间存储值,可以转换成最终输出类型
  */
 public interface InternalAppendingState<K, N, IN, SV, OUT> extends InternalKvState<K, N, SV>, AppendingState<IN, OUT> {
 	/**
@@ -38,6 +41,7 @@ public interface InternalAppendingState<K, N, IN, SV, OUT> extends InternalKvSta
 	 * @return internally stored value.
 	 *
 	 * @throws Exception The method may forward exception thrown internally (by I/O or functions).
+	 * 返回state中间存储的结果
 	 */
 	SV getInternal() throws Exception;
 
@@ -47,6 +51,7 @@ public interface InternalAppendingState<K, N, IN, SV, OUT> extends InternalKvSta
 	 * @param valueToStore new value to store.
 	 *
 	 * @throws Exception The method may forward exception thrown internally (by I/O or functions).
+	 * 更新stage中间存储的结果
 	 */
 	void updateInternal(SV valueToStore) throws Exception;
 }
